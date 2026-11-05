@@ -1,0 +1,200 @@
+/* MiracardiacHealth Shared Styles - Mobile First */
+:root {
+  --ah-primary: #0d9488; /* teal-600 */
+  --ah-primary-dark: #0f766e;
+  --ah-secondary: #059669; /* emerald-600 */
+  --ah-accent: #3b82f6;
+  --ah-danger: #dc2626;
+  --ah-warning: #d97706;
+  --ah-bg: #f8fafc;
+  --ah-card: #ffffff;
+  --ah-text: #0f172a;
+  --ah-muted: #64748b;
+  --ah-border: #e2e8f0;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--ah-bg);
+  color: var(--ah-text);
+  min-height: 100dvh;
+  padding-bottom: calc(64px + var(--safe-bottom));
+}
+
+/* Bottom navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: white;
+  border-top: 1px solid var(--ah-border);
+  padding-bottom: var(--safe-bottom);
+  display: flex;
+  justify-content: space-around;
+  height: 64px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+}
+
+.bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 0.65rem;
+  color: var(--ah-muted);
+  text-decoration: none;
+  gap: 2px;
+  transition: color 0.15s;
+}
+
+.bottom-nav a.active {
+  color: var(--ah-primary);
+  font-weight: 600;
+}
+
+.bottom-nav a svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Cards */
+.ah-card {
+  background: var(--ah-card);
+  border-radius: 1rem;
+  border: 1px solid var(--ah-border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--ah-primary), var(--ah-secondary));
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-primary:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--ah-primary);
+  color: var(--ah-primary);
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1.15rem;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: var(--ah-danger);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1.15rem;
+  border: none;
+  cursor: pointer;
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-active, .badge-approved, .badge-confirmed, .badge-completed { background: #d1fae5; color: #065f46; }
+.badge-rejected, .badge-cancelled, .badge-closed { background: #fee2e2; color: #991b1b; }
+.badge-open, .badge-in_progress, .badge-preparing { background: #dbeafe; color: #1e40af; }
+.badge-paid_pending { background: #ffedd5; color: #9a3412; }
+
+/* Chat bubbles */
+.chat-bubble {
+  max-width: 80%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.chat-bubble.mine {
+  background: linear-gradient(135deg, #0d9488, #059669);
+  color: white;
+  border-bottom-right-radius: 0.25rem;
+  margin-left: auto;
+}
+.chat-bubble.theirs {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Input focus */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  ring: 2px;
+  border-color: var(--ah-primary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+/* Safe area for notched phones */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Toast already handled in JS */
+
+/* Loading spinner */
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--ah-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
