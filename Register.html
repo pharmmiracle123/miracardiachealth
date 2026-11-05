@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Create Account | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <style>
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .blob { position:absolute; border-radius:9999px; filter:blur(40px); opacity:.4; animation: floaty 9s ease-in-out infinite; }
+    @keyframes floaty { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-18px) scale(1.08)} }
+    .heartbeat { animation: beat 1.4s ease-in-out infinite; display:inline-block; }
+    @keyframes beat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.2)} 30%{transform:scale(1)} 45%{transform:scale(1.12)} 60%{transform:scale(1)} }
+    .ic { width: 18px; height: 18px; flex-shrink: 0; display: block; }
+    .inp { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .8rem 1rem; font-size: .9rem; transition: border-color .2s, box-shadow .2s; }
+    .inp:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <section class="relative ah-gradient text-white overflow-hidden">
+    <div class="blob w-48 h-48 bg-cyan-300 -top-10 -left-10"></div>
+    <div class="blob w-48 h-48 bg-emerald-300 top-10 -right-12" style="animation-delay:-3s"></div>
+    <div class="relative max-w-md mx-auto px-5 pt-8 pb-14 text-center">
+      <a href="index.html" class="inline-flex items-center gap-2">
+        <img class="site-logo w-11 h-11 rounded-2xl object-contain shadow" src="icons/icon.svg" alt="MH" />
+        <span class="font-extrabold text-xl">Miracardiac<span class="text-emerald-200">Health</span></span>
+      </a>
+      <h1 class="text-2xl font-extrabold mt-4">Create your account <span class="heartbeat">💚</span></h1>
+      <p class="text-sm text-white/90 mt-1">Patient &amp; Student registration · Free · Takes under a minute</p>
+    </div>
+  </section>
+
+  <main class="max-w-md mx-auto px-4 -mt-8 relative z-10 pb-10">
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-5">
+
+      <div class="rounded-2xl border border-teal-100 bg-teal-50/70 px-4 py-3 mb-4">
+        <p class="text-sm font-bold text-teal-900">Patient / Student account</p>
+        <p class="text-[11px] text-teal-800/80 mt-0.5">Book consultations, order medicines, access counseling &amp; the Student Hub. Staff accounts (doctors, pharmacists, nurses, etc.) are created only by clinic Admin.</p>
+      </div>
+
+      <div id="regMsg" class="hidden mt-2 rounded-xl px-3 py-2.5 text-xs font-medium"></div>
+
+      <form id="regForm" class="space-y-3 mt-2" novalidate>
+        <div>
+          <label for="name" class="block text-xs font-bold text-slate-500 mb-1">Full name</label>
+          <input id="name" type="text" autocomplete="name" class="inp" placeholder="e.g. Amaka Okafor" required />
+        </div>
+        <div>
+          <label for="email" class="block text-xs font-bold text-slate-500 mb-1">Email address</label>
+          <input id="email" type="email" autocomplete="email" inputmode="email" class="inp" placeholder="you@example.com" required />
+        </div>
+        <div>
+          <label for="phone" class="block text-xs font-bold text-slate-500 mb-1">Phone number</label>
+          <input id="phone" type="tel" autocomplete="tel" inputmode="tel" class="inp" placeholder="08012345678" required />
+        </div>
+        <div>
+          <label for="password" class="block text-xs font-bold text-slate-500 mb-1">Password</label>
+          <div class="relative">
+            <input id="password" type="password" autocomplete="new-password" class="inp pr-12" placeholder="At least 8 characters" required />
+            <button type="button" id="togglePw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-1 text-xs font-bold" aria-label="Show password">SHOW</button>
+          </div>
+          <div class="flex gap-1 mt-2"><div class="sbar h-1.5 flex-1 rounded-full bg-slate-200"></div><div class="sbar h-1.5 flex-1 rounded-full bg-slate-200"></div><div class="sbar h-1.5 flex-1 rounded-full bg-slate-200"></div><div class="sbar h-1.5 flex-1 rounded-full bg-slate-200"></div></div>
+          <p id="strengthText" class="text-[11px] text-slate-400 mt-1">Use letters, numbers and a symbol for a strong password.</p>
+        </div>
+        <div>
+          <label for="password2" class="block text-xs font-bold text-slate-500 mb-1">Confirm password</label>
+          <input id="password2" type="password" autocomplete="new-password" class="inp" placeholder="Re-enter password" required />
+        </div>
+
+        <label class="flex items-start gap-2 text-xs text-slate-600 mt-1">
+          <input id="consent" type="checkbox" class="mt-0.5 rounded border-slate-300" required />
+          <span>I am 18 or older, and I agree to the <a href="terms.html" target="_blank" class="font-bold text-teal-700 underline">Terms</a> and <a href="privacy.html" target="_blank" class="font-bold text-teal-700 underline">Privacy Policy</a>, including how my health information is handled.</span>
+        </label>
+
+        <button id="regBtn" type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold py-3 text-sm shadow-lg shadow-teal-600/25 active:scale-[.98] transition disabled:opacity-60">Create account</button>
+      </form>
+
+      <div class="flex items-center gap-3 my-4">
+        <div class="flex-1 h-px bg-slate-200"></div><span class="text-[11px] font-semibold text-slate-400">OR</span><div class="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      <button id="googleBtn" type="button" class="w-full flex items-center justify-center gap-3 border-[1.5px] border-slate-200 rounded-xl py-3 text-sm font-semibold hover:bg-slate-50 active:scale-[.98] transition disabled:opacity-60">
+        <svg class="ic" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Sign up with Google
+      </button>
+
+      <p class="text-center text-sm text-slate-500 mt-5">Already have an account? <a href="Login.html" id="loginLink" class="font-bold text-teal-700">Log in</a></p>
+      <p class="text-center text-[11px] text-slate-400 mt-3">Are you a doctor, pharmacist or staff member? Contact your clinic Admin — they create staff accounts.</p>
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="index.html" class="text-xs font-semibold text-slate-500">← Back to home</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import {auth, db, googleProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile,
+      onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    function nextUrl() {
+      const n = params.get('next') || '';
+      return /^[\w\- \/]+\.html(\?[\w=&.\-%]*)?$/.test(n) ? n : 'Dashboard.html';
+    }
+    if (params.get('next')) $('loginLink').href = 'Login.html?next=' + encodeURIComponent(params.get('next'));
+
+    const role = 'patient';
+
+    function showMsg(text, type = 'error') {
+      const el = $('regMsg');
+      el.textContent = text; el.classList.remove('hidden');
+      el.className = 'mt-2 rounded-xl px-3 py-2.5 text-xs font-medium ' + (type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function friendlyError(e) {
+      const c = (e && e.code) || '';
+      if (c === 'auth/email-already-in-use') return 'An account with this email already exists. Try logging in instead.';
+      if (c === 'auth/invalid-email') return 'Please enter a valid email address.';
+      if (c === 'auth/weak-password') return 'Password is too weak. Use at least 8 characters.';
+      if (c === 'auth/network-request-failed') return 'Network problem. Check your internet and try again.';
+      if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return '';
+      if (c === 'auth/popup-blocked') return 'Your browser blocked the Google popup. Allow popups and try again.';
+      if (c === 'auth/unauthorized-domain') return 'This website address is not authorised in Firebase yet (Authentication > Settings > Authorized domains).';
+      if (c === 'auth/operation-not-allowed') return 'This sign-in method is not enabled in Firebase yet.';
+      if (c === 'permission-denied') return 'Your account was created, but we could not save your profile (permission denied). Please log in, or contact support.';
+      return 'Something went wrong. Please try again.';
+    }
+
+    $('togglePw').addEventListener('click', () => {
+      const show = $('password').type === 'password';
+      $('password').type = show ? 'text' : 'password';
+      $('password2').type = show ? 'text' : 'password';
+      $('togglePw').textContent = show ? 'HIDE' : 'SHOW';
+    });
+    function strength(pw) {
+      let s = 0;
+      if (pw.length >= 8) s++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+      if (/\d/.test(pw)) s++;
+      if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 12) s++;
+      return s;
+    }
+    $('password').addEventListener('input', () => {
+      const pw = $('password').value, s = pw ? strength(pw) : 0;
+      const colors = ['bg-slate-200', 'bg-red-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-600'];
+      const labels = ['Use letters, numbers and a symbol for a strong password.', 'Weak', 'Fair', 'Good', 'Strong'];
+      document.querySelectorAll('.sbar').forEach((b, i) => { b.className = 'sbar h-1.5 flex-1 rounded-full ' + (i < s ? colors[s] : 'bg-slate-200'); });
+      $('strengthText').textContent = labels[s];
+    });
+
+    function validate({ needPassword }) {
+      const name = $('name').value.trim(), email = $('email').value.trim(), phone = $('phone').value.replace(/[\s\-()]/g, '');
+      if (name.length < 3 || !/\s/.test(name)) return 'Enter your full name (first and last name).';
+      if (needPassword && !/^\S+@\S+\.\S+$/.test(email)) return 'Enter a valid email address.';
+      if (phone && !/^(\+?234|0)?[789][01]\d{8}$/.test(phone)) return 'Enter a valid Nigerian phone number, e.g. 08012345678.';
+      if (needPassword) {
+        if (!phone) return 'Enter your phone number.';
+        const pw = $('password').value;
+        if (pw.length < 8) return 'Password must be at least 8 characters.';
+        if (strength(pw) < 2) return 'Choose a stronger password (mix letters and numbers).';
+        if (pw !== $('password2').value) return 'The two passwords do not match.';
+      }
+      if (!$('consent').checked) return 'Please accept the Terms and Privacy Policy to continue.';
+      return '';
+    }
+
+    async function createProfile(user, { name, phone }) {
+      const ref = doc(db, 'users', user.uid);
+      const existing = await getDoc(ref);
+      if (existing.exists()) return;
+      const base = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: name || user.displayName || '',
+        photoURL: user.photoURL || '',
+        phone: phone || '',
+        role: 'patient',
+        status: 'active',
+        provider: (user.providerData && user.providerData[0] && user.providerData[0].providerId) || 'password',
+        consent: true,
+        consentAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      try {
+        await setDoc(ref, base);
+      } catch (e) {
+        if (e.code === 'permission-denied') {
+          await setDoc(ref, { ...base, status: 'pending' });
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    let busy = false;
+    function setBusy(on, label) {
+      busy = on; $('regBtn').disabled = on; $('googleBtn').disabled = on;
+      $('regBtn').textContent = on ? (label || 'Creating account…') : 'Create account';
+    }
+
+    $('regForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('regMsg').classList.add('hidden');
+      const err = validate({ needPassword: true }); if (err) return showMsg(err);
+      setBusy(true);
+      const name = $('name').value.trim(), phone = $('phone').value.replace(/[\s\-()]/g, '');
+      let cred;
+      try {
+        cred = await createUserWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+      } catch (ex) { console.error(ex); showMsg(friendlyError(ex)); return setBusy(false); }
+      try {
+        try { await updateProfile(cred.user, { displayName: name }); } catch (_) {}
+        await createProfile(cred.user, { name, phone });
+        showMsg('Account created! Taking you in…', 'ok');
+        setTimeout(() => location.replace(nextUrl()), 700);
+      } catch (ex) {
+        console.error(ex);
+        showMsg(friendlyError(ex) || 'Account created, but profile setup failed. Please log in to finish.');
+        setBusy(false);
+      }
+    });
+
+    $('googleBtn').addEventListener('click', async () => {
+      $('regMsg').classList.add('hidden');
+      const err = validate({ needPassword: false });
+      if (err) return showMsg(err);
+      setBusy(true, 'Please wait…');
+      try {
+        const cred = await signInWithPopup(auth, googleProvider);
+        const snap = await getDoc(doc(db, 'users', cred.user.uid));
+        if (snap.exists()) {
+          showMsg('You already have an account. Logging you in…', 'ok');
+          return setTimeout(() => location.replace(nextUrl()), 700);
+        }
+        await createProfile(cred.user, { name: $('name').value.trim() || cred.user.displayName, phone: $('phone').value.replace(/[\s\-()]/g, '') });
+        showMsg('Account created! Taking you in…', 'ok');
+        setTimeout(() => location.replace(nextUrl()), 700);
+      } catch (ex) {
+        console.error(ex);
+        const m = friendlyError(ex); if (m) showMsg(m);
+        setBusy(false);
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => { if (user && !busy) location.replace(nextUrl()); });
+
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
+</body>
+</html>

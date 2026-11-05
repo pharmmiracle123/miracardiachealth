@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Appointments | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+    .bottom-nav a svg { width: 22px !important; height: 22px !important; flex: none; }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }
+    .field { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .65rem .85rem; font-size: .875rem; }
+    .field:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    .lbl { display: flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 800; color: #0f172a; margin-bottom: .5rem; }
+    .lbl b { width: 20px; height: 20px; border-radius: 9999px; background: #0d9488; color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+    .card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(15,23,42,.06); padding: 1rem; }
+    .chip { white-space: nowrap; font-size: .8rem; font-weight: 700; padding: .5rem .95rem; border-radius: 9999px; background: #fff; border: 1.5px solid #e2e8f0; color: #64748b; display: inline-flex; gap: .35rem; align-items: center; }
+    .chip.on { background: linear-gradient(135deg,#0d9488,#059669); color: #fff; border-color: transparent; box-shadow: 0 6px 14px -6px rgba(13,148,136,.6); }
+    .dchip { flex: none; width: 58px; padding: .5rem 0; border-radius: 1rem; border: 1.5px solid #e2e8f0; background: #fff; text-align: center; color: #334155; }
+    .dchip.on { background: linear-gradient(135deg,#0d9488,#059669); color: #fff; border-color: transparent; }
+    .dchip:disabled { opacity: .35; }
+    .slot { font-size: .8rem; font-weight: 700; padding: .55rem 0; border-radius: .75rem; background: #ecfdf5; color: #047857; border: 1.5px solid #a7f3d0; }
+    .slot.on { background: #0d9488; color: #fff; border-color: #0d9488; }
+    .slot:disabled { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; text-decoration: line-through; }
+    .badge-requested { background: #ffedd5; color: #9a3412; }
+    .badge-no_show { background: #e2e8f0; color: #475569; }
+    .abtn { font-size: .75rem; font-weight: 700; padding: .55rem .9rem; border-radius: .7rem; }
+    .skeleton { background: linear-gradient(90deg,#e2e8f0,#f1f5f9,#e2e8f0); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 1rem; height: 96px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <!-- Hero -->
+  <section class="ah-gradient text-white">
+    <div class="max-w-lg mx-auto px-4 pt-4 pb-14">
+      <div class="flex items-center justify-between">
+        <a href="Dashboard.html" class="text-sm font-semibold text-white/90">← Dashboard</a>
+        <span class="font-extrabold text-sm">Appointments</span>
+        <a id="availLink" href="doctor-availability.html" class="hidden text-xs font-bold text-white/90">My hours</a>
+        <span id="heroSpacer" class="w-16"></span>
+      </div>
+      <h1 id="heroTitle" class="text-2xl font-extrabold mt-5">Your appointments 📅</h1>
+      <p id="heroSub" class="text-sm text-white/90 mt-1">Book a doctor at a time that works for you.</p>
+    </div>
+  </section>
+
+  <main class="max-w-lg mx-auto px-4 -mt-8 relative z-10 space-y-4">
+    <div id="notice"></div>
+    <div id="tabs" class="flex gap-2 overflow-x-auto no-scrollbar"></div>
+    <div id="list" class="space-y-3"><div class="skeleton"></div><div class="skeleton"></div></div>
+  </main>
+
+  <!-- Book FAB (patients) -->
+  <button id="bookBtn" class="hidden fixed right-4 z-40 btn-primary shadow-xl px-5 text-sm flex items-center gap-1" style="bottom: calc(86px + env(safe-area-inset-bottom, 0px))">+ Book appointment</button>
+
+  <!-- Booking sheet -->
+  <div id="sheet" class="fixed inset-0 z-50 hidden items-end justify-center bg-black/50">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl max-h-[92vh] overflow-y-auto p-5 pb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-extrabold text-lg">Book an appointment</h2>
+        <button id="closeSheet" type="button" class="text-slate-400 text-3xl leading-none px-2" aria-label="Close">×</button>
+      </div>
+      <div class="space-y-5">
+        <section>
+          <p class="lbl"><b>1</b> Choose a doctor</p>
+          <select id="docSel" class="field"><option value="">Loading doctors…</option></select>
+          <p id="docMsg" class="text-xs text-slate-500 mt-2"></p>
+        </section>
+        <section id="typeSec" class="hidden">
+          <p class="lbl"><b>2</b> Type of consultation</p>
+          <div id="typeChips" class="flex flex-wrap gap-2"></div>
+        </section>
+        <section id="dateSec" class="hidden">
+          <p class="lbl"><b>3</b> Pick a date <span class="text-[11px] font-medium text-slate-400">(Nigeria time)</span></p>
+          <div id="dateStrip" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+        </section>
+        <section id="slotSec" class="hidden">
+          <p class="lbl"><b>4</b> Pick a time</p>
+          <div id="slotGrid" class="grid grid-cols-3 gap-2"></div>
+          <p id="slotMsg" class="text-xs text-slate-500 mt-2"></p>
+        </section>
+        <section id="noteSec" class="hidden space-y-3">
+          <div>
+            <p class="lbl"><b>5</b> Reason for visit <span class="text-[11px] font-medium text-slate-400">(optional)</span></p>
+            <textarea id="notes" rows="2" maxlength="300" class="field" placeholder="Briefly describe your symptoms or what you need"></textarea>
+          </div>
+          <div id="summary" class="rounded-2xl bg-teal-50 border border-teal-100 p-3 text-xs text-teal-900"></div>
+          <button id="confirmBtn" class="btn-primary w-full" disabled>Request appointment</button>
+          <p class="text-[10px] text-slate-400 text-center">The doctor must confirm your request. You will see the status here.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav id="bottomNav" class="bottom-nav">
+    <a href="index.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home</a>
+    <a href="doctors.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Doctors</a>
+    <a href="pharmacy-search.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Pharmacy</a>
+    <a href="student-hub.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/></svg>Students</a>
+    <a href="Dashboard.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Dashboard</a>
+  </nav>
+
+  <script type="module">
+    import {db, requireAuth, showToast, escapeHtml,
+      collection, query, where, getDocs, getDoc, doc, updateDoc, onSnapshot, runTransaction, writeBatch, serverTimestamp, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const esc = escapeHtml;
+
+    const profile = await requireAuth();
+    if (profile) boot();
+
+    function boot() {
+      const isDoctor = profile.role === 'doctor';
+
+      /* ---------- shared helpers (same logic as doctor-availability.html) ---------- */
+      const UTC_DAY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const TYPES = { chat: ['💬', 'Chat consult'], video: ['🎥', 'Video consult'], physical: ['🏥', 'Physical visit'] };
+      const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : NaN; };
+      const fmt = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+      const fmt12 = (t) => { const [h, m] = t.split(':').map(Number); return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); };
+      const watToday = () => new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
+      const addDays = (ds, n) => new Date(new Date(ds + 'T12:00:00Z').getTime() + n * 864e5).toISOString().slice(0, 10);
+      const watDate = (ds, t) => new Date(`${ds}T${t}:00+01:00`);
+
+      function genSlots(a, ds, nowMs = Date.now()) {
+        const day = a.weekly?.[UTC_DAY[new Date(ds + 'T12:00:00Z').getUTCDay()]];
+        if (!day || !day.enabled) return [];
+        if ((a.timeOff || []).some(t => t.date === ds)) return [];
+        const step = Number(a.slotMinutes) || 30, out = new Set();
+        for (const r of day.ranges || []) {
+          const s = toMin(r.start), e = toMin(r.end);
+          if (!(e > s)) continue;
+          for (let m = s; m + step <= e; m += step) {
+            const t = fmt(m);
+            if (watDate(ds, t).getTime() >= nowMs + (Number(a.minNoticeHours) || 0) * 36e5) out.add(t);
+          }
+        }
+        return [...out].sort();
+      }
+
+      const startOf = (a) => a.date?.toDate ? a.date.toDate() : new Date(a.date);
+      const whenStr = (d) => d.toLocaleString('en-NG', { timeZone: 'Africa/Lagos', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+      const cleanTel = (p) => { const d = String(p || '').replace(/[^\d+]/g, ''); if (!d) return ''; if (d.startsWith('+')) return d; if (d.startsWith('234')) return '+' + d; if (d.startsWith('0')) return '+234' + d.slice(1); return '+234' + d; };
+      const safeLink = (u) => (typeof u === 'string' && /^https:\/\//i.test(u)) ? u : '';
+      const gcal = (a) => {
+        const s = startOf(a), e = new Date(s.getTime() + (a.durationMin || 30) * 60000);
+        const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Appointment: ' + (isDoctor ? a.patientName : a.doctorName) + ' (MiracardiacHealth)') + '&dates=' + f(s) + '/' + f(e);
+      };
+
+      /* ---------- appointments list (live) ---------- */
+      let appts = [];
+      let tab = isDoctor ? 'pending' : 'upcoming';
+      const ACTIVE = ['requested', 'confirmed'];
+      const LABEL = { requested: 'awaiting confirmation', confirmed: 'confirmed', cancelled: 'cancelled', completed: 'completed', no_show: 'no show' };
+
+      if (isDoctor) {
+        $('heroTitle').textContent = 'Appointment requests 🩺';
+        $('heroSub').textContent = 'Confirm or decline patient bookings.';
+        $('availLink').classList.remove('hidden'); $('heroSpacer').classList.add('hidden');
+        getDoc(doc(db, 'availability', profile.uid)).then(s => {
+          if (!s.exists()) $('notice').innerHTML = `<div class="card border-amber-200 bg-amber-50 text-xs text-amber-800"><strong>⚠️ You have not set your working hours.</strong> Patients cannot book you until you do. <a href="doctor-availability.html" class="underline font-bold">Set my hours →</a></div>`;
+        }).catch(() => {});
+      } else {
+        $('bookBtn').classList.remove('hidden');
+      }
+
+      const field = isDoctor ? 'doctorId' : 'patientId';
+      onSnapshot(query(collection(db, 'appointments'), where(field, '==', profile.uid)),
+        (snap) => { appts = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); },
+        (err) => { console.error(err); $('list').innerHTML = '<p class="text-sm text-red-600 text-center py-8">Could not load appointments. Check your connection.</p>'; });
+
+      const isUpcoming = (a) => ACTIVE.includes(a.status) && startOf(a).getTime() + 3600e3 >= Date.now();
+
+      function bucket(a) {
+        if (isDoctor) {
+          if (a.status === 'requested' && isUpcoming(a)) return 'pending';
+          if (a.status === 'confirmed' && isUpcoming(a)) return 'upcoming';
+          return 'history';
+        }
+        return isUpcoming(a) ? 'upcoming' : 'past';
+      }
+
+      function render() {
+        const tabs = isDoctor ? [['pending', 'Pending'], ['upcoming', 'Confirmed'], ['history', 'History']] : [['upcoming', 'Upcoming'], ['past', 'Past']];
+        const counts = {}; appts.forEach(a => { const b = bucket(a); counts[b] = (counts[b] || 0) + 1; });
+        $('tabs').innerHTML = tabs.map(([k, l]) => `<button class="chip ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${counts[k] ? ` <span class="text-[10px] opacity-80">(${counts[k]})</span>` : ''}</button>`).join('');
+
+        let list = appts.filter(a => bucket(a) === tab);
+        const asc = tab === 'upcoming' || tab === 'pending';
+        list.sort((a, b) => asc ? startOf(a) - startOf(b) : startOf(b) - startOf(a));
+
+        if (!list.length) {
+          const msg = isDoctor ? { pending: 'No pending requests.', upcoming: 'No confirmed appointments.', history: 'No history yet.' }[tab] : (tab === 'upcoming' ? 'No upcoming appointments.' : 'No past appointments.');
+          $('list').innerHTML = `<div class="text-center py-12 text-slate-400"><div class="text-5xl mb-2">📅</div><p class="text-sm">${msg}</p>${!isDoctor && tab === 'upcoming' ? '<p class="text-xs mt-1">Tap <strong>Book appointment</strong> to get started.</p>' : ''}</div>`;
+          return;
+        }
+        $('list').innerHTML = list.map(cardHtml).join('');
+      }
+
+      function cardHtml(a) {
+        const d = startOf(a), t = TYPES[a.type] || ['📅', a.type || 'Consult'];
+        const expired = a.status === 'requested' && !isUpcoming(a);
+        const statusKey = expired ? 'cancelled' : a.status;
+        const statusText = expired ? 'expired' : (LABEL[a.status] || a.status);
+        const who = isDoctor ? (a.patientName || 'Patient') : ('Dr. ' + String(a.doctorName || '').replace(/^Dr\.?\s*/i, ''));
+        const link = safeLink(a.meetingLink);
+        const tel = isDoctor ? cleanTel(a.patientPhone) : '';
+        let actions = '';
+
+        if (isDoctor) {
+          if (a.status === 'requested' && isUpcoming(a)) actions = `<button data-act="confirm" data-id="${esc(a.id)}" class="abtn text-white bg-gradient-to-r from-teal-600 to-emerald-600">Confirm</button><button data-act="decline" data-id="${esc(a.id)}" class="abtn text-red-600 bg-red-50">Decline</button>`;
+          else if (a.status === 'confirmed') {
+            const started = d.getTime() <= Date.now();
+            actions = (started ? `<button data-act="complete" data-id="${esc(a.id)}" class="abtn text-white bg-emerald-600">Mark completed</button><button data-act="noshow" data-id="${esc(a.id)}" class="abtn text-slate-600 bg-slate-100">No-show</button>` : '')
+              + (a.type === 'video' ? `<button data-act="link" data-id="${esc(a.id)}" class="abtn text-teal-700 bg-teal-50">${link ? 'Edit' : 'Add'} video link</button>` : '')
+              + `<button data-act="cancel" data-id="${esc(a.id)}" class="abtn text-red-600 bg-red-50">Cancel</button>`;
+          }
+        } else {
+          if (a.status === 'confirmed' && link && isUpcoming(a)) actions += `<a href="${esc(link)}" target="_blank" rel="noopener" class="abtn text-white bg-gradient-to-r from-teal-600 to-emerald-600">🎥 Join video call</a>`;
+          if (a.status === 'confirmed' && isUpcoming(a)) actions += `<a href="${esc(gcal(a))}" target="_blank" rel="noopener" class="abtn text-teal-700 bg-teal-50">Add to calendar</a>`;
+          if (ACTIVE.includes(a.status) && isUpcoming(a)) actions += `<button data-act="cancel" data-id="${esc(a.id)}" class="abtn text-red-600 bg-red-50">Cancel</button>`;
+        }
+        return `
+          <div class="card">
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0">
+                <p class="font-bold text-sm truncate">${esc(who)}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${t[0]} ${esc(t[1])}</p>
+              </div>
+              <span class="badge badge-${esc(statusKey)}">${esc(statusText)}</span>
+            </div>
+            <p class="text-sm font-semibold text-teal-800 mt-2">🗓 ${esc(whenStr(d))}</p>
+            ${a.notes ? `<p class="text-xs text-slate-500 mt-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5">“${esc(a.notes)}”</p>` : ''}
+            ${a.status === 'cancelled' && a.cancelReason ? `<p class="text-xs text-red-600 mt-1.5">Reason: ${esc(a.cancelReason)}</p>` : ''}
+            ${a.status === 'cancelled' && a.cancelledBy ? `<p class="text-[11px] text-slate-400 mt-1">Cancelled by ${esc(a.cancelledBy)}</p>` : ''}
+            ${tel ? `<div class="flex gap-2 mt-2"><a href="tel:${esc(tel)}" class="text-xs font-bold text-teal-700">📞 Call patient</a><a href="https://wa.me/${esc(tel.replace('+', ''))}" target="_blank" rel="noopener" class="text-xs font-bold text-emerald-700">WhatsApp</a></div>` : ''}
+            ${actions ? `<div class="flex flex-wrap gap-2 mt-3">${actions}</div>` : ''}
+          </div>`;
+      }
+
+      $('tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; render(); });
+
+      /* ---------- appointment actions ---------- */
+      const lockRefOf = (a) => a.lockId ? doc(db, 'slotLocks', a.lockId) : null;
+
+      async function cancelAppt(a, by, reason) {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'appointments', a.id), { status: 'cancelled', cancelledBy: by, cancelReason: reason || '', updatedAt: serverTimestamp() });
+        const lr = lockRefOf(a); if (lr) batch.delete(lr);      // frees the slot for other patients
+        await batch.commit();
+      }
+
+      $('list').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'A') return;
+        const a = appts.find(x => x.id === b.dataset.id); if (!a) return;
+        const ref = doc(db, 'appointments', a.id);
+        b.disabled = true;
+        try {
+          switch (b.dataset.act) {
+            case 'confirm': {
+              const data = { status: 'confirmed', confirmedAt: serverTimestamp(), updatedAt: serverTimestamp() };
+              if (a.type === 'video') {
+                const l = prompt('Paste your video call link (Google Meet, Zoom, etc.). Leave blank to add it later:', '');
+                if (l && l.trim()) { if (!safeLink(l.trim())) { showToast('Link must start with https://', 'warning'); b.disabled = false; return; } data.meetingLink = l.trim(); }
+              }
+              await updateDoc(ref, data); showToast('Appointment confirmed', 'success'); break;
+            }
+            case 'decline': {
+              const r = prompt('Reason for declining (the patient will see this):', '');
+              if (r === null) { b.disabled = false; return; }
+              await cancelAppt(a, 'doctor', r.trim().slice(0, 120)); showToast('Request declined', 'success'); break;
+            }
+            case 'cancel': {
+              if (!confirm('Cancel this appointment?')) { b.disabled = false; return; }
+              let reason = '';
+              if (isDoctor) { const r = prompt('Reason for cancelling (the patient will see this):', ''); if (r === null) { b.disabled = false; return; } reason = r.trim().slice(0, 120); }
+              await cancelAppt(a, isDoctor ? 'doctor' : 'patient', reason); showToast('Appointment cancelled', 'success'); break;
+            }
+            case 'complete': await updateDoc(ref, { status: 'completed', updatedAt: serverTimestamp() }); showToast('Marked as completed', 'success'); break;
+            case 'noshow': await updateDoc(ref, { status: 'no_show', updatedAt: serverTimestamp() }); showToast('Marked as no-show', 'success'); break;
+            case 'link': {
+              const l = prompt('Video call link:', a.meetingLink || ''); if (l === null) { b.disabled = false; return; }
+              if (l.trim() && !safeLink(l.trim())) { showToast('Link must start with https://', 'warning'); b.disabled = false; return; }
+              await updateDoc(ref, { meetingLink: l.trim(), updatedAt: serverTimestamp() }); showToast('Link saved', 'success'); break;
+            }
+          }
+        } catch (err) { console.error(err); showToast('Action failed. Please try again.', 'error'); b.disabled = false; }
+      });
+
+      /* ---------- booking sheet (patients) ---------- */
+      let doctors = [];
+      const lockCache = {};
+      const sel = { doctor: null, av: null, type: null, date: null, slot: null };
+
+      const openSheet = () => { $('sheet').classList.remove('hidden'); $('sheet').classList.add('flex'); };
+      const closeSheet = () => { $('sheet').classList.add('hidden'); $('sheet').classList.remove('flex'); };
+      $('closeSheet').addEventListener('click', closeSheet);
+      $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) closeSheet(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+
+      function resetSteps(from) {
+        const order = ['typeSec', 'dateSec', 'slotSec', 'noteSec'];
+        order.slice(from).forEach(id => $(id).classList.add('hidden'));
+      }
+
+      async function openBooking(preId) {
+        openSheet();
+        if (!doctors.length) {
+          try {
+            const snap = await getDocs(query(collection(db, 'doctors'), where('status', '==', 'approved')));
+            doctors = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => d.id !== profile.uid).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          } catch (e) { console.error(e); }
+        }
+        $('docSel').innerHTML = '<option value="">Select a doctor</option>' + doctors.map(d => `<option value="${esc(d.id)}">${esc(d.name || 'Doctor')}${d.specialty ? ' – ' + esc(d.specialty) : ''}</option>`).join('');
+        if (!doctors.length) $('docMsg').textContent = 'No doctors are available for booking yet.';
+        if (preId && doctors.some(d => d.id === preId)) { $('docSel').value = preId; chooseDoctor(preId); }
+      }
+      $('bookBtn').addEventListener('click', () => openBooking());
+      $('docSel').addEventListener('change', (e) => chooseDoctor(e.target.value));
+
+      async function chooseDoctor(id) {
+        Object.assign(sel, { doctor: null, av: null, type: null, date: null, slot: null });
+        resetSteps(0); $('docMsg').textContent = '';
+        if (!id) return;
+        sel.doctor = doctors.find(d => d.id === id);
+        $('docMsg').textContent = 'Checking availability…';
+        try {
+          const s = await getDoc(doc(db, 'availability', id));
+          if (!s.exists()) { $('docMsg').textContent = '⏳ This doctor has not set working hours yet. Please choose another doctor or check back soon.'; return; }
+          const av = s.data();
+          if (av.acceptingBookings === false) { $('docMsg').textContent = '⏸ This doctor is not taking new bookings right now.'; return; }
+          sel.av = av;
+          const types = (av.consultTypes || []).filter(t => TYPES[t]);
+          if (!types.length) { $('docMsg').textContent = 'This doctor has no consultation types open.'; return; }
+          $('docMsg').textContent = '';
+          sel.type = types[0];
+          $('typeChips').innerHTML = types.map(k => `<button type="button" class="chip ${k === sel.type ? 'on' : ''}" data-type="${k}"><span>${TYPES[k][0]}</span>${TYPES[k][1]}</button>`).join('');
+          $('typeSec').classList.remove('hidden');
+          buildDates();
+        } catch (e) { console.error(e); $('docMsg').textContent = 'Could not load availability. Try again.'; }
+      }
+
+      $('typeChips').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-type]'); if (!b) return;
+        sel.type = b.dataset.type;
+        document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.toggle('on', c === b));
+        updateSummary();
+      });
+
+      function buildDates() {
+        const av = sel.av, today = watToday(), n = Math.min(Number(av.maxAdvanceDays) || 30, 60);
+        const days = [];
+        for (let i = 0; i <= n; i++) { const ds = addDays(today, i); days.push({ ds, count: genSlots(av, ds).length }); }
+        $('dateStrip').innerHTML = days.map(({ ds, count }) => {
+          const dt = new Date(ds + 'T12:00:00Z');
+          return `<button type="button" class="dchip" data-date="${ds}" ${count ? '' : 'disabled'}>
+            <span class="block text-[10px] font-bold uppercase">${dt.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}</span>
+            <span class="block text-lg font-extrabold leading-tight">${dt.getUTCDate()}</span>
+            <span class="block text-[10px]">${dt.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}</span></button>`;
+        }).join('');
+        $('dateSec').classList.remove('hidden');
+        const first = days.find(d => d.count);
+        if (first) chooseDate(first.ds);
+        else { $('slotSec').classList.remove('hidden'); $('slotGrid').innerHTML = ''; $('slotMsg').textContent = 'No open times in the coming days. Please check back later.'; }
+      }
+      $('dateStrip').addEventListener('click', (e) => { const b = e.target.closest('[data-date]'); if (b && !b.disabled) chooseDate(b.dataset.date); });
+
+      async function loadLocks(doctorId, ds, force) {
+        const key = doctorId + '_' + ds;
+        if (!force && lockCache[key]) return lockCache[key];
+        const s = new Set();
+        try {
+          const snap = await getDocs(query(collection(db, 'slotLocks'), where('doctorId', '==', doctorId), where('date', '==', ds)));
+          snap.forEach(d => s.add(d.data().time));
+        } catch (e) { console.warn('slotLocks', e); }
+        return (lockCache[key] = s);
+      }
+
+      let slotTok = 0;
+      async function chooseDate(ds, force = false) {
+        sel.date = ds; sel.slot = null;
+        document.querySelectorAll('#dateStrip .dchip').forEach(c => c.classList.toggle('on', c.dataset.date === ds));
+        const tok = ++slotTok;
+        $('slotSec').classList.remove('hidden'); $('noteSec').classList.add('hidden');
+        $('slotGrid').innerHTML = ''; $('slotMsg').textContent = 'Loading times…';
+        const slots = genSlots(sel.av, ds);
+        const booked = await loadLocks(sel.doctor.id, ds, force);
+        if (tok !== slotTok) return;
+        const free = slots.filter(s => !booked.has(s));
+        $('slotGrid').innerHTML = slots.map(s => `<button type="button" class="slot" data-slot="${s}" ${booked.has(s) ? 'disabled' : ''}>${fmt12(s)}</button>`).join('');
+        $('slotMsg').textContent = free.length ? `${free.length} open slot${free.length === 1 ? '' : 's'} · ${sel.av.slotMinutes || 30} min each` : 'This day is fully booked. Try another date.';
+      }
+      $('slotGrid').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-slot]'); if (!b || b.disabled) return;
+        sel.slot = b.dataset.slot;
+        document.querySelectorAll('#slotGrid .slot').forEach(c => c.classList.toggle('on', c === b));
+        $('noteSec').classList.remove('hidden'); updateSummary();
+        $('confirmBtn').disabled = false;
+        $('noteSec').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+
+      function updateSummary() {
+        if (!sel.slot) return;
+        const when = whenStr(watDate(sel.date, sel.slot));
+        $('summary').innerHTML = `<strong>${esc(sel.doctor.name || 'Doctor')}</strong><br>${TYPES[sel.type][0]} ${esc(TYPES[sel.type][1])} · ${esc(when)}`;
+      }
+
+      $('confirmBtn').addEventListener('click', async () => {
+        const doctor = sel.doctor, ds = sel.date, slot = sel.slot;
+        if (!doctor || !ds || !slot || !sel.type) return;
+        // re-validate against current rules of the doctor's schedule
+        if (ds > addDays(watToday(), Number(sel.av.maxAdvanceDays) || 30) || !genSlots(sel.av, ds).includes(slot)) return showToast('That time is no longer available. Pick another.', 'warning');
+
+        const btn = $('confirmBtn'); btn.disabled = true; btn.textContent = 'Booking…';
+        const apptRef = doc(collection(db, 'appointments'));
+        const lockId = `${doctor.id}_${ds}_${slot}`;
+        const lockRef = doc(db, 'slotLocks', lockId);
+        try {
+          await runTransaction(db, async (tx) => {
+            const l = await tx.get(lockRef);
+            if (l.exists()) throw new Error('SLOT_TAKEN');
+            tx.set(lockRef, { doctorId: doctor.id, patientId: profile.uid, date: ds, time: slot, apptId: apptRef.id, createdAt: serverTimestamp() });
+            tx.set(apptRef, {
+              patientId: profile.uid,
+              patientName: profile.displayName || profile.email || 'Patient',
+              patientPhone: profile.phone || '',
+              doctorId: doctor.id,
+              doctorName: doctor.name || 'Doctor',
+              type: sel.type,
+              date: watDate(ds, slot),
+              dateStr: ds, slot,
+              durationMin: Number(sel.av.slotMinutes) || 30,
+              lockId,
+              notes: $('notes').value.trim().slice(0, 300),
+              status: 'requested',
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          });
+          showToast('Request sent! The doctor will confirm shortly.', 'success');
+          delete lockCache[doctor.id + '_' + ds];
+          $('notes').value = ''; closeSheet(); tab = 'upcoming'; render();
+        } catch (err) {
+          console.error(err);
+          if (err.message === 'SLOT_TAKEN' || err.code === 'permission-denied' || err.code === 'aborted' || err.code === 'already-exists') {
+            showToast('Someone just booked that time. Please pick another.', 'warning');
+            sel.slot = null; $('noteSec').classList.add('hidden'); chooseDate(ds, true);
+          } else showToast('Could not book. Please try again.', 'error');
+        } finally { btn.textContent = 'Request appointment'; btn.disabled = !sel.slot; }
+      });
+
+      /* ---------- deep link: appointments.html?doctor=ID (from the doctors page) ---------- */
+      const pre = new URLSearchParams(location.search).get('doctor');
+      if (pre && !isDoctor) openBooking(pre);
+
+      if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

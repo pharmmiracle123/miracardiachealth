@@ -1,0 +1,71 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    function isPdfOrImage() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType == 'application/pdf';
+    }
+    function under5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    function under10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Profile photos
+    match /profiles/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isImage() && under5MB();
+      allow delete: if isOwner(userId);
+    }
+
+    // Doctor documents / licences
+    match /doctors/{doctorId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(doctorId) && isPdfOrImage() && under10MB();
+      allow delete: if isOwner(doctorId);
+    }
+
+    // Pharmacy licences & drug images
+    match /pharmacies/{pharmacyId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && under10MB();
+      allow delete: if isSignedIn();
+    }
+
+    // Consultation attachments (chat images/files)
+    match /consultations/{consultId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && under10MB();
+      allow delete: if false; // keep history
+    }
+
+    // Prescriptions & lab results
+    match /prescriptions/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) && isPdfOrImage() && under10MB();
+      allow delete: if isOwner(userId);
+    }
+
+    // Support ticket attachments
+    match /support/{ticketId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && under5MB();
+      allow delete: if false;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

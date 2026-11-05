@@ -1,0 +1,54 @@
+{
+  "name": "MiracardiacHealth | Telemedicine & Pharmacy",
+  "short_name": "MiracardiacHealth",
+  "description": "Consult doctors, order medicines, book appointments and study past questions on MiracardiacHealth.",
+  "id": "./index.html",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#0d9488",
+  "lang": "en-NG",
+  "categories": ["health", "medical", "education"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Find a Doctor",
+      "short_name": "Doctors",
+      "url": "doctors.html",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Order Medicine",
+      "short_name": "Pharmacy",
+      "url": "pharmacy-search.html",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Student Hub",
+      "short_name": "Students",
+      "url": "student-hub.html",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Customer Care",
+      "short_name": "Support",
+      "url": "customer-care.html",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}{}{}

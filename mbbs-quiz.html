@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>MBBS Progressive Quiz | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .opt { border: 2px solid #e2e8f0; border-radius: .9rem; padding: .85rem 1rem; cursor: pointer; transition: .15s; }
+    .opt:hover { border-color: #14b8a6; background: #f0fdfa; }
+    .opt.selected { border-color: #0d9488; background: #ccfbf1; }
+    .opt.correct { border-color: #059669; background: #d1fae5; }
+    .opt.wrong { border-color: #ef4444; background: #fee2e2; }
+    .set-card { border-radius: 1rem; border: 1px solid #e2e8f0; background: #fff; padding: 1rem; }
+    .set-card.locked { opacity: .55; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="student-hub.html" class="text-slate-500">←</a>
+      <div class="flex-1 min-w-0">
+        <h1 class="font-extrabold text-base leading-none">MBBS Progressive Quiz</h1>
+        <p class="text-[10px] text-slate-400">100 questions per set · Unlock next at ≥75%</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+    <!-- Gate: login / pay -->
+    <section id="gateView" class="space-y-4">
+      <div class="ah-card p-5 text-center space-y-3">
+        <div class="text-4xl">🎓</div>
+        <h2 class="font-extrabold text-lg">MBBS Questions — 100 × 100</h2>
+        <p class="text-sm text-slate-600">300L, 400L and 500L sets from the CCMAS scheme of work. Score ≥75% to unlock the next 100 questions.</p>
+        <p class="text-2xl font-extrabold text-teal-700">₦1,000 <span class="text-sm font-semibold text-slate-500">/ 30 days</span></p>
+        <p id="gateStatus" class="text-xs text-slate-500">Checking access…</p>
+        <button id="payBtn" class="btn-primary w-full py-3 hidden">Pay ₦1,000 for 30-day access</button>
+        <button id="loginBtn" class="btn-outline w-full py-3 hidden" onclick="location.href='Login.html'">Log in to continue</button>
+        <p id="gateHint" class="text-[11px] text-slate-400"></p>
+      </div>
+    </section>
+
+    <!-- Level + sets (only when access granted) -->
+    <section id="setupView" class="hidden space-y-4">
+      <div id="accessBanner" class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-xs text-emerald-800 font-semibold"></div>
+      <div class="ah-card p-4">
+        <p class="text-sm font-bold mb-2">Your current level</p>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-level="300" class="lvl-btn rounded-xl border-2 border-teal-600 bg-teal-50 py-3 font-bold text-sm text-teal-800">300L</button>
+          <button data-level="400" class="lvl-btn rounded-xl border-2 border-slate-200 py-3 font-bold text-sm">400L</button>
+          <button data-level="500" class="lvl-btn rounded-xl border-2 border-slate-200 py-3 font-bold text-sm">500L</button>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-3">
+          <strong>300L</strong> → Set 1 (200+300 topics). <strong>400L</strong> → Sets 1–2. <strong>500L</strong> → Sets 1–3.
+          Pass ≥75% to unlock the next 100.
+        </p>
+      </div>
+      <div id="setsList" class="space-y-3"></div>
+    </section>
+
+    <section id="quizView" class="hidden space-y-4">
+      <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
+        <span id="qProgress">Q 1 / 100</span>
+        <span id="qScore">Score: 0</span>
+      </div>
+      <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div id="qBar" class="h-full bg-teal-600 transition-all" style="width:1%"></div>
+      </div>
+      <div class="ah-card p-4 space-y-3">
+        <p id="qTopic" class="text-[10px] font-bold uppercase tracking-wide text-teal-700"></p>
+        <p id="qText" class="font-semibold text-sm leading-relaxed"></p>
+        <div id="qOpts" class="space-y-2"></div>
+        <div id="qExplain" class="hidden text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100"></div>
+      </div>
+      <button id="nextBtn" class="btn-primary w-full hidden">Next question</button>
+      <button id="finishBtn" class="btn-primary w-full hidden">See results</button>
+    </section>
+
+    <section id="resultView" class="hidden space-y-4">
+      <div class="ah-card p-6 text-center space-y-2">
+        <div id="resultEmoji" class="text-4xl">📊</div>
+        <p id="resultTitle" class="font-extrabold text-lg"></p>
+        <p id="resultDetail" class="text-sm text-slate-600"></p>
+        <p id="resultUnlock" class="text-sm font-semibold text-teal-700"></p>
+      </div>
+      <button id="backSets" class="btn-outline w-full">Back to sets</button>
+      <button id="retrySet" class="btn-primary w-full">Retry this set</button>
+    </section>
+  </main>
+
+  <script src="data/mbbs-questions.js"></script>
+  <script type="module">
+    import {
+      auth, db, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot,
+      serverTimestamp, payWithPaystack, generateRef, showToast, escapeHtml
+    } from './js/config.js';
+
+    const PASS = window.MBBS_PASS_PERCENT || 75;
+    const PRICE = 1000;
+    const COURSE_ID = 'mbbs_progressive_quiz'; // Firestore studentAccess key
+    const ADMIN_EMAILS = [
+      'onyekamiracle08@gmail.com',
+      'onyekaudechukwum@gmail.com',
+      'onyekamiracle08@yahoo.com',
+      'onyekaudechukwum@yahoo.com',
+      'admin@miracardiachealth.com'
+    ].map(e => e.toLowerCase());
+
+    const $ = (id) => document.getElementById(id);
+    let user = null;
+    let hasPaidAccess = false;
+    let isAdmin = false;
+    let accessExpiry = null;
+    let unsubAccess = null;
+
+    let level = '300';
+    let setIds = [];
+    let currentSetId = null;
+    let questions = [];
+    let idx = 0;
+    let score = 0;
+    let answered = false;
+    let progress = JSON.parse(localStorage.getItem('mh_mbbs_progress') || '{}');
+
+    function saveProgress() {
+      localStorage.setItem('mh_mbbs_progress', JSON.stringify(progress));
+    }
+
+    function isAdminEmail(email) {
+      return email && ADMIN_EMAILS.includes(String(email).toLowerCase());
+    }
+
+    function showGate() {
+      $('gateView').classList.remove('hidden');
+      $('setupView').classList.add('hidden');
+      $('quizView').classList.add('hidden');
+      $('resultView').classList.add('hidden');
+    }
+
+    function showSetup() {
+      $('gateView').classList.add('hidden');
+      $('setupView').classList.remove('hidden');
+      $('quizView').classList.add('hidden');
+      $('resultView').classList.add('hidden');
+      if (isAdmin) {
+        $('accessBanner').textContent = 'Admin access — free unlimited';
+      } else if (accessExpiry) {
+        $('accessBanner').textContent = 'Access active until ' + accessExpiry.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+      } else {
+        $('accessBanner').textContent = 'Access active (30-day plan)';
+      }
+      renderSets();
+    }
+
+    function updateGateUI() {
+      if (!user) {
+        $('gateStatus').textContent = 'Please log in to access the quiz.';
+        $('payBtn').classList.add('hidden');
+        $('loginBtn').classList.remove('hidden');
+        $('gateHint').textContent = '';
+        showGate();
+        return;
+      }
+      if (isAdmin || hasPaidAccess) {
+        showSetup();
+        return;
+      }
+      $('gateStatus').textContent = 'Payment required to unlock all progressive sets.';
+      $('payBtn').classList.remove('hidden');
+      $('loginBtn').classList.add('hidden');
+      $('gateHint').textContent = 'Paystack · ₦1,000 · valid 30 days · auto-activates after successful payment';
+      showGate();
+    }
+
+    async function watchAccess(uid) {
+      if (unsubAccess) { unsubAccess(); unsubAccess = null; }
+      const accessId = `${uid}_${COURSE_ID}`;
+      unsubAccess = onSnapshot(doc(db, 'studentAccess', accessId), (snap) => {
+        hasPaidAccess = false;
+        accessExpiry = null;
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.status === 'active') {
+            if (d.expiresAt && d.expiresAt.toDate) {
+              const exp = d.expiresAt.toDate();
+              if (exp > new Date()) {
+                hasPaidAccess = true;
+                accessExpiry = exp;
+              }
+            } else {
+              hasPaidAccess = true;
+            }
+          }
+        }
+        updateGateUI();
+      }, () => updateGateUI());
+    }
+
+    onAuthStateChanged(auth, async (u) => {
+      user = u;
+      isAdmin = !!(u && isAdminEmail(u.email));
+      hasPaidAccess = false;
+      if (u) {
+        if (isAdmin) {
+          hasPaidAccess = true;
+          updateGateUI();
+        } else {
+          await watchAccess(u.uid);
+        }
+      } else {
+        if (unsubAccess) { unsubAccess(); unsubAccess = null; }
+        updateGateUI();
+      }
+    });
+
+    $('payBtn').onclick = () => {
+      if (!user) {
+        location.href = 'Login.html';
+        return;
+      }
+      const reference = generateRef('MBBS');
+      payWithPaystack({
+        email: user.email,
+        amount: PRICE,
+        reference,
+        metadata: {
+          purpose: 'student_course',
+          courseId: COURSE_ID,
+          courseTitle: 'MBBS Progressive Quiz (100x100)',
+          userId: user.uid
+        },
+        onSuccess: async (res) => {
+          const ref = (res && res.reference) || reference;
+          try {
+            await setDoc(doc(db, 'studentPurchases', ref), {
+              reference: ref,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || '',
+              courseId: COURSE_ID,
+              courseTitle: 'MBBS Progressive Quiz (100x100)',
+              amount: PRICE,
+              status: 'paid_pending',
+              purpose: 'student_course',
+              createdAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.error(e);
+          }
+          // Try Cloud Function verify (auto-grant) if deployed
+          try {
+            const projectId = (await import('./js/config.js')).firebaseConfig?.projectId;
+            // Client-side best effort: show pending; CF webhook will set studentAccess
+            showToast('Payment received! Activating access…', 'success');
+            $('gateStatus').textContent = 'Payment received — activating (usually a few seconds)…';
+            $('payBtn').classList.add('hidden');
+            // Poll access for up to ~20s
+            let tries = 0;
+            const poll = setInterval(async () => {
+              tries++;
+              const snap = await getDoc(doc(db, 'studentAccess', `${user.uid}_${COURSE_ID}`));
+              if (snap.exists() && snap.data().status === 'active') {
+                clearInterval(poll);
+                hasPaidAccess = true;
+                if (snap.data().expiresAt?.toDate) accessExpiry = snap.data().expiresAt.toDate();
+                updateGateUI();
+              } else if (tries > 15) {
+                clearInterval(poll);
+                $('gateStatus').textContent = 'Payment recorded. If access does not open in a minute, contact Support with ref: ' + ref;
+                $('payBtn').classList.remove('hidden');
+              }
+            }, 1500);
+          } catch (e) {
+            showToast('Payment received. Awaiting activation.', 'success');
+          }
+        },
+        onCancel: () => showToast('Payment cancelled', 'info')
+      });
+    };
+
+    function isUnlocked(setId) {
+      if (setId === 'set1_300') return true;
+      if (setId === 'set2_400') return (progress['set1_300']?.bestPercent || 0) >= PASS;
+      if (setId === 'set3_500') return (progress['set2_400']?.bestPercent || 0) >= PASS;
+      return false;
+    }
+
+    function setLabel(id) {
+      if (id === 'set1_300') return { title: 'Set 1 — 100 Questions', sub: '200L + 300L (Anatomy, Physiology, Biochemistry, Intro Path/Pharm)' };
+      if (id === 'set2_400') return { title: 'Set 2 — 100 Questions', sub: 'Clinical / 400L emphasis' };
+      return { title: 'Set 3 — 100 Questions', sub: 'O&G, Paediatrics, Community, Emergency' };
+    }
+
+    function renderSets() {
+      setIds = window.getMBBSSetsForStudentLevel(level);
+      $('setsList').innerHTML = setIds.map((id) => {
+        const meta = setLabel(id);
+        const unlocked = isUnlocked(id);
+        const p = progress[id];
+        const best = p?.bestPercent != null ? `${p.bestPercent}% best` : 'Not attempted';
+        return `
+          <div class="set-card ${unlocked ? '' : 'locked'}">
+            <p class="font-extrabold text-sm">${meta.title}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">${meta.sub}</p>
+            <p class="text-[11px] font-semibold mt-1 ${unlocked ? 'text-teal-700' : 'text-slate-400'}">${unlocked ? '🔓 Unlocked' : '🔒 Score ≥75% on previous set'} · ${best}</p>
+            ${unlocked ? `<button data-start="${id}" class="mt-3 w-full btn-primary text-sm py-2.5">Start set</button>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    document.querySelectorAll('.lvl-btn').forEach(btn => {
+      btn.onclick = () => {
+        level = btn.dataset.level;
+        document.querySelectorAll('.lvl-btn').forEach(b => {
+          b.classList.toggle('border-teal-600', b === btn);
+          b.classList.toggle('bg-teal-50', b === btn);
+          b.classList.toggle('text-teal-800', b === btn);
+          b.classList.toggle('border-slate-200', b !== btn);
+        });
+        renderSets();
+      };
+    });
+
+    $('setsList').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-start]');
+      if (!btn) return;
+      startSet(btn.dataset.start);
+    });
+
+    function startSet(setId) {
+      if (!isAdmin && !hasPaidAccess) return updateGateUI();
+      if (!isUnlocked(setId)) return alert('Score at least 75% on the previous set.');
+      currentSetId = setId;
+      questions = [...(window.getQuestionsForSet(setId) || [])];
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+      idx = 0; score = 0; answered = false;
+      $('setupView').classList.add('hidden');
+      $('resultView').classList.add('hidden');
+      $('quizView').classList.remove('hidden');
+      showQuestion();
+    }
+
+    function showQuestion() {
+      answered = false;
+      const q = questions[idx];
+      $('qProgress').textContent = `Q ${idx + 1} / ${questions.length}`;
+      $('qScore').textContent = `Score: ${score}`;
+      $('qBar').style.width = `${(idx / questions.length) * 100}%`;
+      $('qTopic').textContent = q.topic || '';
+      $('qText').textContent = q.question;
+      $('qExplain').classList.add('hidden');
+      $('nextBtn').classList.add('hidden');
+      $('finishBtn').classList.add('hidden');
+      $('qOpts').innerHTML = (q.options || []).map((o, i) =>
+        `<div class="opt" data-i="${i}">${String.fromCharCode(65 + i)}. ${o}</div>`
+      ).join('');
+    }
+
+    $('qOpts').addEventListener('click', (e) => {
+      const opt = e.target.closest('.opt');
+      if (!opt || answered) return;
+      answered = true;
+      const i = +opt.dataset.i;
+      const q = questions[idx];
+      const correct = q.correctIndex;
+      document.querySelectorAll('.opt').forEach((el, j) => {
+        if (j === correct) el.classList.add('correct');
+        else if (j === i) el.classList.add('wrong');
+      });
+      if (i === correct) score++;
+      $('qScore').textContent = `Score: ${score}`;
+      $('qExplain').textContent = q.explanation || '';
+      $('qExplain').classList.remove('hidden');
+      if (idx < questions.length - 1) $('nextBtn').classList.remove('hidden');
+      else $('finishBtn').classList.remove('hidden');
+    });
+
+    $('nextBtn').onclick = () => { idx++; showQuestion(); };
+    $('finishBtn').onclick = () => {
+      const total = questions.length;
+      const percent = Math.round((score / total) * 100);
+      const passed = percent >= PASS;
+      if (!progress[currentSetId] || percent > (progress[currentSetId].bestPercent || 0)) {
+        progress[currentSetId] = { bestPercent: percent, score, total, at: Date.now() };
+        saveProgress();
+      }
+      $('quizView').classList.add('hidden');
+      $('resultView').classList.remove('hidden');
+      $('resultEmoji').textContent = passed ? '🎉' : '📚';
+      $('resultTitle').textContent = passed ? `Passed — ${percent}%` : `Score ${percent}% — keep practising`;
+      $('resultDetail').textContent = `You got ${score} out of ${total}. Pass mark is ${PASS}%.`;
+      if (passed && currentSetId === 'set1_300') $('resultUnlock').textContent = 'Set 2 is now unlocked!';
+      else if (passed && currentSetId === 'set2_400') $('resultUnlock').textContent = 'Set 3 is now unlocked!';
+      else if (passed) $('resultUnlock').textContent = 'Highest set completed for this path.';
+      else $('resultUnlock').textContent = `Score at least ${PASS}% to unlock the next 100.`;
+    };
+
+    $('backSets').onclick = () => {
+      $('resultView').classList.add('hidden');
+      $('setupView').classList.remove('hidden');
+      renderSets();
+    };
+    $('retrySet').onclick = () => startSet(currentSetId);
+  </script>
+</body>
+</html>

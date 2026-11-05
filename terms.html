@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Terms of Service | MiracardiacHealth</title>
+  <meta name="description" content="The rules for using MiracardiacHealth: telemedicine, pharmacy, appointments and the Student Hub." />
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .doc h2 { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 1.75rem 0 .5rem; scroll-margin-top: 80px; }
+    .doc p, .doc li { font-size: .875rem; line-height: 1.65; color: #475569; }
+    .doc p { margin: .5rem 0; }
+    .doc ul { list-style: disc; padding-left: 1.25rem; margin: .5rem 0; }
+    .doc li { margin: .25rem 0; }
+    .doc a { color: #0d9488; font-weight: 600; text-decoration: underline; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <img class="site-logo w-8 h-8 rounded-xl object-contain shadow" src="icons/icon.svg" alt="MH" />
+        <span class="font-extrabold text-sm text-teal-700">Miracardiac<span class="text-emerald-600">Health</span></span>
+      </a>
+      <a href="privacy.html" class="text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-lg">Privacy</a>
+    </div>
+  </header>
+
+  <section class="ah-gradient text-white">
+    <div class="max-w-3xl mx-auto px-4 py-10">
+      <p class="text-[11px] font-bold tracking-wide uppercase text-white/80">Legal</p>
+      <h1 class="text-3xl font-extrabold mt-1">Terms of Service</h1>
+      <p class="text-sm text-white/90 mt-2 max-w-md">Please read these rules carefully. By creating an account or using MiracardiacHealth, you agree to them.</p>
+      <p class="text-xs text-white/70 mt-3">Last updated: October 2026</p>
+    </div>
+  </section>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- Emergency notice -->
+    <div class="rounded-2xl bg-red-50 border border-red-100 p-4 flex gap-3">
+      <span class="text-2xl">🚨</span>
+      <div>
+        <p class="text-sm font-extrabold text-red-700">Not for emergencies</p>
+        <p class="text-xs text-red-600 mt-0.5">MiracardiacHealth does not provide emergency care. If you or someone else is in danger, call <a href="tel:112" class="font-bold underline">112</a> or go to the nearest hospital immediately.</p>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="rounded-2xl bg-teal-50 border border-teal-100 p-4 mt-4">
+      <p class="text-xs font-bold text-teal-800 uppercase tracking-wide mb-2">The main points</p>
+      <ul class="space-y-1.5 text-sm text-teal-900">
+        <li>✅ Doctors give medical advice. We are the platform that connects you.</li>
+        <li>✅ A doctor chat opens only after payment and admin approval.</li>
+        <li>✅ Pharmacies are independent and responsible for their drugs and prices.</li>
+        <li>✅ Student Hub content is for your personal study. No sharing or copying.</li>
+      </ul>
+    </div>
+
+    <nav class="mt-5 rounded-2xl bg-white border border-slate-200 p-4">
+      <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Contents</p>
+      <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-teal-700 font-medium list-decimal pl-5">
+        <li><a href="#accept">Accepting these terms</a></li>
+        <li><a href="#service">What we provide</a></li>
+        <li><a href="#accounts">Accounts</a></li>
+        <li><a href="#consult">Doctor consultations</a></li>
+        <li><a href="#appt">Appointments</a></li>
+        <li><a href="#pharmacy">Pharmacy orders</a></li>
+        <li><a href="#student">Student Hub</a></li>
+        <li><a href="#pay">Payments & refunds</a></li>
+        <li><a href="#professionals">Doctors & pharmacists</a></li>
+        <li><a href="#conduct">Acceptable use</a></li>
+        <li><a href="#ip">Intellectual property</a></li>
+        <li><a href="#liability">Disclaimers & liability</a></li>
+        <li><a href="#suspend">Suspension & ending</a></li>
+        <li><a href="#law">Governing law & contact</a></li>
+      </ol>
+    </nav>
+
+    <article class="doc mt-2 bg-white border border-slate-200 rounded-2xl p-5">
+
+      <h2 id="accept">1. Accepting these terms</h2>
+      <p>These Terms of Service ("Terms") form a binding agreement between you and MiracardiacHealth ("we", "us"). If you do not agree, please do not use the platform. You must be at least 18 years old, or use the platform under the supervision of a parent or guardian. Our <a href="privacy.html">Privacy Policy</a> explains how we handle your data and is part of these Terms.</p>
+
+      <h2 id="service">2. What we provide</h2>
+      <p>MiracardiacHealth is an online platform that offers:</p>
+      <ul>
+        <li>a directory of doctors and paid chat consultations;</li>
+        <li>appointment booking;</li>
+        <li>a marketplace where registered pharmacies list drugs and receive orders;</li>
+        <li>customer care and support tickets;</li>
+        <li>health news, tips and nearby services; and</li>
+        <li>a Student Hub with paid past questions for medical and health students.</li>
+      </ul>
+      <p>We may add, change or remove features at any time.</p>
+
+      <h2 id="accounts">3. Accounts</h2>
+      <ul>
+        <li>Give accurate information and keep it up to date.</li>
+        <li>You are responsible for your password and for everything done through your account. Tell us at once if you suspect misuse.</li>
+        <li>One person, one account. Do not share your login with anyone.</li>
+        <li>Doctors, pharmacists and support agents must be approved by our admin team before their account becomes active.</li>
+      </ul>
+
+      <h2 id="consult">4. Doctor consultations</h2>
+      <ul>
+        <li><strong>How it works:</strong> you choose a doctor, pay the consultation fee, and an admin approves the payment. Once approved, the chat opens for the period shown in your account (currently up to 7 days).</li>
+        <li><strong>Medical advice comes from the doctor</strong>, who is an independent professional. MiracardiacHealth does not practise medicine and is not responsible for a doctor's clinical decisions.</li>
+        <li>Online consultations have limits. A doctor may advise you to visit a hospital or see someone in person, and you should follow that advice.</li>
+        <li>Give honest and complete information. Wrong or missing details can lead to wrong advice.</li>
+        <li>Prescriptions are issued only at the doctor's discretion. We cannot guarantee that any prescription will be issued.</li>
+        <li>Chats are private between you, your doctor and authorised admins. Please be respectful. Abuse or harassment of doctors can lead to suspension.</li>
+      </ul>
+
+      <h2 id="appt">5. Appointments</h2>
+      <ul>
+        <li>Appointment types may include chat, video or physical visit, depending on the doctor.</li>
+        <li>Times shown are subject to the doctor's availability and confirmation.</li>
+        <li>Please cancel or reschedule early if you cannot attend. Repeated no-shows may limit your booking ability.</li>
+      </ul>
+
+      <h2 id="pharmacy">6. Pharmacy orders</h2>
+      <ul>
+        <li>Pharmacies on the platform are independent businesses. They set their own prices, stock, delivery terms and are responsible for the drugs they supply.</li>
+        <li>Prescription-only drugs need a valid prescription from a licensed doctor or an uploaded prescription that the pharmacist can verify. A pharmacist may refuse or cancel an order for safety or legal reasons.</li>
+        <li>Check your drug, dose and expiry date when you receive it. Do not take any medicine you are unsure about. Ask the pharmacist or your doctor first.</li>
+        <li>Stock and prices can change. An order is confirmed only when the pharmacy accepts it.</li>
+        <li>For problems with an order, contact <a href="customer-care.html">Customer Care</a>.</li>
+      </ul>
+
+      <h2 id="student">7. Student Hub</h2>
+      <ul>
+        <li><strong>Personal licence:</strong> when you pay and are approved, you get a personal, non-transferable licence to view the course for the access period shown in your account. It may expire.</li>
+        <li><strong>No sharing or copying:</strong> you must not screenshot, record, copy, print, download, resell, post or otherwise share course content, or share your account to let others view it.</li>
+        <li><strong>Watermarking:</strong> content is watermarked with your account details so we can trace leaks. You agree to this.</li>
+        <li><strong>Violations</strong> can lead to immediate loss of access without refund and, where appropriate, further action.</li>
+        <li><strong>Study aid only:</strong> questions and answers are provided to help you practise. We do not guarantee exam results or that every answer is error-free. Always confirm important facts with your textbooks and lecturers.</li>
+        <li>Content may be updated, reorganised or removed over time.</li>
+      </ul>
+
+      <h2 id="pay">8. Payments & refunds</h2>
+      <ul>
+        <li>Payments are processed securely by <strong>Paystack</strong>. We do not store your card details.</li>
+        <li>Prices are shown in Nigerian Naira (₦) and may change. The price shown when you pay is the price you are charged.</li>
+        <li><strong>Pending approval:</strong> doctor consultation and Student Hub payments are reviewed by our admin team before access is activated.</li>
+        <li><strong>If a payment is rejected</strong> or access cannot be provided, we will refund the amount to your original payment method. Refunds can take several business days to appear.</li>
+        <li>Once a consultation has started or a course has been opened and used, payments are generally non-refundable, except where required by law or where we agree it is fair. Contact <a href="customer-care.html">Customer Care</a> with your payment reference.</li>
+        <li>Drug orders are subject to the pharmacy's own cancellation and return rules.</li>
+        <li>If you are charged but do not see your access, keep your payment reference and contact support. Do not pay twice.</li>
+      </ul>
+
+      <h2 id="professionals">9. Doctors & pharmacists</h2>
+      <p>If you join as a doctor or pharmacist, you also agree that:</p>
+      <ul>
+        <li>you hold a valid, current licence and will provide true details and documents;</li>
+        <li>you will follow your professional code of ethics and Nigerian law, and keep patient information confidential;</li>
+        <li>doctors will give advice within their competence and refer patients when needed;</li>
+        <li>pharmacies will list only genuine, properly stored, unexpired products and dispense prescription drugs lawfully;</li>
+        <li>we may charge a platform commission on payments, as shown in your account or agreed with you; and</li>
+        <li>we may suspend or remove your account if you breach these Terms, your licence lapses, or patients' safety is at risk.</li>
+      </ul>
+
+      <h2 id="conduct">10. Acceptable use</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>break any law or use the platform for any unlawful purpose;</li>
+        <li>give false information, impersonate another person, or pose as a doctor or pharmacist if you are not one;</li>
+        <li>harass, abuse or threaten doctors, pharmacists, support agents or other users;</li>
+        <li>upload viruses, attempt to hack, scrape, overload or bypass security or payment controls;</li>
+        <li>try to access chats, data or courses you have not paid for or are not allowed to see;</li>
+        <li>use the platform to sell or ask for illegal drugs or controlled substances without lawful authority; or</li>
+        <li>copy or resell our content, software or brand.</li>
+      </ul>
+
+      <h2 id="ip">11. Intellectual property</h2>
+      <p>The platform, its design, software, logo and content (including Student Hub questions and explanations, unless owned by others) belong to MiracardiacHealth or its licensors and are protected by law. You receive only a limited right to use them as these Terms allow. Content you submit (such as messages or reviews) remains yours, but you give us permission to store and display it as needed to run the service.</p>
+
+      <h2 id="liability">12. Disclaimers & liability</h2>
+      <ul>
+        <li>The platform is provided "as is" and "as available". We do not promise it will always be uninterrupted or error-free.</li>
+        <li>Information on the platform, including health news and tips, is general and is <strong>not a substitute for professional medical advice, diagnosis or treatment</strong>.</li>
+        <li>To the fullest extent the law allows, MiracardiacHealth is not liable for the advice or conduct of independent doctors, the products or conduct of independent pharmacies, or for indirect or consequential losses.</li>
+        <li>Nothing in these Terms removes any right you have under Nigerian consumer protection law, or limits liability that cannot lawfully be limited.</li>
+        <li>You agree to compensate us for losses we suffer because you knowingly broke these Terms or the law.</li>
+      </ul>
+
+      <h2 id="suspend">13. Suspension & ending</h2>
+      <p>We may suspend or close your account, with or without notice, if you break these Terms, put others at risk, or act fraudulently. You may stop using the platform at any time and may ask us to delete your account. Sections that by their nature should continue (for example intellectual property, liability and governing law) will survive.</p>
+
+      <h2 id="law">14. Governing law & contact</h2>
+      <p>These Terms are governed by the laws of the Federal Republic of Nigeria. We will first try to resolve any dispute informally through Customer Care. If that fails, the courts of Nigeria will have jurisdiction. We may update these Terms from time to time. If you keep using the platform after an update, you accept the new Terms.</p>
+      <p><strong>Contact us:</strong></p>
+      <ul>
+        <li>Email: <a href="mailto:YOUR-SUPPORT-EMAIL@example.com">YOUR-SUPPORT-EMAIL@example.com</a></li>
+        <li>In-app: <a href="customer-care.html">Customer Care</a></li>
+        <li>Address: YOUR BUSINESS ADDRESS, Nigeria</li>
+      </ul>
+    </article>
+
+    <div class="flex flex-wrap items-center justify-center gap-4 text-xs py-6">
+      <a href="privacy.html" class="text-teal-700 font-semibold">Privacy Policy</a>
+      <a href="customer-care.html" class="text-teal-700 font-semibold">Customer Care</a>
+      <a href="index.html" class="text-teal-700 font-semibold">Home</a>
+    </div>
+    <p class="text-center text-[10px] text-slate-400 pb-8">© <span id="yr"></span> MiracardiacHealth. All rights reserved.</p>
+  </main>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
+</body>
+</html>

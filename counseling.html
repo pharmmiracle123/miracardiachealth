@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Health Counseling | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Health Counseling</h1>
+          <p class="text-[10px] text-slate-400">Mental health · Lifestyle · Chronic disease coaching</p>
+        </div>
+      </div>
+      <button id="newSession" class="text-xs font-bold bg-pink-600 text-white rounded-lg px-3 py-1.5">+ Session</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <section class="card bg-gradient-to-br from-pink-50 to-rose-50 border-pink-100">
+      <h2 class="font-extrabold text-sm text-pink-800">Supporting whole-person care</h2>
+      <p class="text-xs text-slate-600 mt-1">Counselors, psychologists, nurses and doctors can document sessions, goals, risk assessments and follow-up plans. Integrates with EMR and appointments for continuity of care.</p>
+      <div class="flex flex-wrap gap-2 mt-3 text-[11px] font-semibold">
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Anxiety & Depression</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Diabetes education</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Hypertension lifestyle</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Substance use</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Grief & trauma</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Pre/post-op counseling</span>
+        <span class="bg-white/80 rounded-full px-2.5 py-1">Adherence support</span>
+      </div>
+    </section>
+
+    <div id="sessions" class="space-y-2"></div>
+
+    <div id="sessionModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg">Counseling Session</h2>
+        <div><label class="lbl">Client / Patient name</label><input id="cName" class="field" /></div>
+        <div><label class="lbl">Session type</label>
+          <select id="cType" class="field">
+            <option>Initial assessment</option>
+            <option>Follow-up</option>
+            <option>Crisis intervention</option>
+            <option>Psychoeducation</option>
+            <option>Lifestyle coaching</option>
+            <option>Family session</option>
+            <option>Group session</option>
+          </select>
+        </div>
+        <div><label class="lbl">Focus areas</label><input id="cFocus" class="field" placeholder="e.g. Anxiety, sleep, medication adherence" /></div>
+        <div><label class="lbl">Risk assessment (self-harm / harm to others)</label>
+          <select id="cRisk" class="field">
+            <option value="none">No elevated risk identified</option>
+            <option value="low">Low – monitor</option>
+            <option value="moderate">Moderate – safety plan</option>
+            <option value="high">High – escalate / emergency protocol</option>
+          </select>
+        </div>
+        <div><label class="lbl">Session notes (confidential)</label><textarea id="cNotes" class="field h-28" placeholder="Presenting issues, interventions, homework, progress..."></textarea></div>
+        <div><label class="lbl">Goals / next steps</label><textarea id="cGoals" class="field h-16"></textarea></div>
+        <div><label class="lbl">Follow-up date</label><input id="cFollow" type="date" class="field" /></div>
+        <div class="flex gap-2">
+          <button id="cancelSession" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="saveSession" class="flex-1 bg-pink-600 text-white rounded-xl py-2.5 font-bold text-sm">Save Session</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['doctor','nurse','admin','support','counselor','psychologist']);
+
+    document.getElementById('newSession').onclick = () => {
+      document.getElementById('sessionModal').classList.remove('hidden');
+      document.getElementById('sessionModal').classList.add('flex');
+    };
+    document.getElementById('cancelSession').onclick = () => {
+      document.getElementById('sessionModal').classList.add('hidden');
+      document.getElementById('sessionModal').classList.remove('flex');
+    };
+
+    document.getElementById('saveSession').onclick = async () => {
+      const name = document.getElementById('cName').value.trim();
+      if (!name) return alert('Client name required');
+      const risk = document.getElementById('cRisk').value;
+      if (risk === 'high') {
+        if (!confirm('High risk selected. Ensure emergency / senior clinician protocols are followed. Continue to save?')) return;
+      }
+      await addDoc(collection(db, 'counselingSessions'), {
+        clientName: name,
+        type: document.getElementById('cType').value,
+        focus: document.getElementById('cFocus').value,
+        risk,
+        notes: document.getElementById('cNotes').value,
+        goals: document.getElementById('cGoals').value,
+        followUp: document.getElementById('cFollow').value || null,
+        at: serverTimestamp(),
+        counselorId: auth.currentUser?.uid,
+        counselorName: profile.fullName || profile.displayName || 'Counselor'
+      });
+      document.getElementById('sessionModal').classList.add('hidden');
+      load();
+    };
+
+    async function load() {
+      const snap = await getDocs(query(collection(db, 'counselingSessions'), orderBy('at', 'desc'), limit(25)));
+      const el = document.getElementById('sessions');
+      el.innerHTML = snap.empty ? '<p class="text-sm text-slate-500 card">No sessions yet. Start a new counseling session.</p>' : '';
+      snap.forEach(d => {
+        const s = d.data();
+        const t = s.at?.toDate ? s.at.toDate().toLocaleString() : '';
+        const riskColor = s.risk === 'high' ? 'text-red-700 bg-red-50' : s.risk === 'moderate' ? 'text-amber-700 bg-amber-50' : 'text-slate-500';
+        el.innerHTML += `<div class="card">
+          <div class="flex justify-between items-start">
+            <div><div class="font-bold text-sm">${s.clientName}</div><div class="text-xs text-pink-700">${s.type} · ${s.focus||''}</div></div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${riskColor}">Risk: ${s.risk||'none'}</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-2 line-clamp-3">${(s.notes||'').slice(0,180)}${(s.notes||'').length>180?'…':''}</div>
+          ${s.goals ? `<div class="text-[11px] mt-1 text-teal-700"><strong>Goals:</strong> ${s.goals.slice(0,100)}</div>` : ''}
+          <div class="text-[10px] text-slate-400 mt-2">${t} · ${s.counselorName||''}${s.followUp ? ' · Follow-up: '+s.followUp : ''}</div>
+        </div>`;
+      });
+    }
+    await load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Doctor Registration | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-slate-50">
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="Dashboard.html" class="text-slate-500">←</a>
+      <h1 class="font-bold text-lg">Register as Doctor</h1>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 py-6">
+    <div class="ah-card p-5">
+      <p class="text-sm text-slate-500 mb-5">Staff doctor accounts are created by Admin. Use this form only if Admin already created your login and asked you to complete specialty &amp; photo details.</p>
+      <form id="doctorForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Full Name *</label>
+          <input name="name" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Dr. Ada Okafor" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Specialty *</label>
+          <select name="specialty" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+            <option value="">Select specialty</option>
+            <option>General Practice</option>
+            <option>Pediatrics</option>
+            <option>Cardiology</option>
+            <option>Dermatology</option>
+            <option>Gynecology</option>
+            <option>Psychiatry</option>
+            <option>Orthopedics</option>
+            <option>Ophthalmology</option>
+            <option>ENT</option>
+            <option>Internal Medicine</option>
+            <option>Surgery</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Years of Experience *</label>
+            <input name="experience" type="number" min="0" max="60" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Consultation Fee (₦) *</label>
+            <input name="consultationFee" type="number" min="500" step="100" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="5000" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">MDCN / License Number *</label>
+          <input name="licenseNumber" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Phone (WhatsApp) *</label>
+          <input name="phone" type="tel" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="+234..." />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Bio / About You</label>
+          <textarea name="bio" rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Brief professional summary..."></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Profile Photo</label>
+          <input name="photo" type="file" accept="image/*" class="w-full text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">License Document (PDF/Image)</label>
+          <input name="licenseDoc" type="file" accept="image/*,application/pdf" class="w-full text-sm" />
+        </div>
+        <label class="flex items-start gap-2 text-xs text-slate-600">
+          <input type="checkbox" name="consent" required class="mt-0.5" />
+          <span>I confirm that the information provided is accurate and I am a licensed medical practitioner in Nigeria. I agree to the Terms of Service.</span>
+        </label>
+        <button type="submit" id="submitBtn" class="btn-primary w-full">Submit for Review</button>
+      </form>
+    </div>
+  </main>
+
+  <script type="module">
+    import {auth, db, storage, requireAuth, showToast, escapeHtml,
+      doc, setDoc, updateDoc, serverTimestamp, ref, uploadBytesResumable, getDownloadURL, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const profile = await requireAuth();
+    if (!profile) throw new Error('Not logged in');
+
+    // Only staff with doctor/surgeon role (created by Admin) should complete this form
+    const allowed = ['doctor', 'surgeon', 'admin'];
+    if (!allowed.includes(profile.role)) {
+      document.querySelector('main').innerHTML = `
+        <div class="ah-card p-6 text-center space-y-3">
+          <p class="text-4xl">🔒</p>
+          <h2 class="font-bold text-lg">Staff accounts are Admin-only</h2>
+          <p class="text-sm text-slate-600">Patients and the public cannot register as doctors. Ask your clinic Admin to create your staff account, then log in with the email they gave you.</p>
+          <a href="Dashboard.html" class="inline-block mt-2 text-teal-700 font-bold text-sm">← Back to dashboard</a>
+        </div>`;
+      throw new Error('Not a staff doctor');
+    }
+
+    const form = document.getElementById('doctorForm');
+    if (profile.displayName) form.name.value = profile.displayName;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const fd = new FormData(form);
+      const data = {
+        name: fd.get('name').trim(),
+        specialty: fd.get('specialty'),
+        experience: parseInt(fd.get('experience'), 10) || 0,
+        consultationFee: parseInt(fd.get('consultationFee'), 10) || 0,
+        licenseNumber: fd.get('licenseNumber').trim(),
+        phone: fd.get('phone').trim(),
+        bio: (fd.get('bio') || '').trim(),
+        status: 'pending',
+        available: false,
+        rating: 0,
+        reviewCount: 0,
+        ownerId: profile.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      try {
+        // Upload photo if provided
+        const photoFile = fd.get('photo');
+        if (photoFile && photoFile.size > 0) {
+          const photoRef = ref(storage, `doctors/${profile.uid}/photo_${Date.now()}`);
+          await uploadBytesResumable(photoRef, photoFile);
+          data.photoURL = await getDownloadURL(photoRef);
+        }
+
+        // Upload license
+        const licFile = fd.get('licenseDoc');
+        if (licFile && licFile.size > 0) {
+          const licRef = ref(storage, `doctors/${profile.uid}/license_${Date.now()}`);
+          await uploadBytesResumable(licRef, licFile);
+          data.licenseURL = await getDownloadURL(licRef);
+        }
+
+        // Create doctor profile (doc id = uid for easy linking)
+        await setDoc(doc(db, 'doctors', profile.uid), data);
+
+        // Update user role to doctor (pending)
+        await updateDoc(doc(db, 'users', profile.uid), {
+          role: 'doctor',
+          status: 'pending',
+          updatedAt: serverTimestamp()
+        });
+
+        showToast('Application submitted! Awaiting admin approval.', 'success');
+        setTimeout(() => location.href = 'Dashboard.html', 1500);
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Submit for Review';
+      }
+    });
+  </script>
+</body>
+</html>

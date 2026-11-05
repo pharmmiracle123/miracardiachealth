@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Inpatient & Ward Management | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .bed{border-radius:.9rem;padding:.75rem;border:2px solid #e2e8f0;background:#fff;min-height:5.5rem}
+    .bed.occupied{border-color:#0d9488;background:#f0fdfa}
+    .bed.reserved{border-color:#f59e0b;background:#fffbeb}
+    .bed.cleaning{border-color:#94a3b8;background:#f8fafc}
+    .bed.blocked{border-color:#ef4444;background:#fef2f2}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:.2rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Inpatient & Ward Board</h1>
+          <p class="text-[10px] text-slate-400">Admissions · Beds · Transfers · Discharge</p>
+        </div>
+      </div>
+      <button id="admitBtn" class="text-xs font-bold bg-teal-600 text-white rounded-lg px-3 py-1.5">+ Admit</button>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
+    <!-- Stats -->
+    <div id="wardStats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+      <div class="bg-white rounded-xl border p-3"><div class="text-2xl font-extrabold text-teal-700" id="sOcc">—</div><div class="text-[10px] font-bold text-slate-500">Occupied</div></div>
+      <div class="bg-white rounded-xl border p-3"><div class="text-2xl font-extrabold text-emerald-600" id="sFree">—</div><div class="text-[10px] font-bold text-slate-500">Available</div></div>
+      <div class="bg-white rounded-xl border p-3"><div class="text-2xl font-extrabold text-amber-600" id="sRes">—</div><div class="text-[10px] font-bold text-slate-500">Reserved</div></div>
+      <div class="bg-white rounded-xl border p-3"><div class="text-2xl font-extrabold text-slate-700" id="sRate">—</div><div class="text-[10px] font-bold text-slate-500">Occupancy %</div></div>
+    </div>
+
+    <!-- Ward filter -->
+    <div class="flex flex-wrap gap-2">
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border bg-teal-600 text-white border-teal-600" data-ward="all">All Wards</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="Medical">Medical</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="Surgical">Surgical</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="ICU">ICU</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="Maternity">Maternity</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="Paediatric">Paediatric</button>
+      <button class="ward-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-ward="Emergency">Emergency</button>
+    </div>
+
+    <div id="bedBoard" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
+
+    <!-- Admit modal -->
+    <div id="admitModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg">Admit Patient</h2>
+        <div><label class="lbl">Patient name / MRN</label><input id="admName" class="field" placeholder="Full name" /></div>
+        <div><label class="lbl">Patient UID (optional if registered)</label><input id="admUid" class="field" placeholder="Firebase UID if known" /></div>
+        <div><label class="lbl">Ward</label>
+          <select id="admWard" class="field">
+            <option>Medical</option><option>Surgical</option><option>ICU</option><option>Maternity</option><option>Paediatric</option><option>Emergency</option>
+          </select>
+        </div>
+        <div><label class="lbl">Bed number</label><input id="admBed" class="field" placeholder="e.g. M-12" /></div>
+        <div><label class="lbl">Diagnosis / reason</label><textarea id="admDx" class="field h-20"></textarea></div>
+        <div><label class="lbl">Admitting clinician</label><input id="admDoc" class="field" /></div>
+        <div class="flex gap-2 pt-2">
+          <button id="cancelAdmit" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="confirmAdmit" class="flex-1 bg-teal-600 text-white rounded-xl py-2.5 font-bold text-sm">Admit</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, doc, setDoc, getDocs, updateDoc, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['doctor','nurse','admin','surgeon']);
+
+    // Seed default beds if none
+    const DEFAULT_BEDS = [];
+    ['Medical','Surgical','ICU','Maternity','Paediatric','Emergency'].forEach(w => {
+      const count = w === 'ICU' ? 8 : w === 'Emergency' ? 10 : 12;
+      for (let i = 1; i <= count; i++) {
+        DEFAULT_BEDS.push({ id: `${w.slice(0,1)}-${i}`, ward: w, bedNo: `${w.slice(0,3).toUpperCase()}-${i}`, status: 'available', patientName: null, patientId: null });
+      }
+    });
+
+    let beds = [];
+    let currentWard = 'all';
+
+    async function loadBeds() {
+      const snap = await getDocs(collection(db, 'beds'));
+      if (snap.empty) {
+        // seed once
+        for (const b of DEFAULT_BEDS) {
+          await setDoc(doc(db, 'beds', b.id), { ...b, updatedAt: serverTimestamp() });
+        }
+        beds = DEFAULT_BEDS.map(b => ({ ...b }));
+      } else {
+        beds = [];
+        snap.forEach(d => beds.push({ id: d.id, ...d.data() }));
+      }
+      render();
+    }
+
+    function render() {
+      const filtered = currentWard === 'all' ? beds : beds.filter(b => b.ward === currentWard);
+      const occ = beds.filter(b => b.status === 'occupied').length;
+      const free = beds.filter(b => b.status === 'available').length;
+      const res = beds.filter(b => b.status === 'reserved').length;
+      document.getElementById('sOcc').textContent = occ;
+      document.getElementById('sFree').textContent = free;
+      document.getElementById('sRes').textContent = res;
+      document.getElementById('sRate').textContent = beds.length ? Math.round(occ / beds.length * 100) + '%' : '—';
+
+      document.getElementById('bedBoard').innerHTML = filtered.map(b => `
+        <div class="bed ${b.status}" data-id="${b.id}">
+          <div class="flex justify-between items-start">
+            <span class="font-extrabold text-sm">${b.bedNo || b.id}</span>
+            <span class="text-[10px] font-bold uppercase ${
+              b.status==='occupied'?'text-teal-700':b.status==='reserved'?'text-amber-700':b.status==='cleaning'?'text-slate-500':'text-emerald-600'
+            }">${b.status}</span>
+          </div>
+          <div class="text-xs mt-1 text-slate-600 truncate">${b.patientName || '—'}</div>
+          <div class="text-[10px] text-slate-400">${b.ward}${b.diagnosis ? ' · ' + b.diagnosis.slice(0,30) : ''}</div>
+          ${b.status==='occupied' ? `<div class="mt-2 flex gap-1">
+            <button data-act="transfer" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded">Transfer</button>
+            <button data-act="discharge" class="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">Discharge</button>
+          </div>` : b.status==='available' ? `<button data-act="quick-admit" class="mt-2 text-[10px] font-bold text-teal-700">Admit here</button>` : ''}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.bed').forEach(el => {
+        el.querySelectorAll('button').forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const act = btn.dataset.act;
+            const id = el.dataset.id;
+            if (act === 'discharge') discharge(id);
+            if (act === 'transfer') transfer(id);
+            if (act === 'quick-admit') { document.getElementById('admBed').value = beds.find(x=>x.id===id)?.bedNo || id; document.getElementById('admWard').value = beds.find(x=>x.id===id)?.ward || 'Medical'; openAdmit(); }
+          };
+        });
+      });
+    }
+
+    document.querySelectorAll('.ward-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.ward-btn').forEach(b => { b.classList.remove('bg-teal-600','text-white','border-teal-600'); b.classList.add('border-slate-200'); });
+        btn.classList.add('bg-teal-600','text-white','border-teal-600');
+        currentWard = btn.dataset.ward;
+        render();
+      };
+    });
+
+    function openAdmit() {
+      document.getElementById('admitModal').classList.remove('hidden');
+      document.getElementById('admitModal').classList.add('flex');
+      document.getElementById('admDoc').value = profile.fullName || profile.displayName || '';
+    }
+    document.getElementById('admitBtn').onclick = openAdmit;
+    document.getElementById('cancelAdmit').onclick = () => {
+      document.getElementById('admitModal').classList.add('hidden');
+      document.getElementById('admitModal').classList.remove('flex');
+    };
+
+    document.getElementById('confirmAdmit').onclick = async () => {
+      const name = document.getElementById('admName').value.trim();
+      const bedNo = document.getElementById('admBed').value.trim();
+      const ward = document.getElementById('admWard').value;
+      if (!name || !bedNo) return alert('Name and bed required');
+      const bed = beds.find(b => (b.bedNo === bedNo || b.id === bedNo) && b.ward === ward) || beds.find(b => b.bedNo === bedNo);
+      if (!bed) return alert('Bed not found. Use exact bed number from board.');
+      if (bed.status === 'occupied') return alert('Bed already occupied');
+
+      await updateDoc(doc(db, 'beds', bed.id), {
+        status: 'occupied',
+        patientName: name,
+        patientId: document.getElementById('admUid').value.trim() || null,
+        diagnosis: document.getElementById('admDx').value.trim(),
+        admittingDoctor: document.getElementById('admDoc').value.trim(),
+        admittedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      await addDoc(collection(db, 'admissions'), {
+        bedId: bed.id, bedNo: bed.bedNo, ward, patientName: name,
+        patientId: document.getElementById('admUid').value.trim() || null,
+        diagnosis: document.getElementById('admDx').value.trim(),
+        admittingDoctor: document.getElementById('admDoc').value.trim(),
+        status: 'admitted', createdAt: serverTimestamp(), by: auth.currentUser?.uid
+      });
+      document.getElementById('admitModal').classList.add('hidden');
+      await loadBeds();
+    };
+
+    async function discharge(bedId) {
+      if (!confirm('Discharge this patient?')) return;
+      const bed = beds.find(b => b.id === bedId);
+      await updateDoc(doc(db, 'beds', bedId), {
+        status: 'cleaning', patientName: null, patientId: null, diagnosis: null,
+        dischargedAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      // after short delay could set available; for now leave as cleaning
+      await loadBeds();
+    }
+
+    async function transfer(bedId) {
+      const newBed = prompt('Enter destination bed number (e.g. ICU-3):');
+      if (!newBed) return;
+      const dest = beds.find(b => b.bedNo === newBed || b.id === newBed);
+      if (!dest || dest.status === 'occupied') return alert('Destination bed not available');
+      const src = beds.find(b => b.id === bedId);
+      await updateDoc(doc(db, 'beds', dest.id), {
+        status: 'occupied', patientName: src.patientName, patientId: src.patientId,
+        diagnosis: src.diagnosis, admittingDoctor: src.admittingDoctor,
+        transferredFrom: src.bedNo, updatedAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, 'beds', bedId), {
+        status: 'cleaning', patientName: null, patientId: null, diagnosis: null, updatedAt: serverTimestamp()
+      });
+      await loadBeds();
+    }
+
+    // Mark cleaning beds available (simple action via long-press simulation - button on cleaning beds)
+    // For demo, auto-refresh
+    await loadBeds();
+    setInterval(loadBeds, 60000);
+  </script>
+</body>
+</html>

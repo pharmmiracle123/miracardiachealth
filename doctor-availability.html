@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>My Availability | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .field { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .6rem .75rem; font-size: .875rem; }
+    .field:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    .lbl { display: block; font-size: .72rem; font-weight: 700; color: #475569; margin-bottom: .25rem; }
+    .card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(15,23,42,.06); padding: 1rem; }
+    .chip { white-space: nowrap; font-size: .8rem; font-weight: 700; padding: .5rem .95rem; border-radius: 9999px; background: #fff; border: 1.5px solid #e2e8f0; color: #64748b; display: inline-flex; gap: .35rem; align-items: center; }
+    .chip.on { background: linear-gradient(135deg,#0d9488,#059669); color: #fff; border-color: transparent; box-shadow: 0 6px 14px -6px rgba(13,148,136,.6); }
+    /* switch */
+    .sw { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .sw input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+    .sw i { position: absolute; inset: 0; background: #cbd5e1; border-radius: 9999px; transition: background .2s; }
+    .sw i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+    .sw input:checked + i { background: #0d9488; }
+    .sw input:checked + i::after { transform: translateX(20px); }
+    .slot { font-size: .75rem; font-weight: 700; padding: .4rem .7rem; border-radius: .6rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .slot.booked { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; text-decoration: line-through; }
+    .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); border-top: 1px solid #e2e8f0; padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom, 0px)); }
+    .skeleton { background: linear-gradient(90deg,#e2e8f0,#f1f5f9,#e2e8f0); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 1rem; height: 90px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <!-- Hero -->
+  <section class="ah-gradient text-white">
+    <div class="max-w-lg mx-auto px-4 pt-4 pb-14">
+      <div class="flex items-center justify-between">
+        <a href="Dashboard.html" class="text-sm font-semibold text-white/90">← Dashboard</a>
+        <span class="font-extrabold text-sm">My Availability</span>
+        <span class="w-16"></span>
+      </div>
+      <h1 class="text-2xl font-extrabold mt-5">Set your working hours 🗓️</h1>
+      <p class="text-sm text-white/90 mt-1">Patients can only book the times you open here. All times are Nigeria time (WAT).</p>
+    </div>
+  </section>
+
+  <main id="app" class="max-w-lg mx-auto px-4 -mt-8 relative z-10 space-y-4">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </main>
+
+  <!-- Save bar -->
+  <div id="saveBar" class="savebar hidden">
+    <div class="max-w-lg mx-auto flex items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <p id="saveMsg" class="text-xs font-bold text-slate-600">All changes saved</p>
+        <p id="sumMsg" class="text-[11px] text-slate-400 truncate"></p>
+      </div>
+      <button id="saveBtn" class="btn-primary px-6 text-sm" disabled>Save</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import {db, requireRole, showToast, escapeHtml,
+      doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, serverTimestamp, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const esc = escapeHtml;
+
+    const profile = await requireRole(['doctor', 'admin']);
+    if (profile) boot();
+
+    async function boot() {
+      /* ---------- constants & helpers ---------- */
+      const DAYS = [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']];
+      const UTC_DAY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const TYPES = { chat: ['💬', 'Chat'], video: ['🎥', 'Video'], physical: ['🏥', 'Physical visit'] };
+
+      const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : NaN; };
+      const fmt = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+      const watToday = () => new Date(Date.now() + 3600e3).toISOString().slice(0, 10);   // today's date in WAT (UTC+1, no DST)
+      const addDays = (ds, n) => new Date(new Date(ds + 'T12:00:00Z').getTime() + n * 864e5).toISOString().slice(0, 10);
+      const watDate = (ds, t) => new Date(`${ds}T${t}:00+01:00`);
+      const prettyDate = (ds) => new Date(ds + 'T12:00:00Z').toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+      /** Shared slot generator: reuse this same logic in appointments.html */
+      function genSlots(a, dateStr, nowMs = Date.now()) {
+        const day = a.weekly?.[UTC_DAY[new Date(dateStr + 'T12:00:00Z').getUTCDay()]];
+        if (!day || !day.enabled) return [];
+        if ((a.timeOff || []).some(t => t.date === dateStr)) return [];
+        const step = Number(a.slotMinutes) || 30, out = new Set();
+        for (const r of day.ranges || []) {
+          const s = toMin(r.start), e = toMin(r.end);
+          if (!(e > s)) continue;
+          for (let m = s; m + step <= e; m += step) {
+            const t = fmt(m);
+            if (watDate(dateStr, t).getTime() >= nowMs + (Number(a.minNoticeHours) || 0) * 36e5) out.add(t);
+          }
+        }
+        return [...out].sort();
+      }
+
+      const blankWeek = () => Object.fromEntries(DAYS.map(([k]) => [k, { enabled: false, ranges: [] }]));
+      const suggestedWeek = () => {
+        const w = blankWeek();
+        ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(k => w[k] = { enabled: true, ranges: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '17:00' }] });
+        return w;
+      };
+
+      /* ---------- load doctor + availability ---------- */
+      const docSnap = await getDoc(doc(db, 'doctors', profile.uid)).catch(() => null);
+      if (!docSnap || !docSnap.exists()) {
+        $('app').innerHTML = `<div class="card text-center py-10"><div class="text-4xl mb-2">🩺</div><p class="font-bold">Complete your doctor profile first</p><p class="text-sm text-slate-500 mt-1">You need a registered doctor profile before you can set availability.</p><a href="doctor-register.html" class="btn-primary inline-block mt-4 px-6 text-sm">Go to doctor registration</a></div>`;
+        return;
+      }
+      const doctor = docSnap.data();
+
+      let av, isNew = false, dirty = false;
+      try {
+        const s = await getDoc(doc(db, 'availability', profile.uid));
+        if (s.exists()) {
+          const d = s.data(), w = blankWeek();
+          DAYS.forEach(([k]) => { const x = d.weekly?.[k]; if (x) w[k] = { enabled: !!x.enabled, ranges: (x.ranges || []).map(r => ({ start: r.start, end: r.end })) }; });
+          av = {
+            acceptingBookings: d.acceptingBookings !== false,
+            consultTypes: Array.isArray(d.consultTypes) && d.consultTypes.length ? d.consultTypes : ['chat'],
+            slotMinutes: Number(d.slotMinutes) || 30, maxAdvanceDays: Number(d.maxAdvanceDays) || 30, minNoticeHours: Number(d.minNoticeHours ?? 2),
+            weekly: w,
+            timeOff: (d.timeOff || []).filter(t => t && t.date >= watToday()).sort((a, b) => a.date.localeCompare(b.date))
+          };
+        } else throw new Error('none');
+      } catch {
+        isNew = true;
+        av = { acceptingBookings: true, consultTypes: ['chat', 'video'], slotMinutes: 30, maxAdvanceDays: 30, minNoticeHours: 2, weekly: suggestedWeek(), timeOff: [] };
+      }
+
+      /* ---------- page skeleton ---------- */
+      const st = doctor.status || 'pending';
+      $('app').innerHTML = `
+        ${isNew ? `<div class="card border-amber-200 bg-amber-50 text-xs text-amber-800"><strong>👋 Suggested schedule loaded.</strong> Adjust it to fit your real hours, then tap <strong>Save</strong>. Nothing is live until you save.</div>` : ''}
+        ${st !== 'approved' ? `<div class="card border-amber-200 bg-amber-50 text-xs text-amber-800">⏳ Your doctor profile is <strong>${esc(st)}</strong>. You can set your hours now. Patients can book you once you are approved.</div>` : ''}
+
+        <div class="card">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-extrabold text-sm">Accepting new bookings</p>
+              <p id="acceptNote" class="text-xs text-slate-500 mt-0.5"></p>
+            </div>
+            <label class="sw"><input type="checkbox" id="acceptSw" /><i></i></label>
+          </div>
+        </div>
+
+        <div class="card space-y-3">
+          <p class="font-extrabold text-sm">Consultation types</p>
+          <div id="typeChips" class="flex flex-wrap gap-2"></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div><label class="lbl">Slot length</label>
+              <select id="slotSel" class="field"><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
+            <div><label class="lbl">Book ahead</label>
+              <select id="windowSel" class="field"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option></select></div>
+            <div><label class="lbl">Min. notice</label>
+              <select id="noticeSel" class="field"><option value="0">None</option><option value="1">1 hour</option><option value="2">2 hours</option><option value="4">4 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select></div>
+          </div>
+        </div>
+
+        <div class="card space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="font-extrabold text-sm">Weekly hours</p>
+          </div>
+          <div class="flex gap-2 overflow-x-auto pb-1" style="scrollbar-width:none">
+            <button class="chip" data-preset="work">Mon–Fri 9–5</button>
+            <button class="chip" data-preset="long">Every day 8–8</button>
+            <button class="chip" data-preset="clear">Clear all</button>
+          </div>
+          <div id="weekly" class="divide-y divide-slate-100"></div>
+        </div>
+
+        <div class="card space-y-3">
+          <p class="font-extrabold text-sm">Days off / leave</p>
+          <div class="grid grid-cols-5 gap-2">
+            <input id="offDate" type="date" class="field col-span-2" />
+            <input id="offReason" maxlength="40" placeholder="Reason (optional)" class="field col-span-2" />
+            <button id="offAdd" class="btn-primary text-xs">Add</button>
+          </div>
+          <div id="offList" class="space-y-1.5"></div>
+        </div>
+
+        <div class="card space-y-3">
+          <div>
+            <p class="font-extrabold text-sm">Preview what patients see</p>
+            <p class="text-[11px] text-slate-400">Uses your current settings, even before you save.</p>
+          </div>
+          <input id="prevDate" type="date" class="field" />
+          <div id="prevOut" class="flex flex-wrap gap-2"></div>
+        </div>`;
+      $('saveBar').classList.remove('hidden');
+
+      const today = watToday();
+      $('offDate').min = today; $('prevDate').min = today; $('prevDate').value = addDays(today, 1);
+
+      /* ---------- rendering ---------- */
+      function markDirty() { dirty = true; $('saveBtn').disabled = false; $('saveMsg').textContent = 'Unsaved changes'; $('saveMsg').className = 'text-xs font-bold text-amber-600'; refreshSummary(); renderPreview(); }
+
+      function renderTop() {
+        $('acceptSw').checked = av.acceptingBookings;
+        $('acceptNote').textContent = av.acceptingBookings ? 'Patients can book your open times.' : "Paused: patients can't book you right now.";
+        $('slotSel').value = String(av.slotMinutes); $('windowSel').value = String(av.maxAdvanceDays); $('noticeSel').value = String(av.minNoticeHours);
+        $('typeChips').innerHTML = Object.entries(TYPES).map(([k, [e, l]]) => `<button type="button" class="chip ${av.consultTypes.includes(k) ? 'on' : ''}" data-type="${k}"><span>${e}</span>${l}</button>`).join('');
+      }
+
+      function renderWeekly() {
+        $('weekly').innerHTML = DAYS.map(([k, label]) => {
+          const d = av.weekly[k];
+          const rows = d.enabled
+            ? d.ranges.map((r, i) => `
+                <div class="flex items-center gap-2 mt-2">
+                  <input type="time" step="300" value="${esc(r.start)}" data-act="time" data-day="${k}" data-i="${i}" data-f="start" class="field !py-2" />
+                  <span class="text-slate-400">–</span>
+                  <input type="time" step="300" value="${esc(r.end)}" data-act="time" data-day="${k}" data-i="${i}" data-f="end" class="field !py-2" />
+                  <button data-act="del" data-day="${k}" data-i="${i}" class="text-red-500 text-xl leading-none px-1" aria-label="Remove">×</button>
+                </div>`).join('') + `<button data-act="add" data-day="${k}" class="mt-2 text-xs font-bold text-teal-700">+ Add hours</button>`
+            : '<p class="text-xs text-slate-400 mt-1">Day off</p>';
+          return `
+            <div class="py-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <label class="sw"><input type="checkbox" data-act="toggle" data-day="${k}" ${d.enabled ? 'checked' : ''} /><i></i></label>
+                  <span class="font-bold text-sm">${label}</span>
+                </div>
+                ${d.enabled ? `<button data-act="copy" data-day="${k}" class="text-[11px] font-bold text-slate-400">⧉ Copy to all</button>` : ''}
+              </div>
+              <div class="pl-14">${rows}</div>
+            </div>`;
+        }).join('');
+      }
+
+      function renderOff() {
+        $('offList').innerHTML = av.timeOff.length ? av.timeOff.map((t, i) => `
+          <div class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+            <div class="min-w-0"><p class="text-xs font-bold">${esc(prettyDate(t.date))}</p>${t.reason ? `<p class="text-[11px] text-slate-500 truncate">${esc(t.reason)}</p>` : ''}</div>
+            <button data-offdel="${i}" class="text-red-500 text-lg leading-none px-1" aria-label="Remove">×</button>
+          </div>`).join('') : '<p class="text-xs text-slate-400">No days off added.</p>';
+      }
+
+      let prevToken = 0;
+      async function renderPreview() {
+        const ds = $('prevDate').value, tok = ++prevToken, out = $('prevOut');
+        if (!ds) { out.innerHTML = ''; return; }
+        const note = (m) => { out.innerHTML = `<p class="text-xs text-slate-500">${m}</p>`; };
+        if (ds > addDays(today, av.maxAdvanceDays)) return note(`Outside your ${av.maxAdvanceDays}-day booking window.`);
+        const off = av.timeOff.find(t => t.date === ds);
+        if (off) return note(`You are off on this date${off.reason ? ' (' + esc(off.reason) + ')' : ''}.`);
+        const slots = genSlots(av, ds);
+        if (!slots.length) return note('No open slots on this date.');
+        let booked = new Set();
+        try {
+          const snap = await getDocs(query(collection(db, 'slotLocks'), where('doctorId', '==', profile.uid), where('date', '==', ds)));
+          snap.forEach(d => booked.add(d.data().time));
+        } catch { /* slotLocks rule not published yet: ignore */ }
+        if (tok !== prevToken) return;
+        out.innerHTML = slots.map(s => `<span class="slot ${booked.has(s) ? 'booked' : ''}">${s}</span>`).join('');
+      }
+
+      function refreshSummary() {
+        let mins = 0, slots = 0;
+        DAYS.forEach(([k]) => { const d = av.weekly[k]; if (!d.enabled) return; d.ranges.forEach(r => { const x = toMin(r.end) - toMin(r.start); if (x > 0) { mins += x; slots += Math.floor(x / av.slotMinutes); } }); });
+        $('sumMsg').textContent = `${(mins / 60).toFixed(mins % 60 ? 1 : 0)} hrs/week · ${slots} slots/week`;
+      }
+
+      function renderAll() { renderTop(); renderWeekly(); renderOff(); refreshSummary(); renderPreview(); }
+      renderAll();
+
+      /* ---------- events ---------- */
+      $('acceptSw').addEventListener('change', (e) => { av.acceptingBookings = e.target.checked; renderTop(); markDirty(); });
+      $('slotSel').addEventListener('change', (e) => { av.slotMinutes = +e.target.value; markDirty(); });
+      $('windowSel').addEventListener('change', (e) => { av.maxAdvanceDays = +e.target.value; markDirty(); });
+      $('noticeSel').addEventListener('change', (e) => { av.minNoticeHours = +e.target.value; markDirty(); });
+      $('prevDate').addEventListener('change', renderPreview);
+
+      $('typeChips').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-type]'); if (!b) return;
+        const k = b.dataset.type, has = av.consultTypes.includes(k);
+        if (has && av.consultTypes.length === 1) return showToast('Keep at least one consultation type', 'warning');
+        av.consultTypes = has ? av.consultTypes.filter(x => x !== k) : [...av.consultTypes, k];
+        renderTop(); markDirty();
+      });
+
+      document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+        const p = b.dataset.preset;
+        if (p === 'work') av.weekly = suggestedWeek();
+        else if (p === 'long') { av.weekly = blankWeek(); DAYS.forEach(([k]) => av.weekly[k] = { enabled: true, ranges: [{ start: '08:00', end: '20:00' }] }); }
+        else { if (!confirm('Clear all weekly hours?')) return; av.weekly = blankWeek(); }
+        renderWeekly(); markDirty();
+      }));
+
+      $('weekly').addEventListener('change', (e) => {
+        const t = e.target, day = t.dataset.day; if (!day) return;
+        if (t.dataset.act === 'toggle') {
+          av.weekly[day].enabled = t.checked;
+          if (t.checked && !av.weekly[day].ranges.length) av.weekly[day].ranges = [{ start: '09:00', end: '17:00' }];
+          renderWeekly(); markDirty();
+        } else if (t.dataset.act === 'time') {
+          av.weekly[day].ranges[+t.dataset.i][t.dataset.f] = t.value; markDirty();
+        }
+      });
+      $('weekly').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'INPUT') return;
+        const day = b.dataset.day, d = av.weekly[day];
+        if (b.dataset.act === 'add') {
+          const last = d.ranges.length ? toMin(d.ranges[d.ranges.length - 1].end) : 9 * 60;
+          if (!(last < 23 * 60)) return showToast('No room left in this day', 'warning');
+          d.ranges.push({ start: fmt(last), end: fmt(Math.min(last + 240, 23 * 60 + 59)) });
+          renderWeekly(); markDirty();
+        } else if (b.dataset.act === 'del') {
+          d.ranges.splice(+b.dataset.i, 1); renderWeekly(); markDirty();
+        } else if (b.dataset.act === 'copy') {
+          if (!confirm('Copy these hours to every other day?')) return;
+          DAYS.forEach(([k]) => { if (k !== day) av.weekly[k] = { enabled: true, ranges: d.ranges.map(r => ({ ...r })) }; });
+          renderWeekly(); markDirty();
+        }
+      });
+
+      $('offAdd').addEventListener('click', () => {
+        const date = $('offDate').value;
+        if (!date) return showToast('Pick a date first', 'warning');
+        if (date < today) return showToast('That date is in the past', 'warning');
+        if (av.timeOff.some(t => t.date === date)) return showToast('Already added', 'warning');
+        av.timeOff.push({ date, reason: $('offReason').value.trim().slice(0, 40) });
+        av.timeOff.sort((a, b) => a.date.localeCompare(b.date));
+        $('offDate').value = ''; $('offReason').value = '';
+        renderOff(); markDirty();
+      });
+      $('offList').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-offdel]'); if (!b) return;
+        av.timeOff.splice(+b.dataset.offdel, 1); renderOff(); markDirty();
+      });
+
+      /* ---------- validate + save ---------- */
+      function validate() {
+        const errs = [];
+        for (const [k, label] of DAYS) {
+          const d = av.weekly[k]; if (!d.enabled) continue;
+          if (!d.ranges.length) { errs.push(`${label}: add hours or switch the day off`); continue; }
+          const rs = d.ranges.map(r => [toMin(r.start), toMin(r.end)]).sort((a, b) => a[0] - b[0]);
+          rs.forEach(([s, e], i) => {
+            if (!(e > s)) errs.push(`${label}: end time must be after start time`);
+            else if (e - s < av.slotMinutes) errs.push(`${label}: one range is shorter than a ${av.slotMinutes}-min slot`);
+            if (i > 0 && s < rs[i - 1][1]) errs.push(`${label}: hours overlap`);
+          });
+        }
+        return [...new Set(errs)];
+      }
+
+      $('saveBtn').addEventListener('click', async () => {
+        const errs = validate();
+        if (errs.length) return showToast(errs[0], 'error');
+        const hasHours = DAYS.some(([k]) => av.weekly[k].enabled && av.weekly[k].ranges.length);
+        if (av.acceptingBookings && !hasHours && !confirm('You have no working hours set, so patients cannot book you. Save anyway?')) return;
+        const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+        try {
+          await setDoc(doc(db, 'availability', profile.uid), {
+            doctorId: profile.uid,
+            acceptingBookings: av.acceptingBookings,
+            consultTypes: av.consultTypes,
+            slotMinutes: av.slotMinutes, maxAdvanceDays: av.maxAdvanceDays, minNoticeHours: av.minNoticeHours,
+            weekly: av.weekly,
+            timeOff: av.timeOff,
+            timezone: 'Africa/Lagos',
+            updatedAt: serverTimestamp()
+          });
+          // keep the public "Available / Busy" badge in sync (non-fatal if it fails)
+          try {
+            await updateDoc(doc(db, 'doctors', profile.uid), { available: av.acceptingBookings && hasHours, consultTypes: av.consultTypes, updatedAt: serverTimestamp() });
+          } catch (e2) { console.warn('doctor badge sync', e2); }
+          dirty = false; btn.textContent = 'Save';
+          $('saveMsg').textContent = '✔ All changes saved'; $('saveMsg').className = 'text-xs font-bold text-emerald-600';
+          showToast('Availability saved', 'success');
+        } catch (err) {
+          console.error(err); btn.disabled = false; btn.textContent = 'Save';
+          showToast(err.code === 'permission-denied' ? 'Not allowed to save. Please log in again.' : (err.message || 'Could not save'), 'error');
+        }
+      });
+
+      window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+    }
+  </script>
+</body>
+</html>

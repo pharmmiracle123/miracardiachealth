@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <meta name="robots" content="noindex" />
+  <title>Admin Dashboard | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' }, secondary: '#059669' }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: 40px; }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#7c3aed,#0f766e); background-size: 300% 300%; animation: gradMove 16s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }
+    .field { width: 100%; border: 1px solid #e2e8f0; background: #fff; border-radius: .75rem; padding: .6rem .75rem; font-size: .875rem; }
+    .lbl { display: block; font-size: .7rem; font-weight: 700; color: #64748b; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .03em; }
+    .btn-sm { font-size: .72rem; font-weight: 700; padding: .4rem .75rem; border-radius: .6rem; }
+    .sub-btn.active { background: #0d9488; color: #fff; border-color: #0d9488; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 safe-top">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="Dashboard.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base leading-none">Admin Dashboard</h1>
+          <p class="text-[10px] text-slate-400 mt-0.5">MiracardiacHealth</p>
+        </div>
+      </div>
+      <span class="badge badge-active text-xs">Admin</span>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-5 space-y-5">
+
+    <!-- Stats -->
+    <section>
+      <div id="statsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="ah-card skeleton h-20"></div><div class="ah-card skeleton h-20"></div><div class="ah-card skeleton h-20"></div>
+        <div class="ah-card skeleton h-20"></div><div class="ah-card skeleton h-20"></div><div class="ah-card skeleton h-20"></div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 overflow-x-auto no-scrollbar border-b border-slate-200 pb-px">
+      <button data-tab="approvals" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-teal-600 text-teal-700">Approvals</button>
+      <button data-tab="consults" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">Consults</button>
+      <button data-tab="student" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">🎓 Student Hub</button>
+      <button data-tab="users" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">Users</button>
+      <button data-tab="orders" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">Orders</button>
+      <button data-tab="tickets" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">Tickets</button>
+      <button data-tab="settings" class="tab-btn px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 border-transparent text-slate-500">Settings</button>
+    </div>
+
+    <!-- ============ APPROVALS ============ -->
+    <div id="panel-approvals" class="tab-panel space-y-5">
+      <div><h3 class="font-bold mb-2">Pending Doctors</h3><div id="pendingDoctors" class="space-y-2"></div></div>
+      <div><h3 class="font-bold mb-2">Pending Pharmacies</h3><div id="pendingPharmacies" class="space-y-2"></div></div>
+      <div><h3 class="font-bold mb-2">Pending Support Agents</h3><div id="pendingSupport" class="space-y-2"></div></div>
+    </div>
+
+    <!-- ============ CONSULTS ============ -->
+    <div id="panel-consults" class="tab-panel hidden space-y-3">
+      <h3 class="font-bold">Paid Consultations Awaiting Approval</h3>
+      <div id="pendingConsults" class="space-y-2"></div>
+    </div>
+
+    <!-- ============ STUDENT HUB ============ -->
+    <div id="panel-student" class="tab-panel hidden space-y-4">
+      <div class="flex gap-2 overflow-x-auto no-scrollbar">
+        <button data-sub="pay" class="sub-btn active whitespace-nowrap text-xs font-bold border border-slate-200 bg-white rounded-full px-4 py-2">💳 Payments</button>
+        <button data-sub="courses" class="sub-btn whitespace-nowrap text-xs font-bold border border-slate-200 bg-white rounded-full px-4 py-2">📚 Courses</button>
+        <button data-sub="questions" class="sub-btn whitespace-nowrap text-xs font-bold border border-slate-200 bg-white rounded-full px-4 py-2">📝 Questions</button>
+        <button data-sub="access" class="sub-btn whitespace-nowrap text-xs font-bold border border-slate-200 bg-white rounded-full px-4 py-2">🔑 Access</button>
+      </div>
+
+      <!-- Payments -->
+      <div id="sub-pay" class="sub-panel space-y-2">
+        <h3 class="font-bold">Student payments awaiting approval</h3>
+        <p class="text-[11px] text-slate-500">Check the reference in your Paystack dashboard first, then approve. Approving unlocks the course on the student's phone instantly.</p>
+        <div id="pendingPurchases" class="space-y-2"></div>
+      </div>
+
+      <!-- Courses -->
+      <div id="sub-courses" class="sub-panel hidden space-y-4">
+        <div class="ah-card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 id="courseFormTitle" class="font-bold">Add a course</h3>
+            <button id="courseCancelEdit" class="hidden text-xs font-semibold text-slate-500">Cancel edit</button>
+          </div>
+          <div><label class="lbl">Course title</label><input id="cTitle" class="field" placeholder="e.g. MBBS 300L Pharmacology Past Questions" /></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="lbl">Department</label>
+              <input id="cCategory" list="deptList" class="field" placeholder="MBBS" />
+              <datalist id="deptList"><option>MBBS</option><option>Pharmacy</option><option>Nursing</option><option>Dentistry</option><option>Lab Science</option><option>Physiotherapy</option><option>Other</option></datalist>
+            </div>
+            <div><label class="lbl">Level</label><input id="cLevel" class="field" placeholder="300L" /></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="lbl">Price (₦) · 0 = free</label><input id="cPrice" type="number" min="0" class="field" placeholder="2000" /></div>
+            <div><label class="lbl">Status</label><select id="cActive" class="field"><option value="true">Active (visible)</option><option value="false">Hidden</option></select></div>
+          </div>
+          <div><label class="lbl">Description</label><textarea id="cDesc" rows="2" class="field" placeholder="What students get in this course"></textarea></div>
+          <button id="saveCourse" class="btn-primary w-full text-sm py-2.5">Save course</button>
+        </div>
+        <div><h3 class="font-bold mb-2">All courses</h3><div id="courseList" class="space-y-2"></div></div>
+      </div>
+
+      <!-- Questions -->
+      <div id="sub-questions" class="sub-panel hidden space-y-4">
+        <div class="ah-card p-4 space-y-3">
+          <div><label class="lbl">Choose course</label><select id="qCourse" class="field"></select></div>
+          <div class="flex gap-2">
+            <button data-qmode="single" class="qmode-btn flex-1 text-xs font-bold rounded-xl py-2 bg-teal-600 text-white">Add one question</button>
+            <button data-qmode="bulk" class="qmode-btn flex-1 text-xs font-bold rounded-xl py-2 bg-slate-100 text-slate-600">Paste many (bulk)</button>
+          </div>
+
+          <!-- single -->
+          <div id="qSingle" class="space-y-3">
+            <div><label class="lbl">Question</label><textarea id="qText" rows="3" class="field" placeholder="Type the question"></textarea></div>
+            <div><label class="lbl">Options (one per line, leave empty for theory)</label><textarea id="qOptions" rows="4" class="field" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D"></textarea></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="lbl">Correct option</label>
+                <select id="qCorrect" class="field"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option><option value="4">E</option><option value="5">F</option></select>
+              </div>
+              <div><label class="lbl">Year</label><input id="qYear" class="field" placeholder="2023" /></div>
+            </div>
+            <div><label class="lbl">Topic</label><input id="qTopic" class="field" placeholder="e.g. Autonomic drugs" /></div>
+            <div><label class="lbl">Answer text (theory questions only)</label><textarea id="qAnswer" rows="2" class="field"></textarea></div>
+            <div><label class="lbl">Explanation (optional)</label><textarea id="qExplain" rows="2" class="field"></textarea></div>
+            <button id="saveQuestion" class="btn-primary w-full text-sm py-2.5">Save question</button>
+          </div>
+
+          <!-- bulk -->
+          <div id="qBulk" class="hidden space-y-3">
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 text-[11px] text-slate-600 whitespace-pre-wrap font-mono">Q: Which nerve supplies the diaphragm?
+A: Vagus
+B: Phrenic
+C: Intercostal
+D: Accessory
+ANS: B
+EXP: C3, C4, C5 keep the diaphragm alive.
+YEAR: 2023
+TOPIC: Thorax
+
+Q: Define hypertension.
+ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
+            <p class="text-[11px] text-slate-500">Leave a <strong>blank line</strong> between questions. Use <b>ANS:</b> with a letter for MCQs, or with text for theory.</p>
+            <textarea id="bulkText" rows="10" class="field font-mono text-xs" placeholder="Paste your questions here…"></textarea>
+            <div id="bulkPreview" class="text-xs text-slate-500"></div>
+            <div class="flex gap-2">
+              <button id="bulkCheck" class="btn-outline flex-1 text-sm">Check</button>
+              <button id="bulkSave" class="btn-primary flex-1 text-sm py-2.5">Upload all</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold">Questions in this course</h3>
+            <span id="qCount" class="text-xs text-slate-500"></span>
+          </div>
+          <div id="qListAdmin" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Access -->
+      <div id="sub-access" class="sub-panel hidden space-y-2">
+        <h3 class="font-bold">Students with active access</h3>
+        <div id="accessList" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- ============ USERS ============ -->
+    <div id="panel-users" class="tab-panel hidden space-y-4">
+      <!-- Add Staff -->
+      <div class="ah-card p-4 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h3 class="font-bold text-sm">Add Staff Account</h3>
+            <p class="text-[11px] text-slate-500">Only Admin can create doctors, pharmacists, nurses and other staff. Patients register themselves.</p>
+          </div>
+          <button type="button" id="toggleStaffForm" class="btn-sm bg-teal-600 text-white">+ New staff</button>
+        </div>
+        <form id="staffForm" class="hidden space-y-3 border-t border-slate-100 pt-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Role *</label>
+              <select id="sfRole" class="field" required>
+                <option value="">Select role</option>
+                <option value="doctor">Doctor</option>
+                <option value="surgeon">Surgeon</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="nurse">Nurse</option>
+                <option value="lab">Laboratory</option>
+                <option value="radiologist">Radiologist</option>
+                <option value="counselor">Counselor</option>
+                <option value="support">Customer Care / Support</option>
+                <option value="anaesthetist">Anaesthetist</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Department *</label>
+              <select id="sfDept" class="field" required>
+                <option value="">Select department</option>
+                <option>General Medicine</option>
+                <option>Surgery / OT</option>
+                <option>Pediatrics</option>
+                <option>Cardiology</option>
+                <option>Obstetrics & Gynecology</option>
+                <option>Emergency</option>
+                <option>Nursing</option>
+                <option>Pharmacy</option>
+                <option>Laboratory</option>
+                <option>Radiology</option>
+                <option>Pathology</option>
+                <option>Counseling</option>
+                <option>Customer Care</option>
+                <option>Administration</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="lbl">Full name *</label>
+            <input id="sfName" class="field" placeholder="Dr. Ada Okafor" required />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Email *</label>
+              <input id="sfEmail" type="email" class="field" placeholder="staff@clinic.com" required />
+            </div>
+            <div>
+              <label class="lbl">Phone *</label>
+              <input id="sfPhone" type="tel" class="field" placeholder="08012345678" required />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Temporary password *</label>
+              <input id="sfPassword" type="text" class="field" placeholder="Min 8 characters" required />
+              <p class="text-[10px] text-slate-400 mt-0.5">Share with staff; they should change it after first login.</p>
+            </div>
+            <div>
+              <label class="lbl">Staff / Employee ID</label>
+              <input id="sfEmpId" class="field" placeholder="Optional" />
+            </div>
+          </div>
+
+          <!-- Doctor fields -->
+          <div id="sfDoctorFields" class="hidden space-y-3 rounded-xl bg-slate-50 border border-slate-200 p-3">
+            <p class="text-xs font-bold text-slate-600">Doctor / Surgeon details</p>
+            <div>
+              <label class="lbl">Specialty *</label>
+              <select id="sfSpecialty" class="field">
+                <option value="">Select specialty</option>
+                <option>General Practice</option>
+                <option>Pediatrics</option>
+                <option>Cardiology</option>
+                <option>Dermatology</option>
+                <option>Gynecology</option>
+                <option>Psychiatry</option>
+                <option>Orthopedics</option>
+                <option>Ophthalmology</option>
+                <option>ENT</option>
+                <option>Internal Medicine</option>
+                <option>Surgery</option>
+                <option>Anaesthesia</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="lbl">Years of experience</label>
+                <input id="sfExperience" type="number" min="0" max="60" class="field" placeholder="5" />
+              </div>
+              <div>
+                <label class="lbl">Consultation fee (₦)</label>
+                <input id="sfFee" type="number" min="0" class="field" placeholder="5000" />
+              </div>
+            </div>
+            <div>
+              <label class="lbl">MDCN / License number</label>
+              <input id="sfLicense" class="field" placeholder="License number" />
+            </div>
+            <div>
+              <label class="lbl">Bio / About</label>
+              <textarea id="sfBio" rows="2" class="field" placeholder="Short professional summary"></textarea>
+            </div>
+            <div>
+              <label class="lbl">Profile photo</label>
+              <input id="sfPhoto" type="file" accept="image/*" class="field text-sm" />
+            </div>
+          </div>
+
+          <!-- Pharmacist fields -->
+          <div id="sfPharmFields" class="hidden space-y-3 rounded-xl bg-slate-50 border border-slate-200 p-3">
+            <p class="text-xs font-bold text-slate-600">Pharmacy details</p>
+            <div>
+              <label class="lbl">Pharmacy / outlet name</label>
+              <input id="sfPharmName" class="field" placeholder="Miracardiac Pharmacy – Main" />
+            </div>
+            <div>
+              <label class="lbl">Pharmacy license number</label>
+              <input id="sfPharmLicense" class="field" placeholder="PCN / license no." />
+            </div>
+            <div>
+              <label class="lbl">Location / address</label>
+              <input id="sfPharmLoc" class="field" placeholder="Ward / building / address" />
+            </div>
+            <div>
+              <label class="lbl">Profile photo</label>
+              <input id="sfPharmPhoto" type="file" accept="image/*" class="field text-sm" />
+            </div>
+          </div>
+
+          <div id="sfMsg" class="hidden rounded-xl px-3 py-2 text-xs font-medium"></div>
+          <button type="submit" id="sfSubmit" class="btn-primary w-full py-2.5 text-sm">Create staff account</button>
+        </form>
+      </div>
+
+      <input id="userSearch" type="search" placeholder="Search by name, email or role…" class="field" />
+      <div id="usersList" class="space-y-2"></div>
+    </div>
+
+    <!-- ============ ORDERS ============ -->
+    <div id="panel-orders" class="tab-panel hidden space-y-2">
+      <h3 class="font-bold">Latest orders</h3>
+      <div id="ordersList" class="space-y-2"></div>
+    </div>
+
+    <!-- ============ TICKETS ============ -->
+    <div id="panel-tickets" class="tab-panel hidden space-y-2">
+      <h3 class="font-bold">Open support tickets</h3>
+      <div id="ticketsList" class="space-y-2"></div>
+    </div>
+
+    <!-- ============ SETTINGS ============ -->
+    <div id="panel-settings" class="tab-panel hidden space-y-4">
+      <div class="ah-card p-4">
+        <h3 class="font-bold mb-3">Platform Logo (appears on every page)</h3>
+        <p class="text-[11px] text-slate-500 mb-3">Upload a square PNG/JPG/SVG (recommended 256×256 or larger). Stored on Cloudinary and shown site-wide.</p>
+        <div class="flex items-center gap-4 mb-3">
+          <img id="logoPreview" class="site-logo w-16 h-16 rounded-xl object-contain bg-slate-100 border border-slate-200" src="icons/icon.svg" alt="Logo preview" />
+          <div class="flex-1">
+            <input type="file" id="logoFile" accept="image/*" class="field text-sm" />
+            <p id="logoStatus" class="text-[11px] text-slate-400 mt-1"></p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="saveLogo" class="btn-primary text-sm py-2 px-4">Upload & Save Logo</button>
+          <button id="resetLogo" class="btn-outline text-sm py-2 px-4">Reset to default</button>
+        </div>
+      </div>
+      <div class="ah-card p-4">
+        <h3 class="font-bold mb-3">Platform commission (%)</h3>
+        <div class="flex gap-2">
+          <input id="commissionInput" type="number" min="0" max="50" step="0.5" class="field w-28" />
+          <button id="saveCommission" class="btn-primary text-sm py-2 px-4">Save</button>
+        </div>
+      </div>
+      <div class="ah-card p-4">
+        <h3 class="font-bold mb-1">Scrolling announcement</h3>
+        <p class="text-[11px] text-slate-500 mb-2">Shows on the home page bar, moving right to left. Put each announcement on a <strong>new line</strong> or separate them with <strong>|</strong>.</p>
+        <textarea id="announceText" rows="4" class="field mb-2" placeholder="Free malaria testing this Saturday | New MBBS past questions added"></textarea>
+        <div class="flex gap-2">
+          <button id="saveAnnounce" class="btn-primary text-sm py-2 px-4">Publish</button>
+          <button id="offAnnounce" class="btn-outline text-sm py-2 px-4">Turn off</button>
+        </div>
+        <p id="announceState" class="text-[11px] text-slate-400 mt-2"></p>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import {
+      app, auth, db, storage, requireRole, showToast, showLoading, showEmpty, escapeHtml, formatCurrency, formatDateTime,
+      collection, query, where, orderBy, limit, getDocs, doc, updateDoc, getDoc, setDoc, addDoc, deleteDoc,
+      writeBatch, Timestamp, serverTimestamp, uploadToCloudinary, applyPlatformBranding, DEFAULT_LOGO,
+      createUserWithEmailAndPassword, updateProfile, ref, uploadBytesResumable, getDownloadURL
+    } from './js/config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, signOut as secondarySignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    const profile = await requireRole(['admin']);
+    if (!profile) throw new Error('Unauthorized');
+    applyPlatformBranding();
+
+    const $ = (id) => document.getElementById(id);
+    const esc = escapeHtml;
+    const CAT_EMOJI = { MBBS: '🩺', Pharmacy: '💊', Nursing: '👩‍⚕️', Dentistry: '🦷', 'Lab Science': '🔬', Physiotherapy: '🦴' };
+    const emoji = (c) => CAT_EMOJI[c] || '📚';
+    let courses = [];
+
+    /* ================= TABS ================= */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('border-teal-600', 'text-teal-700'); b.classList.add('border-transparent', 'text-slate-500');
+        });
+        btn.classList.add('border-teal-600', 'text-teal-700'); btn.classList.remove('border-transparent', 'text-slate-500');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        $('panel-' + btn.dataset.tab).classList.remove('hidden');
+        const t = btn.dataset.tab;
+        if (t === 'users') loadUsers();
+        if (t === 'orders') loadOrders();
+        if (t === 'tickets') loadTickets();
+        if (t === 'student') loadPurchases();
+      });
+    });
+    document.querySelectorAll('.sub-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.sub-panel').forEach(p => p.classList.add('hidden'));
+        $('sub-' + btn.dataset.sub).classList.remove('hidden');
+        const s = btn.dataset.sub;
+        if (s === 'pay') loadPurchases();
+        if (s === 'courses') loadCourses();
+        if (s === 'questions') { loadCourses().then(loadQuestions); }
+        if (s === 'access') loadAccess();
+      });
+    });
+
+    /* ================= STATS ================= */
+    async function loadStats() {
+      const grid = $('statsGrid');
+      try {
+        const [users, docsAll, pharmAll, cons, orders, tickets, sCourses, sPend, sApproved] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'doctors')),
+          getDocs(collection(db, 'pharmacies')),
+          getDocs(collection(db, 'consultations')),
+          getDocs(collection(db, 'orders')),
+          getDocs(query(collection(db, 'supportTickets'), where('status', 'in', ['open', 'in_progress']))),
+          getDocs(collection(db, 'studentCourses')),
+          getDocs(query(collection(db, 'studentPurchases'), where('status', '==', 'paid_pending'))),
+          getDocs(query(collection(db, 'studentPurchases'), where('status', '==', 'approved')))
+        ]);
+        let revenue = 0;
+        orders.forEach(d => { if (d.data().paymentStatus === 'success') revenue += (d.data().total || 0); });
+        cons.forEach(d => { if (['active', 'completed'].includes(d.data().status)) revenue += (d.data().fee || 0); });
+        sApproved.forEach(d => { revenue += (d.data().amount || 0); });
+        const isLive = (s) => {
+          const v = ((s && s.status) || '').toLowerCase();
+          return v === 'approved' || v === 'active';
+        };
+        const doctorCount = docsAll.docs.filter(d => isLive(d.data())).length;
+        const pharmCount = pharmAll.docs.filter(d => isLive(d.data())).length;
+        const activeDoctorUsers = users.docs.filter(d => {
+          const x = d.data();
+          return (x.role === 'doctor' || x.role === 'surgeon') && (x.status === 'active' || x.status === 'approved');
+        }).length;
+        const stats = [
+          ['👥', 'Users', users.size], ['👨‍⚕️', 'Doctors', Math.max(doctorCount, activeDoctorUsers)], ['🏥', 'Pharmacies', pharmCount],
+          ['💬', 'Consultations', cons.size], ['📦', 'Orders', orders.size], ['🎫', 'Open tickets', tickets.size],
+          ['📚', 'Student courses', sCourses.size], ['⏳', 'Student payments pending', sPend.size], ['💰', 'Revenue', formatCurrency(revenue)]
+        ];
+        grid.innerHTML = stats.map(s => `
+          <div class="ah-card p-3"><div class="text-xl">${s[0]}</div><div class="text-lg font-extrabold leading-tight">${s[2]}</div><div class="text-[11px] text-slate-500">${s[1]}</div></div>`).join('');
+      } catch (e) { console.error(e); grid.innerHTML = '<p class="text-red-500 text-sm col-span-full">Failed to load stats</p>'; }
+    }
+
+    /* ================= APPROVALS ================= */
+    function approvalCard(d, col, icon, title, sub, photo) {
+      return `
+        <div class="ah-card p-3 flex items-center gap-3">
+          ${photo ? `<img src="${esc(photo)}" class="w-12 h-12 rounded-full object-cover" />` : `<div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-xl">${icon}</div>`}
+          <div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${esc(title)}</p><p class="text-xs text-slate-500 truncate">${esc(sub)}</p></div>
+          <div class="flex gap-1">
+            <button data-act="approve" data-col="${col}" data-id="${d.id}" class="btn-sm bg-emerald-600 text-white">Approve</button>
+            <button data-act="reject" data-col="${col}" data-id="${d.id}" class="btn-sm bg-red-100 text-red-700">Reject</button>
+          </div>
+        </div>`;
+    }
+    async function loadPendingDoctors() {
+      const el = $('pendingDoctors'); showLoading(el);
+      const snap = await getDocs(query(collection(db, 'doctors'), where('status', '==', 'pending')));
+      if (snap.empty) return showEmpty(el, 'No pending doctors', '✅');
+      el.innerHTML = snap.docs.map(d => { const x = d.data();
+        return approvalCard(d, 'doctors', '👨‍⚕️', x.name || 'Doctor', `${x.specialty || ''} · ${x.experience || 0} yrs`, x.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(x.name || 'D'))); }).join('');
+    }
+    async function loadPendingPharmacies() {
+      const el = $('pendingPharmacies'); showLoading(el);
+      const snap = await getDocs(query(collection(db, 'pharmacies'), where('status', '==', 'pending')));
+      if (snap.empty) return showEmpty(el, 'No pending pharmacies', '✅');
+      el.innerHTML = snap.docs.map(d => { const x = d.data();
+        return approvalCard(d, 'pharmacies', '💊', x.name || 'Pharmacy', `${x.city || ''} · ${x.phone || ''}`); }).join('');
+    }
+    async function loadPendingSupport() {
+      const el = $('pendingSupport'); showLoading(el);
+      const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'support'), where('status', '==', 'pending')));
+      if (snap.empty) return showEmpty(el, 'No pending agents', '✅');
+      el.innerHTML = snap.docs.map(d => { const x = d.data();
+        return approvalCard(d, 'users', '🎧', x.displayName || x.email || 'Agent', x.email || ''); }).join('');
+    }
+    function reloadApprovals() { loadPendingDoctors(); loadPendingPharmacies(); loadPendingSupport(); loadStats(); }
+
+    /* ================= CONSULTS ================= */
+    async function loadPendingConsults() {
+      const el = $('pendingConsults'); showLoading(el);
+      try {
+        const snap = await getDocs(query(collection(db, 'consultations'), where('status', '==', 'paid_pending'), orderBy('createdAt', 'desc')));
+        if (snap.empty) return showEmpty(el, 'No pending consultations', '✅');
+        el.innerHTML = snap.docs.map(d => { const x = d.data(); return `
+          <div class="ah-card p-3">
+            <div class="flex justify-between items-start mb-2">
+              <div><p class="font-semibold text-sm">Patient: ${esc(x.patientName || x.patientId || '')}</p><p class="text-xs text-slate-500">Doctor: ${esc(x.doctorName || x.doctorId || '')}</p></div>
+              <span class="badge badge-paid_pending">Paid · Pending</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-2">Fee: ${formatCurrency(x.fee)} · ${formatDateTime(x.createdAt)}</p>
+            <div class="flex gap-2">
+              <button data-act="consult-approve" data-id="${d.id}" class="btn-sm bg-emerald-600 text-white">Approve (7 days)</button>
+              <button data-act="consult-reject" data-id="${d.id}" class="btn-sm bg-red-100 text-red-700">Reject / Refund</button>
+            </div>
+          </div>`; }).join('');
+      } catch (e) {
+        console.error(e);
+        el.innerHTML = '<p class="text-sm text-red-500">Could not load. If the browser console shows an index link, open it once to create the index, then refresh.</p>';
+      }
+    }
+
+    /* ================= STUDENT HUB: PAYMENTS ================= */
+    async function loadPurchases() {
+      const el = $('pendingPurchases'); showLoading(el);
+      try {
+        const snap = await getDocs(query(collection(db, 'studentPurchases'), where('status', '==', 'paid_pending')));
+        if (snap.empty) return showEmpty(el, 'No student payments waiting', '✅');
+        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        el.innerHTML = rows.map(p => `
+          <div class="ah-card p-3 space-y-2">
+            <div class="flex justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-semibold text-sm truncate">${esc(p.courseTitle || 'Course')}</p>
+                <p class="text-xs text-slate-500 truncate">${esc(p.userName || '')} · ${esc(p.userEmail || p.userId || '')}</p>
+              </div>
+              <p class="font-extrabold text-sm text-emerald-700 shrink-0">${formatCurrency(p.amount || 0)}</p>
+            </div>
+            <p class="text-[11px] text-slate-400">Ref: <span class="font-mono text-slate-600">${esc(p.reference || p.id)}</span> · ${formatDateTime(p.createdAt)}</p>
+            <div class="flex items-center gap-2">
+              <select id="dur-${p.id}" class="field !w-auto !py-1.5 text-xs">
+                <option value="30">30 days</option><option value="90">3 months</option><option value="180">6 months</option>
+                <option value="365" selected>1 year</option><option value="0">Lifetime</option>
+              </select>
+              <button data-act="buy-approve" data-id="${p.id}" class="btn-sm bg-emerald-600 text-white">Approve</button>
+              <button data-act="buy-reject" data-id="${p.id}" class="btn-sm bg-red-100 text-red-700">Reject</button>
+            </div>
+          </div>`).join('');
+        el._rows = rows;
+      } catch (e) { console.error(e); showEmpty(el, 'Could not load payments', '⚠️'); }
+    }
+    async function approvePurchase(id) {
+      const rows = $('pendingPurchases')._rows || [];
+      const p = rows.find(r => r.id === id); if (!p) return;
+      const days = Number($('dur-' + id).value);
+      const data = {
+        userId: p.userId, userEmail: p.userEmail || '', courseId: p.courseId, courseTitle: p.courseTitle || '',
+        status: 'active', reference: p.reference || id, approvedAt: serverTimestamp()
+      };
+      if (days > 0) { const d = new Date(); d.setDate(d.getDate() + days); data.expiresAt = Timestamp.fromDate(d); } // omitted = lifetime
+      await setDoc(doc(db, 'studentAccess', `${p.userId}_${p.courseId}`), data);
+      await updateDoc(doc(db, 'studentPurchases', id), { status: 'approved', approvedAt: serverTimestamp() });
+    }
+
+    /* ================= STUDENT HUB: COURSES ================= */
+    let editCourseId = null;
+    async function loadCourses() {
+      const snap = await getDocs(collection(db, 'studentCourses'));
+      courses = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+      const list = $('courseList');
+      list.innerHTML = courses.length ? courses.map(c => `
+        <div class="ah-card p-3 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-2xl shrink-0">${emoji(c.category)}</div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm truncate">${esc(c.title || '')} ${c.active === false ? '<span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full ml-1">Hidden</span>' : ''}</p>
+            <p class="text-xs text-slate-500">${esc(c.category || 'Other')}${c.level ? ' · ' + esc(String(c.level)) : ''} · ${Number(c.price || 0) === 0 ? 'Free' : formatCurrency(c.price)} · ${Number(c.questionCount || 0)} Qs</p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <button data-act="course-edit" data-id="${c.id}" class="btn-sm bg-teal-50 text-teal-700">Edit</button>
+            <button data-act="course-del" data-id="${c.id}" class="btn-sm bg-red-50 text-red-600">Delete</button>
+          </div>
+        </div>`).join('') : '<p class="text-sm text-slate-400 text-center py-6">No courses yet. Add your first one above.</p>';
+      const sel = $('qCourse'); const prev = sel.value;
+      sel.innerHTML = courses.length ? courses.map(c => `<option value="${c.id}">${emoji(c.category)} ${esc(c.title || '')}</option>`).join('') : '<option value="">No courses yet</option>';
+      if (prev && courses.some(c => c.id === prev)) sel.value = prev;
+    }
+    function resetCourseForm() {
+      editCourseId = null;
+      ['cTitle', 'cCategory', 'cLevel', 'cPrice', 'cDesc'].forEach(i => $(i).value = '');
+      $('cActive').value = 'true';
+      $('courseFormTitle').textContent = 'Add a course';
+      $('courseCancelEdit').classList.add('hidden');
+    }
+    $('courseCancelEdit').addEventListener('click', resetCourseForm);
+    $('saveCourse').addEventListener('click', async () => {
+      const title = $('cTitle').value.trim();
+      if (!title) return showToast('Enter a course title', 'error');
+      const data = {
+        title, category: $('cCategory').value.trim() || 'Other', level: $('cLevel').value.trim(),
+        price: Math.max(0, Number($('cPrice').value) || 0), description: $('cDesc').value.trim(),
+        active: $('cActive').value === 'true', updatedAt: serverTimestamp()
+      };
+      try {
+        if (editCourseId) await updateDoc(doc(db, 'studentCourses', editCourseId), data);
+        else await addDoc(collection(db, 'studentCourses'), { ...data, questionCount: 0, createdAt: serverTimestamp() });
+        showToast(editCourseId ? 'Course updated' : 'Course added', 'success');
+        resetCourseForm(); await loadCourses(); loadStats();
+      } catch (e) { showToast(e.message, 'error'); }
+    });
+
+    /* ================= STUDENT HUB: QUESTIONS ================= */
+    let qMode = 'single';
+    document.querySelectorAll('.qmode-btn').forEach(b => b.addEventListener('click', () => {
+      qMode = b.dataset.qmode;
+      document.querySelectorAll('.qmode-btn').forEach(x => { x.classList.toggle('bg-teal-600', x === b); x.classList.toggle('text-white', x === b); x.classList.toggle('bg-slate-100', x !== b); x.classList.toggle('text-slate-600', x !== b); });
+      $('qSingle').classList.toggle('hidden', qMode !== 'single');
+      $('qBulk').classList.toggle('hidden', qMode !== 'bulk');
+    }));
+    $('qCourse').addEventListener('change', loadQuestions);
+
+    async function recount(courseId) {
+      const snap = await getDocs(collection(db, 'studentCourses', courseId, 'questions'));
+      await updateDoc(doc(db, 'studentCourses', courseId), { questionCount: snap.size, updatedAt: serverTimestamp() });
+      return snap.size;
+    }
+    async function loadQuestions() {
+      const cid = $('qCourse').value; const el = $('qListAdmin');
+      if (!cid) { el.innerHTML = ''; $('qCount').textContent = ''; return; }
+      showLoading(el);
+      const snap = await getDocs(collection(db, 'studentCourses', cid, 'questions'));
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (Number(b.order) || 0) - (Number(a.order) || 0));
+      $('qCount').textContent = `${rows.length} total`;
+      if (!rows.length) return showEmpty(el, 'No questions in this course yet', '📝');
+      el.innerHTML = rows.slice(0, 60).map(q => `
+        <div class="ah-card p-3 flex gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold leading-snug">${esc((q.question || '').slice(0, 160))}</p>
+            <p class="text-[11px] text-slate-500 mt-1">${Array.isArray(q.options) && q.options.length ? `MCQ · answer ${'ABCDEF'[q.correctIndex] || '?'}` : 'Theory'}${q.year ? ' · ' + esc(String(q.year)) : ''}${q.topic ? ' · ' + esc(q.topic) : ''}</p>
+          </div>
+          <button data-act="q-del" data-id="${q.id}" class="btn-sm bg-red-50 text-red-600 self-start">Delete</button>
+        </div>`).join('') + (rows.length > 60 ? `<p class="text-center text-[11px] text-slate-400">Showing latest 60 of ${rows.length}</p>` : '');
+    }
+
+    $('saveQuestion').addEventListener('click', async () => {
+      const cid = $('qCourse').value; if (!cid) return showToast('Create/select a course first', 'error');
+      const question = $('qText').value.trim(); if (!question) return showToast('Enter the question', 'error');
+      const options = $('qOptions').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const data = { question, year: $('qYear').value.trim(), topic: $('qTopic').value.trim(), explanation: $('qExplain').value.trim(), order: Date.now(), createdAt: serverTimestamp() };
+      if (options.length) {
+        if (options.length < 2) return showToast('Add at least 2 options', 'error');
+        const ci = Number($('qCorrect').value);
+        if (ci >= options.length) return showToast('Correct option is beyond your options', 'error');
+        data.options = options; data.correctIndex = ci;
+      } else {
+        const ans = $('qAnswer').value.trim(); if (!ans) return showToast('Enter the answer text for a theory question', 'error');
+        data.answer = ans;
+      }
+      try {
+        await addDoc(collection(db, 'studentCourses', cid, 'questions'), data);
+        await recount(cid);
+        ['qText', 'qOptions', 'qAnswer', 'qExplain'].forEach(i => $(i).value = '');
+        showToast('Question saved', 'success'); loadQuestions(); loadCourses();
+      } catch (e) { showToast(e.message, 'error'); }
+    });
+
+    function parseBulk(text) {
+      const out = [], errors = [];
+      const blocks = text.replace(/\r/g, '').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+      const re = /^(ANS|EXP|YEAR|TOPIC|Q|A|B|C|D|E|F)\s*[:.)]\s*(.*)$/i;
+      blocks.forEach((block, bi) => {
+        const f = { Q: '', ANS: '', EXP: '', YEAR: '', TOPIC: '', opts: {} };
+        let last = null;
+        block.split('\n').forEach(line => {
+          const m = line.trim().match(re);
+          if (m) {
+            const k = m[1].toUpperCase();
+            if ('ABCDEF'.includes(k) && k.length === 1) { f.opts[k] = m[2].trim(); last = 'opt:' + k; }
+            else { f[k] = m[2].trim(); last = k; }
+          } else if (last) {
+            if (last.startsWith('opt:')) f.opts[last.slice(4)] += ' ' + line.trim(); else f[last] += '\n' + line.trim();
+          }
+        });
+        if (!f.Q) { errors.push(`Block ${bi + 1}: missing "Q:"`); return; }
+        const letters = Object.keys(f.opts).sort();
+        const q = { question: f.Q, year: f.YEAR, topic: f.TOPIC, explanation: f.EXP };
+        if (letters.length) {
+          if (letters.length < 2) { errors.push(`Block ${bi + 1}: need at least 2 options`); return; }
+          const L = f.ANS.trim().toUpperCase().charAt(0); const ci = letters.indexOf(L);
+          if (ci < 0) { errors.push(`Block ${bi + 1}: ANS must be one of ${letters.join(', ')}`); return; }
+          q.options = letters.map(l => f.opts[l]); q.correctIndex = ci;
+        } else {
+          if (!f.ANS) { errors.push(`Block ${bi + 1}: theory question needs "ANS:" text`); return; }
+          q.answer = f.ANS;
+        }
+        out.push(q);
+      });
+      return { out, errors };
+    }
+    $('bulkCheck').addEventListener('click', () => {
+      const { out, errors } = parseBulk($('bulkText').value);
+      $('bulkPreview').innerHTML = `<span class="text-emerald-700 font-bold">${out.length} valid</span>` + (errors.length ? ` · <span class="text-red-600 font-bold">${errors.length} problem(s)</span><br>${errors.slice(0, 8).map(esc).join('<br>')}` : '');
+    });
+    $('bulkSave').addEventListener('click', async () => {
+      const cid = $('qCourse').value; if (!cid) return showToast('Select a course first', 'error');
+      const { out, errors } = parseBulk($('bulkText').value);
+      if (!out.length) return showToast('No valid questions found', 'error');
+      if (errors.length && !confirm(`${errors.length} block(s) have problems and will be skipped. Upload the ${out.length} valid ones?`)) return;
+      const btn = $('bulkSave'); btn.disabled = true; btn.textContent = 'Uploading…';
+      try {
+        const base = Date.now();
+        for (let i = 0; i < out.length; i += 400) {
+          const batch = writeBatch(db);
+          out.slice(i, i + 400).forEach((q, j) => {
+            batch.set(doc(collection(db, 'studentCourses', cid, 'questions')), { ...q, order: base + i + j, createdAt: serverTimestamp() });
+          });
+          await batch.commit();
+        }
+        await recount(cid);
+        $('bulkText').value = ''; $('bulkPreview').textContent = '';
+        showToast(`${out.length} questions uploaded`, 'success'); loadQuestions(); loadCourses();
+      } catch (e) { showToast(e.message, 'error'); }
+      btn.disabled = false; btn.textContent = 'Upload all';
+    });
+
+    /* ================= STUDENT HUB: ACCESS ================= */
+    async function loadAccess() {
+      const el = $('accessList'); showLoading(el);
+      const snap = await getDocs(query(collection(db, 'studentAccess'), where('status', '==', 'active')));
+      if (snap.empty) return showEmpty(el, 'No active student access yet', '🔑');
+      el.innerHTML = snap.docs.map(d => { const x = d.data();
+        const exp = x.expiresAt && x.expiresAt.toDate ? x.expiresAt.toDate().toLocaleDateString('en-NG') : 'Lifetime';
+        return `
+        <div class="ah-card p-3 flex items-center gap-3">
+          <div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${esc(x.courseTitle || x.courseId)}</p><p class="text-xs text-slate-500 truncate">${esc(x.userEmail || x.userId)} · until ${esc(exp)}</p></div>
+          <button data-act="access-revoke" data-id="${d.id}" class="btn-sm bg-red-50 text-red-600">Revoke</button>
+        </div>`; }).join('');
+    }
+
+    /* ================= USERS ================= */
+    let allUsers = [];
+    async function loadUsers() {
+      const el = $('usersList'); showLoading(el);
+      const snap = await getDocs(query(collection(db, 'users'), limit(300)));
+      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderUsers();
+    }
+    function renderUsers() {
+      const q = $('userSearch').value.trim().toLowerCase();
+      const rows = allUsers.filter(u => !q || (u.displayName || u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.role || '').toLowerCase().includes(q));
+      const el = $('usersList');
+      if (!rows.length) return showEmpty(el, 'No users found', '👥');
+      el.innerHTML = rows.map(u => {
+        const self = u.id === profile.uid;
+        return `
+        <div class="ah-card p-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0"><p class="font-semibold text-sm truncate">${esc(u.displayName || u.name || u.email || u.id)}</p><p class="text-xs text-slate-500 truncate">${esc(u.email || '')}${u.department ? ' · ' + esc(u.department) : ''}${u.phone ? ' · ' + esc(u.phone) : ''}</p></div>
+            <span class="badge badge-${esc(u.status === 'approved' ? 'active' : (u.status || 'pending'))}">${esc(u.status === 'approved' ? 'active' : (u.status || 'pending'))}</span>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <select data-act="user-role" data-id="${u.id}" class="field !w-auto !py-1.5 text-xs" ${self ? 'disabled' : ''}>
+              ${['patient', 'doctor', 'surgeon', 'pharmacist', 'nurse', 'lab', 'radiologist', 'counselor', 'support', 'anaesthetist', 'admin'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+            </select>
+            ${self ? '<span class="text-[11px] text-slate-400">(you)</span>' : (
+              u.status === 'suspended'
+                ? `<button data-act="user-status" data-status="active" data-id="${u.id}" class="btn-sm bg-emerald-600 text-white">Reactivate</button>`
+                : (u.status === 'pending' || u.status === 'rejected'
+                    ? `<button data-act="user-status" data-status="active" data-id="${u.id}" class="btn-sm bg-emerald-600 text-white">Activate</button>
+                       <button data-act="user-status" data-status="suspended" data-id="${u.id}" class="btn-sm bg-red-100 text-red-700">Suspend</button>`
+                    : `<button data-act="user-status" data-status="suspended" data-id="${u.id}" class="btn-sm bg-red-100 text-red-700">Suspend</button>`)
+            )}
+          </div>
+        </div>`; }).join('');
+    }
+    $('userSearch').addEventListener('input', renderUsers);
+
+    /* ================= ADD STAFF ================= */
+    const STAFF_ROLES_DOCTOR = ['doctor', 'surgeon'];
+    const STAFF_ROLES_PHARM = ['pharmacist'];
+    $('toggleStaffForm').addEventListener('click', () => {
+      const f = $('staffForm');
+      f.classList.toggle('hidden');
+      $('toggleStaffForm').textContent = f.classList.contains('hidden') ? '+ New staff' : 'Hide form';
+    });
+    $('sfRole').addEventListener('change', () => {
+      const r = $('sfRole').value;
+      $('sfDoctorFields').classList.toggle('hidden', !STAFF_ROLES_DOCTOR.includes(r));
+      $('sfPharmFields').classList.toggle('hidden', !STAFF_ROLES_PHARM.includes(r));
+    });
+    function sfMsg(text, ok) {
+      const el = $('sfMsg');
+      el.classList.remove('hidden');
+      el.className = 'rounded-xl px-3 py-2 text-xs font-medium ' + (ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100');
+      el.textContent = text;
+    }
+    function genTempPw() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#';
+      let p = '';
+      for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)];
+      return p;
+    }
+    if (!$('sfPassword').value) $('sfPassword').value = genTempPw();
+
+    $('staffForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const role = $('sfRole').value;
+      const name = $('sfName').value.trim();
+      const email = $('sfEmail').value.trim().toLowerCase();
+      const phone = $('sfPhone').value.replace(/[\s\-()]/g, '');
+      const password = $('sfPassword').value;
+      const department = $('sfDept').value;
+      const empId = $('sfEmpId').value.trim();
+      if (!role || !name || !email || !phone || !password || !department) {
+        return sfMsg('Please fill all required fields.');
+      }
+      if (password.length < 8) return sfMsg('Password must be at least 8 characters.');
+      if (STAFF_ROLES_DOCTOR.includes(role) && !$('sfSpecialty').value) {
+        return sfMsg('Select a specialty for this doctor/surgeon.');
+      }
+      const btn = $('sfSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      sfMsg('Creating Auth user and profile…', true);
+
+      let secondaryApp, secondaryAuth, newUid;
+      try {
+        // Secondary Firebase app so admin session is not replaced
+        secondaryApp = initializeApp(app.options, 'StaffCreate_' + Date.now());
+        secondaryAuth = getAuth(secondaryApp);
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        newUid = cred.user.uid;
+        try { await updateProfile(cred.user, { displayName: name }); } catch (_) {}
+
+        // New user creates their own users doc (allowed by rules as pending for staff roles)
+        const userPayload = {
+          uid: newUid,
+          email,
+          displayName: name,
+          phone,
+          role,
+          department,
+          employeeId: empId || '',
+          status: 'pending',
+          provider: 'password',
+          createdByAdmin: profile.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'users', newUid), userPayload);
+
+        // Admin promotes to active + stores extra fields
+        await updateDoc(doc(db, 'users', newUid), {
+          status: 'active',
+          role,
+          department,
+          employeeId: empId || '',
+          updatedAt: serverTimestamp()
+        });
+
+        // Doctor / surgeon profile
+        if (STAFF_ROLES_DOCTOR.includes(role)) {
+          let photoURL = '';
+          const photoFile = $('sfPhoto').files[0];
+          if (photoFile && photoFile.size > 0) {
+            try {
+              photoURL = await uploadToCloudinary(photoFile);
+            } catch (upErr) {
+              console.warn('Photo upload failed', upErr);
+              try {
+                const photoRef = ref(storage, `doctors/${newUid}/photo_${Date.now()}`);
+                await uploadBytesResumable(photoRef, photoFile);
+                photoURL = await getDownloadURL(photoRef);
+              } catch (_) {}
+            }
+          }
+          const doctorData = {
+            name,
+            specialty: $('sfSpecialty').value,
+            experience: parseInt($('sfExperience').value, 10) || 0,
+            consultationFee: parseInt($('sfFee').value, 10) || 0,
+            licenseNumber: ($('sfLicense').value || '').trim(),
+            phone,
+            bio: ($('sfBio').value || '').trim(),
+            photoURL: photoURL || '',
+            department,
+            status: 'approved',
+            available: true,
+            rating: 0,
+            reviewCount: 0,
+            ownerId: newUid,
+            createdByAdmin: profile.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          await setDoc(doc(db, 'doctors', newUid), doctorData);
+        }
+
+        // Pharmacist / pharmacy profile
+        if (STAFF_ROLES_PHARM.includes(role)) {
+          let photoURL = '';
+          const photoFile = $('sfPharmPhoto').files[0];
+          if (photoFile && photoFile.size > 0) {
+            try { photoURL = await uploadToCloudinary(photoFile); } catch (_) {}
+          }
+          const pharmData = {
+            name: ($('sfPharmName').value || name).trim(),
+            ownerName: name,
+            ownerId: newUid,
+            licenseNumber: ($('sfPharmLicense').value || '').trim(),
+            location: ($('sfPharmLoc').value || '').trim(),
+            phone,
+            email,
+            photoURL: photoURL || '',
+            department: department || 'Pharmacy',
+            status: 'approved',
+            createdByAdmin: profile.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          await setDoc(doc(db, 'pharmacies', newUid), pharmData);
+        }
+
+        try { await secondarySignOut(secondaryAuth); } catch (_) {}
+
+        sfMsg(`Staff account created for ${name}. Temporary password: ${password}`, true);
+        showToast('Staff account created successfully', 'success');
+        $('staffForm').reset();
+        $('sfPassword').value = genTempPw();
+        $('sfDoctorFields').classList.add('hidden');
+        $('sfPharmFields').classList.add('hidden');
+        loadUsers();
+        loadStats && loadStats();
+      } catch (err) {
+        console.error(err);
+        let msg = err.message || 'Failed to create staff account';
+        if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered.';
+        if (err.code === 'auth/weak-password') msg = 'Password is too weak.';
+        if (err.code === 'permission-denied') msg = 'Permission denied writing profile. Check Firestore rules.';
+        sfMsg(msg);
+        if (secondaryAuth) try { await secondarySignOut(secondaryAuth); } catch (_) {}
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create staff account';
+      }
+    });
+
+
+    /* ================= ORDERS ================= */
+    async function loadOrders() {
+      const el = $('ordersList'); showLoading(el);
+      try {
+        const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(30)));
+        if (snap.empty) return showEmpty(el, 'No orders yet', '📦');
+        el.innerHTML = snap.docs.map(d => { const x = d.data(); return `
+          <div class="ah-card p-3">
+            <div class="flex justify-between gap-2">
+              <div class="min-w-0"><p class="font-semibold text-sm truncate">${esc(x.pharmacyName || 'Pharmacy order')}</p><p class="text-xs text-slate-500 truncate">${esc(x.patientName || x.patientId || '')} · ${formatDateTime(x.createdAt)}</p></div>
+              <p class="font-extrabold text-sm shrink-0">${formatCurrency(x.total || 0)}</p>
+            </div>
+            <div class="flex gap-2 mt-2"><span class="badge badge-${esc(x.status || 'pending')}">${esc(x.status || 'placed')}</span>
+              <span class="badge ${x.paymentStatus === 'success' ? 'badge-completed' : 'badge-pending'}">${esc(x.paymentStatus || 'unpaid')}</span></div>
+          </div>`; }).join('');
+      } catch (e) { console.error(e); showEmpty(el, 'Could not load orders', '⚠️'); }
+    }
+
+    /* ================= TICKETS ================= */
+    async function loadTickets() {
+      const el = $('ticketsList'); showLoading(el);
+      try {
+        const snap = await getDocs(query(collection(db, 'supportTickets'), where('status', 'in', ['open', 'in_progress'])));
+        if (snap.empty) return showEmpty(el, 'No open tickets', '🎉');
+        el.innerHTML = snap.docs.map(d => { const x = d.data(); return `
+          <div class="ah-card p-3">
+            <div class="flex justify-between gap-2">
+              <div class="min-w-0"><p class="font-semibold text-sm truncate">${esc(x.subject || x.category || 'Ticket')}</p><p class="text-xs text-slate-500 truncate">${esc(x.userName || x.userEmail || x.userId || '')} · ${formatDateTime(x.createdAt)}</p></div>
+              <span class="badge badge-${esc(x.status)}">${esc(x.status)}</span>
+            </div>
+            ${x.message ? `<p class="text-xs text-slate-600 mt-1.5 line-clamp-2">${esc(String(x.message).slice(0, 160))}</p>` : ''}
+            <select data-act="ticket-status" data-id="${d.id}" class="field !w-auto !py-1.5 text-xs mt-2">
+              ${['open', 'in_progress', 'resolved', 'closed'].map(s => `<option value="${s}" ${x.status === s ? 'selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}
+            </select>
+          </div>`; }).join('');
+      } catch (e) { console.error(e); showEmpty(el, 'Could not load tickets', '⚠️'); }
+    }
+
+    /* ================= SETTINGS ================= */
+    // Logo upload via Cloudinary
+    $('logoFile').addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      if (f) {
+        const url = URL.createObjectURL(f);
+        $('logoPreview').src = url;
+        $('logoStatus').textContent = f.name + ' (' + Math.round(f.size / 1024) + ' KB)';
+      }
+    });
+    $('saveLogo').addEventListener('click', async () => {
+      const file = $('logoFile').files?.[0];
+      if (!file) return showToast('Choose an image first', 'error');
+      if (file.size > 5 * 1024 * 1024) return showToast('Image must be under 5 MB', 'error');
+      const btn = $('saveLogo');
+      btn.disabled = true; btn.textContent = 'Uploading…';
+      try {
+        const url = await uploadToCloudinary(file, 'logos');
+        await setDoc(doc(db, 'settings', 'platform'), { logoURL: url, updatedAt: serverTimestamp() }, { merge: true });
+        $('logoPreview').src = url;
+        $('logoStatus').textContent = 'Saved – will appear on every page.';
+        showToast('Logo updated site-wide', 'success');
+        applyPlatformBranding();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Upload failed. Check Cloudinary config in js/config.js', 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Upload & Save Logo';
+      }
+    });
+    $('resetLogo').addEventListener('click', async () => {
+      await setDoc(doc(db, 'settings', 'platform'), { logoURL: DEFAULT_LOGO, updatedAt: serverTimestamp() }, { merge: true });
+      $('logoPreview').src = DEFAULT_LOGO;
+      $('logoStatus').textContent = 'Reset to default icon.';
+      showToast('Logo reset', 'info');
+      applyPlatformBranding();
+    });
+
+    $('saveCommission').addEventListener('click', async () => {
+      const v = parseFloat($('commissionInput').value);
+      if (isNaN(v) || v < 0 || v > 50) return showToast('Invalid %', 'error');
+      await setDoc(doc(db, 'settings', 'platform'), { commissionPercent: v, updatedAt: serverTimestamp() }, { merge: true });
+      showToast('Commission saved', 'success');
+    });
+    $('saveAnnounce').addEventListener('click', async () => {
+      const text = $('announceText').value.trim(); if (!text) return showToast('Write an announcement first', 'error');
+      await setDoc(doc(db, 'announcements', 'latest'), { text, active: true, createdAt: serverTimestamp() });
+      $('announceState').textContent = 'Live on the home page.'; showToast('Announcement published', 'success');
+    });
+    $('offAnnounce').addEventListener('click', async () => {
+      await setDoc(doc(db, 'announcements', 'latest'), { active: false, updatedAt: serverTimestamp() }, { merge: true });
+      $('announceState').textContent = 'Turned off. Home page shows the default welcome messages.'; showToast('Announcement turned off', 'info');
+    });
+    getDoc(doc(db, 'settings', 'platform')).then(s => {
+      if (s.exists()) {
+        const d = s.data();
+        $('commissionInput').value = d.commissionPercent ?? 10;
+        if (d.logoURL) {
+          $('logoPreview').src = d.logoURL;
+          $('logoStatus').textContent = 'Current logo loaded.';
+        }
+      }
+    });
+    getDoc(doc(db, 'announcements', 'latest')).then(s => {
+      if (s.exists()) { $('announceText').value = s.data().text || ''; $('announceState').textContent = s.data().active ? 'Currently live on the home page.' : 'Currently turned off.'; }
+    });
+
+    /* ================= ONE CLICK HANDLER FOR ALL ACTIONS ================= */
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-act]'); if (!btn || btn.tagName === 'SELECT') return;
+      const act = btn.dataset.act, id = btn.dataset.id;
+      btn.disabled = true;
+      try {
+        if (act === 'approve' || act === 'reject') {
+          const col = btn.dataset.col;
+          const approved = act === 'approve';
+          btn.innerHTML = '<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin align-middle"></span>';
+          // doctors/pharmacies: status approved|rejected + available flag (Doctors page reads this)
+          if (col === 'doctors') {
+            const uref = doc(db, 'users', id);
+            let uData = {};
+            try { const us = await getDoc(uref); if (us.exists()) uData = us.data(); } catch (_) {}
+            const dref = doc(db, 'doctors', id);
+            let dData = {};
+            try { const ds = await getDoc(dref); if (ds.exists()) dData = ds.data(); } catch (_) {}
+            await setDoc(dref, {
+              name: dData.name || uData.displayName || uData.name || 'Doctor',
+              specialty: dData.specialty || uData.department || 'General Practice',
+              phone: dData.phone || uData.phone || '',
+              photoURL: dData.photoURL || uData.photoURL || '',
+              experience: dData.experience || 0,
+              consultationFee: dData.consultationFee || 0,
+              licenseNumber: dData.licenseNumber || '',
+              bio: dData.bio || '',
+              department: dData.department || uData.department || '',
+              status: approved ? 'approved' : 'rejected',
+              available: approved ? true : false,
+              ownerId: id,
+              rating: dData.rating || 0,
+              reviewCount: dData.reviewCount || 0,
+              updatedAt: serverTimestamp(),
+              ...(dData.createdAt ? {} : { createdAt: serverTimestamp() })
+            }, { merge: true });
+            try {
+              await setDoc(uref, {
+                status: approved ? 'active' : 'rejected',
+                role: 'doctor',
+                updatedAt: serverTimestamp()
+              }, { merge: true });
+            } catch (_) {}
+          } else if (col === 'pharmacies') {
+            await updateDoc(doc(db, col, id), {
+              status: approved ? 'approved' : 'rejected',
+              available: approved ? true : false,
+              updatedAt: serverTimestamp()
+            });
+            try {
+              await updateDoc(doc(db, 'users', id), {
+                status: approved ? 'active' : 'rejected',
+                role: 'pharmacist',
+                updatedAt: serverTimestamp()
+              });
+            } catch (_) {}
+          } else {
+            await updateDoc(doc(db, col, id), {
+              status: approved ? 'approved' : 'rejected',
+              updatedAt: serverTimestamp()
+            });
+          }
+          showToast(approved ? '✓ Approved — doctor will show on Doctors page' : 'Rejected', approved ? 'success' : 'warning');
+          reloadApprovals();
+          if (typeof loadStats === 'function') loadStats();
+        } else if (act === 'consult-approve') {
+          const exp = new Date(); exp.setDate(exp.getDate() + 7);
+          await updateDoc(doc(db, 'consultations', id), { status: 'active', approvedAt: serverTimestamp(), expiresAt: exp, updatedAt: serverTimestamp() });
+          showToast('Consultation activated', 'success'); loadPendingConsults(); loadStats();
+        } else if (act === 'consult-reject') {
+          if (!confirm('Reject and mark for refund?')) { btn.disabled = false; return; }
+          await updateDoc(doc(db, 'consultations', id), { status: 'rejected', updatedAt: serverTimestamp() });
+          showToast('Rejected', 'warning'); loadPendingConsults();
+        } else if (act === 'buy-approve') {
+          await approvePurchase(id); showToast('Approved. Course unlocked for the student.', 'success'); loadPurchases(); loadStats();
+        } else if (act === 'buy-reject') {
+          if (!confirm('Reject this student payment?')) { btn.disabled = false; return; }
+          await updateDoc(doc(db, 'studentPurchases', id), { status: 'rejected', updatedAt: serverTimestamp() });
+          showToast('Rejected', 'warning'); loadPurchases(); loadStats();
+        } else if (act === 'course-edit') {
+          const c = courses.find(x => x.id === id); if (!c) return;
+          editCourseId = id; $('cTitle').value = c.title || ''; $('cCategory').value = c.category || ''; $('cLevel').value = c.level || '';
+          $('cPrice').value = c.price ?? 0; $('cDesc').value = c.description || ''; $('cActive').value = String(c.active !== false);
+          $('courseFormTitle').textContent = 'Edit course'; $('courseCancelEdit').classList.remove('hidden');
+          window.scrollTo({ top: $('sub-courses').offsetTop - 80, behavior: 'smooth' }); btn.disabled = false; return;
+        } else if (act === 'course-del') {
+          if (!confirm('Delete this course AND all its questions? This cannot be undone.')) { btn.disabled = false; return; }
+          const qs = await getDocs(collection(db, 'studentCourses', id, 'questions'));
+          for (let i = 0; i < qs.docs.length; i += 400) {
+            const b = writeBatch(db); qs.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+          }
+          await deleteDoc(doc(db, 'studentCourses', id));
+          showToast('Course deleted', 'warning'); await loadCourses(); loadStats();
+        } else if (act === 'q-del') {
+          const cid = $('qCourse').value;
+          if (!confirm('Delete this question?')) { btn.disabled = false; return; }
+          await deleteDoc(doc(db, 'studentCourses', cid, 'questions', id));
+          await recount(cid); showToast('Deleted', 'warning'); loadQuestions(); loadCourses();
+        } else if (act === 'access-revoke') {
+          if (!confirm('Revoke this student\'s access?')) { btn.disabled = false; return; }
+          await updateDoc(doc(db, 'studentAccess', id), { status: 'revoked', revokedAt: serverTimestamp() });
+          showToast('Access revoked', 'warning'); loadAccess();
+        } else if (act === 'user-status') {
+          const newStatus = btn.dataset.status; // active | suspended
+          const prevLabel = btn.textContent;
+          btn.innerHTML = '<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin align-middle"></span>';
+          btn.disabled = true;
+
+          await updateDoc(doc(db, 'users', id), { status: newStatus, updatedAt: serverTimestamp() });
+          const u = allUsers.find(x => x.id === id);
+          if (u) u.status = newStatus;
+
+          // Sync doctors collection so they appear on Doctors page + Admin count
+          if (u && (u.role === 'doctor' || u.role === 'surgeon')) {
+            const dref = doc(db, 'doctors', id);
+            const dsnap = await getDoc(dref);
+            if (newStatus === 'active') {
+              const payload = {
+                name: u.displayName || u.name || (dsnap.exists() ? dsnap.data().name : 'Doctor'),
+                specialty: (dsnap.exists() && dsnap.data().specialty) || u.department || 'General Practice',
+                phone: u.phone || (dsnap.exists() ? dsnap.data().phone : '') || '',
+                status: 'approved',
+                available: true,
+                ownerId: id,
+                updatedAt: serverTimestamp()
+              };
+              if (dsnap.exists()) {
+                await updateDoc(dref, payload);
+              } else {
+                await setDoc(dref, {
+                  ...payload,
+                  experience: 0,
+                  consultationFee: 0,
+                  licenseNumber: '',
+                  bio: '',
+                  photoURL: u.photoURL || '',
+                  rating: 0,
+                  reviewCount: 0,
+                  createdAt: serverTimestamp()
+                });
+              }
+            } else if (newStatus === 'suspended' && dsnap.exists()) {
+              await updateDoc(dref, { status: 'suspended', available: false, updatedAt: serverTimestamp() });
+            }
+          }
+
+          if (u && u.role === 'pharmacist') {
+            const pref = doc(db, 'pharmacies', id);
+            const psnap = await getDoc(pref);
+            if (newStatus === 'active') {
+              if (psnap.exists()) {
+                await updateDoc(pref, { status: 'approved', updatedAt: serverTimestamp() });
+              } else {
+                await setDoc(pref, {
+                  name: u.displayName || 'Pharmacy',
+                  ownerName: u.displayName || '',
+                  ownerId: id,
+                  phone: u.phone || '',
+                  email: u.email || '',
+                  status: 'approved',
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp()
+                });
+              }
+            } else if (newStatus === 'suspended' && psnap.exists()) {
+              await updateDoc(pref, { status: 'suspended', updatedAt: serverTimestamp() });
+            }
+          }
+
+          showToast(newStatus === 'active' ? '✓ Account activated successfully' : 'Account suspended', newStatus === 'active' ? 'success' : 'warning');
+          await loadUsers();
+          if (typeof loadStats === 'function') await loadStats();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Failed: ' + (err.message || 'Unknown error'), 'error');
+        btn.disabled = false;
+        if (btn.dataset.act === 'user-status') {
+          const st = btn.dataset.status;
+          btn.textContent = st === 'active' ? (btn.textContent.includes('Activate') ? 'Activate' : 'Reactivate') : 'Suspend';
+          // Restore sensible labels
+          if (st === 'active') btn.textContent = 'Reactivate';
+          else btn.textContent = 'Suspend';
+        }
+      }
+    });
+
+    document.addEventListener('change', async (e) => {
+      const sel = e.target.closest('select[data-act]'); if (!sel) return;
+      const id = sel.dataset.id;
+      try {
+        if (sel.dataset.act === 'user-role') {
+          if (!confirm(`Change this user's role to "${sel.value}"?`)) { loadUsers(); return; }
+          const newRole = sel.value;
+          sel.disabled = true;
+          await updateDoc(doc(db, 'users', id), { role: newRole, status: 'active', updatedAt: serverTimestamp() });
+          const u = allUsers.find(x => x.id === id);
+          if (u) { u.role = newRole; u.status = 'active'; }
+          if (newRole === 'doctor' || newRole === 'surgeon') {
+            const dref = doc(db, 'doctors', id);
+            const dsnap = await getDoc(dref);
+            const base = {
+              name: (u && (u.displayName || u.name)) || 'Doctor',
+              specialty: (dsnap.exists() && dsnap.data().specialty) || (u && u.department) || 'General Practice',
+              phone: (u && u.phone) || '',
+              status: 'approved',
+              available: true,
+              ownerId: id,
+              updatedAt: serverTimestamp()
+            };
+            if (!dsnap.exists()) {
+              await setDoc(dref, { ...base, experience: 0, consultationFee: 0, licenseNumber: '', bio: '', photoURL: (u && u.photoURL) || '', rating: 0, reviewCount: 0, createdAt: serverTimestamp() });
+            } else {
+              await updateDoc(dref, base);
+            }
+          }
+          if (newRole === 'pharmacist') {
+            const pref = doc(db, 'pharmacies', id);
+            const psnap = await getDoc(pref);
+            if (!psnap.exists()) {
+              await setDoc(pref, {
+                name: (u && u.displayName) || 'Pharmacy',
+                ownerName: (u && u.displayName) || '',
+                ownerId: id,
+                phone: (u && u.phone) || '',
+                email: (u && u.email) || '',
+                status: 'approved',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              });
+            } else {
+              await updateDoc(pref, { status: 'approved', updatedAt: serverTimestamp() });
+            }
+          }
+          showToast('✓ Role updated & activated', 'success');
+          await loadUsers();
+          if (typeof loadStats === 'function') await loadStats();
+        } else if (sel.dataset.act === 'ticket-status') {
+          await updateDoc(doc(db, 'supportTickets', id), { status: sel.value, updatedAt: serverTimestamp() });
+          showToast('Ticket updated', 'success'); if (['resolved', 'closed'].includes(sel.value)) loadTickets(); loadStats();
+        }
+      } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+    });
+
+    /* ================= INIT ================= */
+    loadStats(); reloadApprovals(); loadPendingConsults();
+  </script>
+</body>
+</html>

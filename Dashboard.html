@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Dashboard | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="modulepreload" href="js/config.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+    .bottom-nav a svg { width: 22px !important; height: 22px !important; flex: none; }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .card { background: #fff; border: 1px solid #f1f5f9; border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(15,23,42,.06); padding: 1rem; }
+    .tile { background: #fff; border: 1px solid #f1f5f9; border-radius: 1.1rem; box-shadow: 0 1px 3px rgba(15,23,42,.05); padding: .85rem .4rem; text-align: center; transition: transform .15s; }
+    .tile:active { transform: scale(.96); }
+    .tile span.e { display: block; font-size: 1.6rem; line-height: 1.1; }
+    .tile span.t { display: block; font-size: .7rem; font-weight: 700; color: #334155; margin-top: .3rem; }
+    .abtn { font-size: .75rem; font-weight: 700; padding: .55rem .9rem; border-radius: .7rem; }
+    .badge-requested, .badge-placed { background: #ffedd5; color: #9a3412; }
+    .badge-ready, .badge-out_for_delivery { background: #e0f2fe; color: #075985; }
+    .badge-no_show, .badge-expired { background: #e2e8f0; color: #475569; }
+    .skeleton-d { background: linear-gradient(90deg,#e2e8f0,#f1f5f9,#e2e8f0); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 1rem; height: 84px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <!-- Hero -->
+  <section class="ah-gradient text-white">
+    <div class="max-w-lg mx-auto px-4 pt-4 pb-16">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <img class="site-logo w-8 h-8 rounded-lg object-contain" src="icons/icon.svg" alt="MH" />
+          <span class="font-extrabold text-sm">MiracardiacHealth</span>
+        </div>
+        <button id="logoutBtn" class="text-xs font-bold bg-white/15 rounded-lg px-3 py-1.5">Logout</button>
+      </div>
+      <div id="hero" class="mt-5 flex items-center gap-3">
+        <div class="w-14 h-14 rounded-full bg-white/20"></div>
+        <div class="flex-1"><div class="h-4 w-40 bg-white/25 rounded mb-2"></div><div class="h-3 w-24 bg-white/20 rounded"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-lg mx-auto px-4 -mt-9 relative z-10 space-y-5">
+
+    <div id="tip"></div>
+    <div id="banner"></div>
+    <div id="setup"></div>
+
+    <!-- Stats -->
+    <div id="stats" class="grid gap-2"></div>
+
+    <!-- Quick actions -->
+    <section>
+      <h2 class="font-extrabold text-sm mb-2">Quick actions</h2>
+      <div id="tiles" class="grid grid-cols-3 gap-2.5"></div>
+    </section>
+
+    <!-- Admin attention -->
+    <section id="adminSec" class="hidden">
+      <h2 class="font-extrabold text-sm mb-2">Needs your attention</h2>
+      <div id="adminList" class="space-y-2"></div>
+    </section>
+
+    <!-- Appointments -->
+    <section id="apptSec" class="hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h2 id="apptTitle" class="font-extrabold text-sm">Upcoming appointments</h2>
+        <a href="appointments.html" class="text-xs font-bold text-teal-700">View all →</a>
+      </div>
+      <div id="apptList" class="space-y-2"><div class="skeleton-d"></div></div>
+    </section>
+
+    <!-- Consultations -->
+    <section id="consultSec" class="hidden">
+      <h2 class="font-extrabold text-sm mb-2">My consultations</h2>
+      <div id="consultList" class="space-y-2"><div class="skeleton-d"></div></div>
+    </section>
+
+    <!-- Orders -->
+    <section id="orderSec" class="hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h2 id="orderTitle" class="font-extrabold text-sm">My orders</h2>
+        <a id="orderMore" href="cart.html" class="text-xs font-bold text-teal-700">Open cart →</a>
+      </div>
+      <div id="orderList" class="space-y-2"><div class="skeleton-d"></div></div>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav id="bottomNav" class="bottom-nav">
+    <a href="index.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home</a>
+    <a href="doctors.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Doctors</a>
+    <a href="pharmacy-search.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Pharmacy</a>
+    <a href="student-hub.html"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/></svg>Students</a>
+    <a href="Dashboard.html" class="active"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Dashboard</a>
+  </nav>
+
+  <script type="module">
+    import {auth, db, signOut, escapeHtml, onAuthStateChanged,
+      collection, query, where, getDocs, getDoc, setDoc, serverTimestamp, doc, onSnapshot, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const esc = escapeHtml;
+
+    /* ---------- Saved profile: lets the dashboard open instantly on repeat visits ---------- */
+    const CACHE_KEY = 'mh_profile_v1';
+    function readCache(uid) {
+      try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); return c && c.uid === uid ? c : null; }
+      catch (_) { return null; }
+    }
+    function writeCache(p) {
+      try {
+        const { uid, email, displayName, photoURL, phone, role, status } = p;
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ uid, email, displayName, photoURL, phone, role, status }));
+      } catch (_) {}
+    }
+
+    $('logoutBtn').addEventListener('click', async () => {
+      try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
+      try { await signOut(auth); } catch (_) {}
+      location.href = 'index.html';
+    });
+
+    /* ---------- Wait for Firebase to restore the signed-in user ---------- */
+    function waitForUser() {
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = (u) => { if (!done) { done = true; resolve(u); } };
+        onAuthStateChanged(auth, (u) => {
+          if (u) return finish(u);
+          setTimeout(() => finish(auth.currentUser || null), 1500);
+        });
+        setTimeout(() => finish(auth.currentUser || null), 8000);
+      });
+    }
+
+    /* ---------- Load profile; never block the dashboard if this fails ---------- */
+    async function loadProfile(user) {
+      const fallback = {
+        uid: user.uid, email: user.email || '', displayName: user.displayName || '',
+        photoURL: user.photoURL || '', phone: user.phoneNumber || '', role: 'patient', status: 'active'
+      };
+      const ref = doc(db, 'users', user.uid);
+      try {
+        const snap = await getDoc(ref);
+        if (snap.exists()) return { profile: { ...fallback, ...snap.data(), uid: user.uid }, problem: '' };
+        const base = { ...fallback, provider: (user.providerData && user.providerData[0] && user.providerData[0].providerId) || 'password', consent: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        try { await setDoc(ref, base); }
+        catch (e1) {
+          try { await setDoc(ref, { ...base, status: 'pending' }); }
+          catch (e2) { return { profile: fallback, problem: 'Your profile could not be saved (' + (e2.code || e2.message) + '). Publish the latest firestore.rules.' }; }
+        }
+        return { profile: fallback, problem: '' };
+      } catch (e) {
+        return { profile: fallback, problem: 'Your profile could not be loaded (' + (e.code || e.message) + '). Showing the basic dashboard.' };
+      }
+    }
+
+    function showProblem(msg) {
+      document.body.insertAdjacentHTML('afterbegin', `<div style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#b45309;color:#fff;padding:10px;font-size:12px;text-align:center">${esc(msg)}</div>`);
+    }
+
+    let profile = null;
+    let problem = '';
+    const authUser = await waitForUser();
+    if (!authUser) {
+      location.replace('Login.html?next=Dashboard.html');
+    } else {
+      const cached = readCache(authUser.uid);
+      const fresh = loadProfile(authUser);          // starts now, in parallel with drawing
+      if (cached) {
+        // Repeat visit: draw immediately from the saved profile, refresh quietly
+        profile = cached;
+        fresh.then(({ profile: p, problem: pr }) => {
+          if (pr) { showProblem(pr); return; }
+          writeCache(p);
+          if (p.role !== cached.role || p.status !== cached.status) location.reload();
+        });
+      } else {
+        ({ profile, problem } = await fresh);
+        if (!problem) writeCache(profile);
+      }
+    }
+    if (profile) {
+      try { boot(); if (problem) showProblem(problem); }
+      catch (e) { console.error(e); showProblem('Dashboard error: ' + ((e && e.message) || e)); }
+    }
+
+    function boot() {
+      const role = profile.role || 'patient';
+      const uid = profile.uid;
+      const counts = {};
+
+      /* ---------- helpers ---------- */
+      const toDate = (v) => v?.toDate ? v.toDate() : (v ? new Date(v) : null);
+      const wat = (d) => new Date(d.getTime() + 3600e3).toISOString().slice(0, 10);
+      const whenLabel = (d) => {
+        if (!d) return '';
+        const t = d.toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' });
+        const ds = wat(d), today = wat(new Date()), tmr = wat(new Date(Date.now() + 864e5));
+        if (ds === today) return 'Today, ' + t;
+        if (ds === tmr) return 'Tomorrow, ' + t;
+        return d.toLocaleDateString('en-NG', { timeZone: 'Africa/Lagos', weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + t;
+      };
+      const safeHttps = (u) => (typeof u === 'string' && /^https:\/\//i.test(u)) ? u : '';
+      const TYPES = { chat: '💬 Chat consult', video: '🎥 Video consult', physical: '🏥 Physical visit' };
+      const empty = (emoji, text, link) => `<div class="card text-center py-6 text-slate-400"><div class="text-3xl mb-1">${emoji}</div><p class="text-xs">${text}</p>${link || ''}</div>`;
+      const show = (id) => $(id).classList.remove('hidden');
+
+      /* ---------- hero ---------- */
+      const name = profile.displayName || (profile.email || 'there').split('@')[0];
+      const first = name.split(' ')[0];
+      const now = new Date();
+      const h = now.getHours();   // device local time
+      const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+      const greetIcon = h < 12 ? '☀️' : h < 17 ? '🌤️' : '🌙';
+
+      /* ---------- Daily health message (changes every day, same all day) ---------- */
+      const TIPS = [
+        ['💧', 'Have you drunk water today? 🤔 Take a glass right now.'],
+        ['💚', 'Health is wealth. Take good care of yourself today.'],
+        ['😴', 'Sleep is medicine. Aim for 7 to 8 hours tonight.'],
+        ['🥗', 'Add one extra fruit or vegetable to your plate today.'],
+        ['🚶', 'A 20-minute walk today is good for your heart and your mind.'],
+        ['🧼', 'Wash your hands with soap before you eat. Small habit, big protection.'],
+        ['🧘', 'Take 5 slow, deep breaths. Your body will thank you.'],
+        ['🦟', 'Sleep under a treated net and clear stagnant water around your home.'],
+        ['🍬', 'Go easy on sugary drinks today. Water is the best choice.'],
+        ['🩺', 'When last did you check your blood pressure? Prevention beats cure.'],
+        ['🌞', 'Get a few minutes of morning sunlight. It lifts your mood.'],
+        ['📵', 'Take a short break from your phone and rest your eyes.'],
+        ['🍳', 'Do not skip breakfast. Your body needs fuel to start the day.'],
+        ['💊', 'Finish every course of medicine your doctor prescribed, even if you feel better.'],
+        ['🤝', 'Talk to someone you trust today. Mental health matters too.'],
+        ['🧂', 'Reduce salt in your food. Your heart and kidneys will thank you.'],
+        ['🏃', 'Stretch for 5 minutes. Your back and shoulders need it.'],
+        ['😊', 'A smile is free medicine. Share one today.'],
+        ['🛡️', 'Stay up to date with your vaccines. They protect you and your family.'],
+        ['🥜', 'Choose a healthy snack today: groundnuts, fruit or boiled corn.'],
+        ['🪥', 'Brush your teeth twice a day. Oral health is whole-body health.'],
+        ['🩸', 'Know your blood group and genotype. It can save a life.'],
+        ['🌿', 'Wash fruits and vegetables well before eating them.'],
+        ['⏰', 'Keep a regular sleep time. Your body loves routine.'],
+        ['🚭', 'Your lungs are precious. Avoid smoke and keep your air clean.'],
+        ['🧠', 'Rest is not laziness. Give your mind a break today.'],
+        ['🍉', 'Stay hydrated. Water-rich fruits like watermelon help too.'],
+        ['❤️', 'Your heart works for you all day. Do something kind for it today.'],
+        ['🙏', 'Be grateful for one good thing today. It is good for your wellbeing.'],
+        ['🧴', 'Protect your skin from strong sun and keep it moisturised.'],
+        ['📅', 'Do not ignore small symptoms. Book a check-up if something feels off.'],
+        ['🥤', 'Drink water before you reach for a soft drink.'],
+        ['🛌', 'Tired? Rest early tonight. Recovery happens while you sleep.'],
+        ['🍽️', 'Eat slowly and stop when you are comfortably full.'],
+        ['👨‍👩‍👧', 'Check in on a family member today. Care is healing.'],
+        ['🏋️', 'Move your body for 30 minutes today. Any activity counts.'],
+        ['🧊', 'Keep food covered and drink only safe, clean water.'],
+        ['🌙', 'Switch off bright screens 30 minutes before bed for deeper sleep.'],
+        ['💪', 'Small healthy habits, done daily, build a strong future.'],
+        ['🌍', 'Your health is your greatest wealth. Protect it every day.']
+      ];
+      const dayNum = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5);
+      const tip = TIPS[dayNum % TIPS.length];
+      $('tip').innerHTML = `
+        <div class="card flex items-start gap-3 border-teal-100 bg-gradient-to-br from-teal-50 to-white">
+          <div class="text-3xl leading-none">${tip[0]}</div>
+          <div class="min-w-0">
+            <p class="text-[10px] font-extrabold uppercase tracking-wide text-teal-700">Health tip of the day</p>
+            <p class="text-sm font-semibold text-slate-800 mt-0.5">${esc(tip[1])}</p>
+          </div>
+        </div>`;
+      const photo = safeHttps(profile.photoURL);
+      const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
+      const status = profile.status || 'active';
+      $('hero').innerHTML = `
+        ${photo ? `<img src="${esc(photo)}" alt="" class="w-14 h-14 rounded-full object-cover border-2 border-white/60" />`
+                : `<div class="w-14 h-14 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-lg font-extrabold">${esc(initials)}</div>`}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-white">${greet} ${greetIcon}</p>
+          <p class="text-xl font-extrabold truncate">${esc(first)}</p>
+          <p class="text-[11px] text-white/85 capitalize">${esc(role)} · ${esc(status)}</p>
+        </div>
+        <a href="Update profile.html" class="text-xs font-bold bg-white/15 rounded-lg px-3 py-1.5">Edit</a>`;
+
+      /* ---------- status banner ---------- */
+      if (['doctor', 'pharmacist', 'support'].includes(role) && status === 'pending') {
+        $('banner').innerHTML = `<div class="card border-amber-200 bg-amber-50 text-xs text-amber-800"><strong>⏳ Your account is awaiting approval.</strong> Our team reviews new ${esc(role)} accounts. You can finish setting up now, and you will go live once approved.</div>`;
+      } else if (status === 'suspended' || status === 'rejected') {
+        $('banner').innerHTML = `<div class="card border-red-200 bg-red-50 text-xs text-red-700"><strong>Your account is ${esc(status)}.</strong> Please contact support if you think this is a mistake. <a href="customer-care.html" class="underline font-bold">Contact support</a></div>`;
+      }
+
+      /* ---------- quick action tiles ---------- */
+      const T = (href, e, t) => ({ href, e, t });
+      const TILES = {
+        patient: [T('doctors.html', '👨‍⚕️', 'Find Doctor'), T('appointments.html', '📅', 'Appointments'), T('pharmacy-search.html', '💊', 'Pharmacy'),
+          T('cart.html', '🛒', 'My Cart'), T('Nearby Services.html', '📍', 'Nearby'), T('student-hub.html', '🎓', 'Student Hub'),
+          T('counseling.html', '💬', 'Counseling'), T('customer-care.html', '🎧', 'Support'), T('Update profile.html', '👤', 'My Profile')],
+        doctor: [T('hms-hub.html', '🏥', 'HMS Hub'), T('emr.html', '📋', 'EMR / Chart'), T('appointments.html', '📅', 'Appointments'),
+          T('surgery-ot.html', '🔪', 'Surgery / OT'), T('clinical-guidelines.html', '📖', 'Guidelines'), T('doctor-availability.html', '🗓️', 'My Hours'),
+          T('laboratory.html', '🧪', 'Lab Orders'), T('inpatient.html', '🛏️', 'Wards'), T('Update profile.html', '👤', 'My Account')],
+        nurse: [T('hms-hub.html', '🏥', 'HMS Hub'), T('nursing.html', '👩‍⚕️', 'Nursing Station'), T('emr.html', '📋', 'EMR'),
+          T('inpatient.html', '🛏️', 'Ward Board'), T('emergency.html', '🚨', 'Emergency'), T('clinical-guidelines.html', '📖', 'Guidelines')],
+        surgeon: [T('hms-hub.html', '🏥', 'HMS Hub'), T('surgery-ot.html', '🔪', 'OT Board'), T('emr.html', '📋', 'EMR'),
+          T('inpatient.html', '🛏️', 'Wards'), T('clinical-guidelines.html', '📖', 'Guidelines'), T('appointments.html', '📅', 'Appointments')],
+        pharmacist: [T('pharmacist.html', '💊', 'Manage Pharmacy'), T('hms-hub.html', '🏥', 'HMS Hub'), T('inventory.html', '📦', 'Inventory'),
+          T('pharmacist.html#orders', '📦', 'Orders'), T('Update profile.html', '👤', 'My Account'), T('customer-care.html', '🎧', 'Support')],
+        support: [T('support-agent.html', '🎫', 'Ticket Queue'), T('customer-care.html', '🎧', 'Support Center'), T('counseling.html', '💬', 'Counseling'), T('Update profile.html', '👤', 'My Account')],
+        admin: [T('hms-hub.html', '🏥', 'Full HMS'), T('admin.html', '⚙️', 'Admin Panel'), T('analytics.html', '📊', 'Analytics'),
+          T('billing.html', '💰', 'Billing'), T('staff-hr.html', '👥', 'Staff / HR'), T('student-hub.html', '🎓', 'Student Hub'),
+          T('quality-safety.html', '🛡️', 'Quality'), T('Update profile.html', '👤', 'My Account'), T('Nearby Services.html', '📍', 'Nearby')]
+      };
+      $('tiles').innerHTML = (TILES[role] || TILES.patient).map(x => `<a href="${x.href}" class="tile"><span class="e">${x.e}</span><span class="t">${x.t}</span></a>`).join('');
+
+      /* ---------- stats ---------- */
+      const STATS = {
+        patient: [['Upcoming', 'appts', 'text-teal-700'], ['Active chats', 'chats', 'text-sky-600'], ['Orders in progress', 'orders', 'text-orange-600']],
+        doctor: [['Pending requests', 'pending', 'text-orange-600'], ['Today', 'today', 'text-teal-700'], ['Active chats', 'chats', 'text-sky-600']],
+        pharmacist: [['New orders', 'newOrders', 'text-orange-600'], ['In progress', 'activeOrders', 'text-teal-700'], ['Drugs listed', 'drugs', 'text-sky-600']],
+        support: [['Open tickets', 'tickets', 'text-orange-600']],
+        admin: [['Doctors pending', 'pDoctors', 'text-orange-600'], ['Pharmacies pending', 'pPharm', 'text-teal-700'], ['Payments to review', 'pPay', 'text-sky-600']]
+      };
+      function paintStats() {
+        const cfg = STATS[role] || STATS.patient;
+        $('stats').style.gridTemplateColumns = `repeat(${cfg.length}, minmax(0, 1fr))`;
+        $('stats').innerHTML = cfg.map(([l, k, c]) => `
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 text-center">
+            <p class="text-xl font-extrabold ${c}">${counts[k] ?? '–'}</p>
+            <p class="text-[10px] font-semibold text-slate-500 leading-tight">${l}</p>
+          </div>`).join('');
+      }
+      paintStats();
+
+      /* ---------- appointments (patient + doctor, live) ---------- */
+      const isUpcoming = (a) => ['requested', 'confirmed'].includes(a.status) && toDate(a.date).getTime() + 3600e3 >= Date.now();
+      if (role === 'patient' || role === 'doctor') {
+        show('apptSec');
+        const isDoc = role === 'doctor';
+        if (isDoc) $('apptTitle').textContent = 'Your schedule';
+        onSnapshot(query(collection(db, 'appointments'), where(isDoc ? 'doctorId' : 'patientId', '==', uid)),
+          (snap) => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.date && isUpcoming(a)).sort((a, b) => toDate(a.date) - toDate(b.date));
+            const today = wat(new Date());
+            if (isDoc) {
+              const pend = list.filter(a => a.status === 'requested'), conf = list.filter(a => a.status === 'confirmed');
+              counts.pending = pend.length; counts.today = conf.filter(a => wat(toDate(a.date)) === today).length;
+              $('apptList').innerHTML =
+                (pend.length ? `<a href="appointments.html" class="card block border-orange-200 bg-orange-50 text-xs text-orange-800"><strong>🔔 ${pend.length} appointment request${pend.length === 1 ? '' : 's'} waiting.</strong> Tap to confirm or decline →</a>` : '')
+                + (conf.length ? conf.slice(0, 4).map(a => apptCard(a, true)).join('') : empty('🗓️', 'No confirmed appointments yet.', '<a href="doctor-availability.html" class="inline-block mt-2 text-xs font-bold text-teal-700">Set your working hours →</a>'));
+            } else {
+              counts.appts = list.length;
+              $('apptList').innerHTML = list.length ? list.slice(0, 3).map((a, i) => apptCard(a, false, i === 0)).join('')
+                : empty('📅', 'No upcoming appointments.', '<a href="appointments.html" class="inline-block mt-2 text-xs font-bold text-teal-700">Book an appointment →</a>');
+            }
+            paintStats();
+          },
+          (err) => { console.error(err); $('apptList').innerHTML = empty('⚠️', 'Could not load appointments.'); });
+      }
+
+      function apptCard(a, forDoctor, featured) {
+        const d = toDate(a.date), link = safeHttps(a.meetingLink);
+        const who = forDoctor ? (a.patientName || 'Patient') : ('Dr. ' + String(a.doctorName || '').replace(/^Dr\.?\s*/i, ''));
+        const join = (!forDoctor && a.status === 'confirmed' && link) ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="abtn inline-block mt-3 text-white bg-gradient-to-r from-teal-600 to-emerald-600">🎥 Join video call</a>` : '';
+        return `
+          <a href="appointments.html" class="card block ${featured ? 'border-teal-200 bg-gradient-to-br from-teal-50 to-white' : ''}">
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0">
+                ${featured ? '<p class="text-[10px] font-extrabold uppercase text-teal-700 mb-0.5">Next appointment</p>' : ''}
+                <p class="font-bold text-sm truncate">${esc(who)}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${esc(TYPES[a.type] || 'Consult')}</p>
+              </div>
+              <span class="badge badge-${esc(a.status)}">${a.status === 'requested' ? 'awaiting' : esc(a.status)}</span>
+            </div>
+            <p class="text-sm font-semibold text-teal-800 mt-2">🗓 ${esc(whenLabel(d))}</p>${join}
+          </a>`;
+      }
+
+      /* ---------- consultations (patient + doctor) ---------- */
+      if (role === 'patient' || role === 'doctor') {
+        show('consultSec');
+        getDocs(query(collection(db, 'consultations'), where(role === 'doctor' ? 'doctorId' : 'patientId', '==', uid)))
+          .then((snap) => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+            counts.chats = list.filter(c => c.status === 'active').length; paintStats();
+            if (!list.length) { $('consultList').innerHTML = empty('💬', role === 'doctor' ? 'No consultations yet.' : 'No consultations yet. Pick a doctor to start one.', role === 'patient' ? '<a href="doctors.html" class="inline-block mt-2 text-xs font-bold text-teal-700">Find a doctor →</a>' : ''); return; }
+            $('consultList').innerHTML = list.slice(0, 4).map(c => {
+              const who = role === 'doctor' ? (c.patientName || 'Patient') : ('Dr. ' + String(c.doctorName || '—').replace(/^Dr\.?\s*/i, ''));
+              const when = toDate(c.createdAt);
+              return `
+                <div class="card flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-bold text-sm truncate">${esc(who)}</p>
+                    <p class="text-xs text-slate-500 mt-0.5"><span class="badge badge-${esc(c.status)}">${esc(String(c.status || '').replace(/_/g, ' '))}</span> ${when ? '· ' + esc(when.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })) : ''}</p>
+                  </div>
+                  ${c.status === 'active' ? `<a href="chat.html?id=${encodeURIComponent(c.id)}" class="abtn text-white bg-gradient-to-r from-teal-600 to-emerald-600 shrink-0">Open chat</a>` : ''}
+                </div>`;
+            }).join('');
+          })
+          .catch((e) => { console.error(e); $('consultList').innerHTML = empty('⚠️', 'Could not load consultations.'); });
+      }
+
+      /* ---------- orders (patient + pharmacist, live) ---------- */
+      function tracker(o) {
+        if (o.status === 'cancelled') return '<p class="text-[11px] font-bold text-red-600 mt-2">Order cancelled</p>';
+        const flow = ['placed', 'confirmed', 'preparing', o.deliveryMethod === 'delivery' ? 'out_for_delivery' : 'ready', 'completed'];
+        const L = { placed: 'Placed', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready', out_for_delivery: 'On the way', completed: 'Done' };
+        let idx = flow.indexOf(o.status); if (idx < 0) idx = (o.status === 'ready' || o.status === 'out_for_delivery') ? 3 : 0;
+        return `<div class="flex gap-1 mt-3">${flow.map((s, i) => `<div class="flex-1"><div class="h-1.5 rounded-full ${i <= idx ? 'bg-teal-500' : 'bg-slate-200'}"></div><p class="text-[9px] mt-1 text-center ${i === idx ? 'font-bold text-teal-700' : 'text-slate-400'}">${L[s]}</p></div>`).join('')}</div>`;
+      }
+      const money = (n) => '₦' + Number(n || 0).toLocaleString('en-NG');
+      const itemsText = (o) => (o.items || []).slice(0, 3).map(i => `${Number(i.qty ?? i.quantity ?? 1)}× ${esc(i.name || 'Item')}`).join(', ') + ((o.items || []).length > 3 ? '…' : '');
+
+      if (role === 'patient' || role === 'pharmacist') {
+        show('orderSec');
+        const isPh = role === 'pharmacist';
+        if (isPh) { $('orderTitle').textContent = 'Incoming orders'; $('orderMore').textContent = 'Manage →'; $('orderMore').href = 'pharmacist.html#orders'; }
+        onSnapshot(query(collection(db, 'orders'), where(isPh ? 'pharmacyOwnerId' : 'patientId', '==', uid)),
+          (snap) => {
+            const all = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+            const active = all.filter(o => !['completed', 'cancelled'].includes(o.status));
+            if (isPh) { counts.newOrders = all.filter(o => o.status === 'placed').length; counts.activeOrders = active.length; }
+            else counts.orders = active.length;
+            paintStats();
+            const shown = (isPh ? active : all).slice(0, 3);
+            if (!shown.length) { $('orderList').innerHTML = empty('📦', isPh ? 'No active orders right now.' : 'No orders yet.', isPh ? '' : '<a href="pharmacy-search.html" class="inline-block mt-2 text-xs font-bold text-teal-700">Find a medicine →</a>'); return; }
+            $('orderList').innerHTML = shown.map(o => `
+              <div class="card">
+                <div class="flex justify-between items-start gap-2">
+                  <div class="min-w-0">
+                    <p class="font-bold text-sm">#${esc(o.id.slice(0, 8).toUpperCase())}${isPh ? ' · ' + esc(o.patientName || 'Customer') : ''}</p>
+                    <p class="text-xs text-slate-500 mt-0.5 truncate">${itemsText(o) || 'No items'}</p>
+                  </div>
+                  <p class="font-extrabold text-sm text-teal-700 shrink-0">${money(o.total)}</p>
+                </div>
+                <div class="flex items-center gap-1.5 mt-1.5">
+                  <span class="badge badge-${esc(o.status)}">${esc(String(o.status || '').replace(/_/g, ' '))}</span>
+                  <span class="text-[11px] text-slate-400">${o.deliveryMethod === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}</span>
+                </div>
+                ${isPh ? '' : tracker(o)}
+              </div>`).join('');
+          },
+          (err) => { console.error(err); $('orderList').innerHTML = empty('⚠️', 'Could not load orders.'); });
+      }
+
+      /* ---------- admin: things to review ---------- */
+      if (role === 'admin') {
+        show('adminSec');
+        const q = (col, field, val) => getDocs(query(collection(db, col), where(field, '==', val))).then(s => s.size);
+        Promise.allSettled([q('doctors', 'status', 'pending'), q('pharmacies', 'status', 'pending'), q('consultations', 'status', 'paid_pending'), q('studentPurchases', 'status', 'paid_pending')])
+          .then(([d, p, c, s]) => {
+            const v = (r) => r.status === 'fulfilled' ? r.value : null;
+            counts.pDoctors = v(d) ?? '–'; counts.pPharm = v(p) ?? '–';
+            counts.pPay = (v(c) == null && v(s) == null) ? '–' : (v(c) || 0) + (v(s) || 0);
+            paintStats();
+            const rows = [['👨‍⚕️', 'Doctors awaiting approval', v(d)], ['💊', 'Pharmacies awaiting approval', v(p)], ['💳', 'Consultation payments', v(c)], ['🎓', 'Student Hub payments', v(s)]];
+            $('adminList').innerHTML = rows.map(([e, l, n]) => `
+              <a href="admin.html" class="card flex items-center justify-between">
+                <span class="text-sm font-semibold">${e} ${l}</span>
+                <span class="text-sm font-extrabold ${n ? 'text-orange-600' : 'text-slate-300'}">${n ?? '–'}</span>
+              </a>`).join('');
+          });
+      }
+
+      /* ---------- support: open tickets ---------- */
+      if (role === 'support') {
+        getDocs(query(collection(db, 'tickets'), where('status', '==', 'open')))
+          .then(s => { counts.tickets = s.size; paintStats(); })
+          .catch(() => { counts.tickets = '–'; paintStats(); });
+      }
+
+      /* ---------- setup checklists ---------- */
+      function paintSetup(title, steps) {
+        const done = steps.filter(s => s.ok).length;
+        if (done === steps.length) { $('setup').innerHTML = ''; return; }
+        $('setup').innerHTML = `
+          <div class="card">
+            <div class="flex items-center justify-between mb-2">
+              <p class="font-extrabold text-sm">${esc(title)}</p>
+              <span class="text-xs font-bold text-teal-700">${done}/${steps.length}</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 rounded-full mb-3 overflow-hidden"><div class="h-full bg-gradient-to-r from-teal-500 to-emerald-500" style="width:${Math.round(done / steps.length * 100)}%"></div></div>
+            <div class="space-y-2">${steps.map(s => {
+              const inner = `<span class="${s.ok ? 'text-emerald-600' : 'text-slate-300'} text-base">${s.ok ? '✔' : '○'}</span><span class="flex-1 text-sm ${s.ok ? 'text-slate-400 line-through' : 'font-semibold'}">${esc(s.label)}</span>${!s.ok && s.href ? '<span class="text-xs font-bold text-teal-700">Do it →</span>' : ''}`;
+              return (!s.ok && s.href) ? `<a href="${s.href}" class="flex items-center gap-2">${inner}</a>` : `<div class="flex items-center gap-2">${inner}</div>`;
+            }).join('')}</div>
+          </div>`;
+      }
+
+      if (role === 'doctor') {
+        Promise.all([getDoc(doc(db, 'doctors', uid)), getDoc(doc(db, 'availability', uid))]).then(([d, a]) => {
+          paintSetup('Finish setting up your practice', [
+            { ok: d.exists(), label: 'Register your doctor profile', href: 'doctor-register.html' },
+            { ok: a.exists(), label: 'Set your working hours', href: 'doctor-availability.html' },
+            { ok: !!photo, label: 'Add a profile photo', href: 'Update profile.html' },
+            { ok: d.exists() && d.data().status === 'approved', label: 'Approval by our team' }
+          ]);
+        }).catch(() => {});
+      } else if (role === 'pharmacist') {
+        getDocs(query(collection(db, 'pharmacies'), where('ownerId', '==', uid))).then(async (snap) => {
+          const ph = snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+          let nDrugs = 0;
+          if (ph) { try { nDrugs = (await getDocs(collection(db, 'pharmacies', ph.id, 'drugs'))).size; } catch (_) {} }
+          counts.drugs = nDrugs; paintStats();
+          paintSetup('Finish setting up your pharmacy', [
+            { ok: !!ph, label: 'Register your pharmacy', href: 'pharmacist.html' },
+            { ok: nDrugs > 0, label: 'Add your first drug', href: 'pharmacist.html' },
+            { ok: !!ph && ph.lat != null && ph.lng != null, label: 'Add your map location', href: 'pharmacist.html' },
+            { ok: !!ph && ph.status === 'approved', label: 'Approval by our team' }
+          ]);
+        }).catch(() => {});
+      } else if (role === 'patient' && !profile.phone) {
+        paintSetup('Complete your profile', [
+          { ok: false, label: 'Add your phone number so doctors and pharmacies can reach you', href: 'Update profile.html' },
+          { ok: true, label: 'Create your account' }
+        ]);
+      }
+
+      if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

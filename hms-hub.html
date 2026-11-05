@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <meta name="description" content="MiracardiacHealth – Full Standard Hospital Management System Hub" />
+  <title>HMS Hub | MiracardiacHealth – World-Class Hospital Management</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#7c3aed,#0f766e); background-size: 300% 300%; animation: gradMove 16s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .module-card { background:#fff; border:1px solid #e2e8f0; border-radius:1.1rem; padding:1rem; transition: all .2s; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+    .module-card:hover, .module-card:active { transform:translateY(-2px); box-shadow:0 8px 20px rgba(13,148,136,.12); border-color:#99f6e4; }
+    .mod-icon { width:2.75rem; height:2.75rem; border-radius:.9rem; display:flex; align-items:center; justify-content:center; font-size:1.35rem; }
+    .role-pill { font-size:.65rem; font-weight:700; padding:.2rem .5rem; border-radius:999px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="Dashboard.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base leading-none">Hospital Management System</h1>
+          <p class="text-[10px] text-slate-400 mt-0.5">World-class clinical & operational platform</p>
+        </div>
+      </div>
+      <span class="role-pill bg-teal-100 text-teal-800" id="roleBadge">Staff</span>
+    </div>
+  </header>
+
+  <section class="ah-gradient text-white">
+    <div class="max-w-3xl mx-auto px-4 py-6">
+      <h2 class="text-xl font-extrabold">Full Standard HMS</h2>
+      <p class="text-sm text-white/85 mt-1 max-w-xl">Unified modules for surgeons, physicians, nurses, lab scientists, radiologists, pharmacists, administrators, counselors and every hospital department. Designed for excellence in care delivery worldwide.</p>
+      <div class="flex flex-wrap gap-2 mt-4 text-xs font-semibold">
+        <span class="bg-white/20 rounded-full px-3 py-1">EMR</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Inpatient</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">OT / Surgery</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Lab & Radiology</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Nursing</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Billing</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Inventory</span>
+        <span class="bg-white/20 rounded-full px-3 py-1">Analytics</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-3xl mx-auto px-4 py-5 space-y-6">
+
+    <!-- Clinical Core -->
+    <section>
+      <h3 class="font-extrabold text-sm text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span> Clinical Core
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="emr.html" class="module-card">
+          <div class="mod-icon bg-teal-50 text-teal-700 mb-2">📋</div>
+          <div class="font-bold text-sm">Electronic Medical Records</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Complete patient chart, history, allergies, vitals, notes</p>
+        </a>
+        <a href="inpatient.html" class="module-card">
+          <div class="mod-icon bg-blue-50 text-blue-700 mb-2">🛏️</div>
+          <div class="font-bold text-sm">Inpatient & Wards</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Bed board, admissions, transfers, discharge</p>
+        </a>
+        <a href="surgery-ot.html" class="module-card">
+          <div class="mod-icon bg-rose-50 text-rose-700 mb-2">🔪</div>
+          <div class="font-bold text-sm">Surgery / OT</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Theatre scheduling, pre-op, WHO checklist, post-op</p>
+        </a>
+        <a href="nursing.html" class="module-card">
+          <div class="mod-icon bg-indigo-50 text-indigo-700 mb-2">👩‍⚕️</div>
+          <div class="font-bold text-sm">Nursing Station</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Care plans, MAR, vitals, shift handover</p>
+        </a>
+        <a href="emergency.html" class="module-card">
+          <div class="mod-icon bg-red-50 text-red-700 mb-2">🚨</div>
+          <div class="font-bold text-sm">Emergency & Triage</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">ESI triage, trauma bay, rapid registration</p>
+        </a>
+        <a href="referrals.html" class="module-card">
+          <div class="mod-icon bg-amber-50 text-amber-700 mb-2">↗️</div>
+          <div class="font-bold text-sm">Referrals & Consults</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Internal & external specialist referrals</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Diagnostics -->
+    <section>
+      <h3 class="font-extrabold text-sm text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-4 bg-sky-500 rounded-full"></span> Diagnostics & Imaging
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="laboratory.html" class="module-card">
+          <div class="mod-icon bg-violet-50 text-violet-700 mb-2">🧪</div>
+          <div class="font-bold text-sm">Laboratory</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Orders, specimen tracking, results, critical alerts</p>
+        </a>
+        <a href="radiology.html" class="module-card">
+          <div class="mod-icon bg-cyan-50 text-cyan-700 mb-2">📷</div>
+          <div class="font-bold text-sm">Radiology & Imaging</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">X-ray, CT, MRI, ultrasound requests & reports</p>
+        </a>
+        <a href="pathology.html" class="module-card">
+          <div class="mod-icon bg-fuchsia-50 text-fuchsia-700 mb-2">🔬</div>
+          <div class="font-bold text-sm">Pathology</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Histopathology, cytology, blood bank interface</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Pharmacy & Supply -->
+    <section>
+      <h3 class="font-extrabold text-sm text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span> Pharmacy, Inventory & Supply Chain
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="pharmacist.html" class="module-card">
+          <div class="mod-icon bg-emerald-50 text-emerald-700 mb-2">💊</div>
+          <div class="font-bold text-sm">Hospital Pharmacy</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Inpatient & outpatient dispensing, formulary</p>
+        </a>
+        <a href="inventory.html" class="module-card">
+          <div class="mod-icon bg-lime-50 text-lime-700 mb-2">📦</div>
+          <div class="font-bold text-sm">Inventory & Stores</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Stock levels, expiry, procurement, CSSD</p>
+        </a>
+        <a href="pharmacy-search.html" class="module-card">
+          <div class="mod-icon bg-green-50 text-green-700 mb-2">🔍</div>
+          <div class="font-bold text-sm">Drug Search & Cart</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Patient-facing pharmacy marketplace</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Administration & Finance -->
+    <section>
+      <h3 class="font-extrabold text-sm text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-4 bg-orange-500 rounded-full"></span> Administration, Finance & Quality
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="billing.html" class="module-card">
+          <div class="mod-icon bg-orange-50 text-orange-700 mb-2">💰</div>
+          <div class="font-bold text-sm">Billing & Invoicing</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Itemized bills, insurance, deposits, receipts</p>
+        </a>
+        <a href="staff-hr.html" class="module-card">
+          <div class="mod-icon bg-slate-100 text-slate-700 mb-2">👥</div>
+          <div class="font-bold text-sm">Staff & HR</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Roster, credentials, leave, performance</p>
+        </a>
+        <a href="analytics.html" class="module-card">
+          <div class="mod-icon bg-purple-50 text-purple-700 mb-2">📊</div>
+          <div class="font-bold text-sm">Analytics & Reports</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">KPIs, occupancy, outcomes, revenue dashboards</p>
+        </a>
+        <a href="quality-safety.html" class="module-card">
+          <div class="mod-icon bg-yellow-50 text-yellow-700 mb-2">🛡️</div>
+          <div class="font-bold text-sm">Quality & Safety</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Incident reports, audits, infection control</p>
+        </a>
+        <a href="admin.html" class="module-card">
+          <div class="mod-icon bg-teal-50 text-teal-700 mb-2">⚙️</div>
+          <div class="font-bold text-sm">Platform Admin</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Users, approvals, settings, branding</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Patient Experience & Counseling -->
+    <section>
+      <h3 class="font-extrabold text-sm text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-4 bg-pink-500 rounded-full"></span> Patient Experience, Counseling & Education
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="counseling.html" class="module-card">
+          <div class="mod-icon bg-pink-50 text-pink-700 mb-2">💬</div>
+          <div class="font-bold text-sm">Health Counseling</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Mental health, lifestyle, chronic disease coaching</p>
+        </a>
+        <a href="appointments.html" class="module-card">
+          <div class="mod-icon bg-blue-50 text-blue-700 mb-2">📅</div>
+          <div class="font-bold text-sm">Appointments</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Book, reschedule, waitlist, reminders</p>
+        </a>
+        <a href="chat.html" class="module-card">
+          <div class="mod-icon bg-teal-50 text-teal-700 mb-2">💭</div>
+          <div class="font-bold text-sm">Secure Messaging</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Doctor-patient & care-team chat</p>
+        </a>
+        <a href="student-hub.html" class="module-card">
+          <div class="mod-icon bg-indigo-50 text-indigo-700 mb-2">🎓</div>
+          <div class="font-bold text-sm">Medical Education Hub</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Courses, CME, student resources</p>
+        </a>
+        <a href="clinical-guidelines.html" class="module-card">
+          <div class="mod-icon bg-sky-50 text-sky-700 mb-2">📖</div>
+          <div class="font-bold text-sm">Clinical Guidelines</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Evidence-based protocols & decision support</p>
+        </a>
+        <a href="discharge.html" class="module-card">
+          <div class="mod-icon bg-green-50 text-green-700 mb-2">🏠</div>
+          <div class="font-bold text-sm">Discharge & Follow-up</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Summaries, meds, appointments, education</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- World-class features banner -->
+    <section class="rounded-2xl bg-gradient-to-br from-slate-900 to-teal-900 text-white p-5">
+      <h3 class="font-extrabold text-lg">Built to be among the best in the world</h3>
+      <ul class="mt-3 space-y-2 text-sm text-white/90">
+        <li class="flex gap-2"><span>✓</span> Role-based access for every hospital department</li>
+        <li class="flex gap-2"><span>✓</span> WHO Surgical Safety Checklist & infection-control workflows</li>
+        <li class="flex gap-2"><span>✓</span> Structured EMR with allergies, problem list, medication reconciliation</li>
+        <li class="flex gap-2"><span>✓</span> Real-time bed board, OT board and lab critical-value alerts</li>
+        <li class="flex gap-2"><span>✓</span> Integrated billing, insurance and inventory with expiry tracking</li>
+        <li class="flex gap-2"><span>✓</span> Counseling, patient education and continuous professional development</li>
+        <li class="flex gap-2"><span>✓</span> Mobile-first, offline-capable, NDPR / privacy-aware design</li>
+        <li class="flex gap-2"><span>✓</span> Analytics for quality improvement and hospital performance</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-50 safe-bottom">
+    <div class="max-w-lg mx-auto flex justify-around py-2 text-[10px] font-bold text-slate-500">
+      <a href="Dashboard.html" class="flex flex-col items-center gap-0.5"><span class="text-lg">🏠</span>Home</a>
+      <a href="hms-hub.html" class="flex flex-col items-center gap-0.5 text-teal-600"><span class="text-lg">🏥</span>HMS</a>
+      <a href="appointments.html" class="flex flex-col items-center gap-0.5"><span class="text-lg">📅</span>Appts</a>
+      <a href="chat.html" class="flex flex-col items-center gap-0.5"><span class="text-lg">💬</span>Chat</a>
+      <a href="Update profile.html" class="flex flex-col items-center gap-0.5"><span class="text-lg">👤</span>Profile</a>
+    </div>
+  </nav>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['patient','doctor','pharmacist','support','admin','nurse','lab','radiologist','surgeon']);
+    if (profile) {
+      document.getElementById('roleBadge').textContent = (profile.role || 'Staff').replace(/^\w/, c => c.toUpperCase());
+    }
+  </script>
+</body>
+</html>

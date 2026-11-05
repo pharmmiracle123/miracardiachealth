@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Analytics & Reports | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>body{padding-bottom:40px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}.field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}.lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}</style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+      <div><h1 class="font-extrabold text-base">Analytics & Reports</h1><p class="text-[10px] text-slate-400">KPIs · Occupancy · Outcomes</p></div>
+    </div>
+  </header>
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="card">
+      <h3 class="font-bold text-sm mb-3">New Imaging Request</h3>
+      <div class="mb-2"><label class="lbl">Patient</label><input id="patient" class="field" /></div>
+      <div class="mb-2"><label class="lbl">Modality</label><select id="modality" class="field"><option>X-ray</option><option>Ultrasound</option><option>CT</option><option>MRI</option><option>Fluoroscopy</option><option>Mammography</option></select></div>
+      <div class="mb-2"><label class="lbl">Body part / protocol</label><input id="bodyPart" class="field" /></div>
+      <div class="mb-2"><label class="lbl">Clinical indication</label><textarea id="indication" class="field h-20"></textarea></div>
+      <div class="mb-2"><label class="lbl">Priority</label><select id="priority" class="field"><option>Routine</option><option>Urgent</option><option>STAT</option></select></div>
+      <button id="save" class="w-full bg-cyan-600 text-white font-bold py-2.5 rounded-xl text-sm">Submit Request</button>
+    </div>
+    <div id="list" class="space-y-2"></div>
+  </main>
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    await requireAuth(['doctor','nurse','admin','radiologist','surgeon']);
+    document.getElementById('save').onclick = async () => {
+      const patient = document.getElementById('patient').value.trim();
+      if (!patient) return alert('Patient required');
+      await addDoc(collection(db, 'imagingOrders'), {
+        patient, modality: document.getElementById('modality').value,
+        bodyPart: document.getElementById('bodyPart').value,
+        indication: document.getElementById('indication').value,
+        priority: document.getElementById('priority').value,
+        status: 'requested', createdAt: serverTimestamp(), createdBy: auth.currentUser?.uid
+      });
+      alert('Request submitted'); load();
+    };
+    async function load() {
+      const snap = await getDocs(query(collection(db, 'imagingOrders'), orderBy('createdAt', 'desc'), limit(25)));
+      document.getElementById('list').innerHTML = '';
+      snap.forEach(d => {
+        const x = d.data();
+        document.getElementById('list').innerHTML += `<div class="card text-sm"><div class="font-bold">${x.patient}</div><div class="text-xs text-cyan-700">${x.modality} · ${x.bodyPart||''} · ${x.priority}</div><div class="text-[10px] text-slate-400 mt-1">${x.indication||''}</div></div>`;
+      });
+    }
+    load();
+  </script>
+</body>
+</html>

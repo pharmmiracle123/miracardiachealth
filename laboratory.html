@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Laboratory Management | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+    .crit{background:#fef2f2;border-color:#fecaca}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Laboratory</h1>
+          <p class="text-[10px] text-slate-400">Orders · Specimens · Results · Critical alerts</p>
+        </div>
+      </div>
+      <button id="newOrderBtn" class="text-xs font-bold bg-violet-600 text-white rounded-lg px-3 py-1.5">+ Order</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="flex gap-1.5">
+      <button class="l-tab text-xs font-bold px-3 py-1.5 rounded-full bg-violet-600 text-white" data-t="queue">Work Queue</button>
+      <button class="l-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="results">Enter Results</button>
+      <button class="l-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="critical">Critical Values</button>
+    </div>
+
+    <div id="panel-queue" class="l-panel space-y-2">
+      <div id="labQueue" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-results" class="l-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-2">Enter / Update Result</h3>
+        <input id="resOrderId" class="field mb-2" placeholder="Order ID (from queue)" />
+        <input id="resPatient" class="field mb-2" placeholder="Patient name" />
+        <input id="resTest" class="field mb-2" placeholder="Test name" />
+        <textarea id="resValue" class="field h-24 mb-2" placeholder="Result values / interpretation"></textarea>
+        <label class="flex items-center gap-2 text-sm mb-2"><input type="checkbox" id="resCritical" /> Mark as CRITICAL value</label>
+        <button id="saveResult" class="w-full bg-violet-600 text-white font-bold py-2.5 rounded-xl text-sm">Save Result</button>
+      </div>
+    </div>
+
+    <div id="panel-critical" class="l-panel hidden space-y-2">
+      <p class="text-xs text-red-600 font-bold">Critical values require immediate clinician notification.</p>
+      <div id="critList" class="space-y-2"></div>
+    </div>
+
+    <!-- New order modal -->
+    <div id="orderModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3">
+        <h2 class="font-extrabold text-lg">New Lab Order</h2>
+        <div><label class="lbl">Patient</label><input id="oPatient" class="field" /></div>
+        <div><label class="lbl">Tests (comma or line separated)</label><textarea id="oTests" class="field h-20" placeholder="FBC, U&E, LFT, RBS, Malaria parasite..."></textarea></div>
+        <div><label class="lbl">Priority</label>
+          <select id="oPriority" class="field"><option>Routine</option><option>Urgent</option><option>STAT</option></select>
+        </div>
+        <div><label class="lbl">Clinical indication</label><input id="oIndication" class="field" /></div>
+        <div class="flex gap-2">
+          <button id="cancelOrder" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="placeLabOrder" class="flex-1 bg-violet-600 text-white rounded-xl py-2.5 font-bold text-sm">Place Order</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, where, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['lab','doctor','nurse','admin','surgeon']);
+
+    document.querySelectorAll('.l-tab').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.l-tab').forEach(b => { b.classList.remove('bg-violet-600','text-white'); b.classList.add('border','border-slate-200'); });
+        btn.classList.add('bg-violet-600','text-white');
+        document.querySelectorAll('.l-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById('panel-' + btn.dataset.t).classList.remove('hidden');
+      };
+    });
+
+    document.getElementById('newOrderBtn').onclick = () => {
+      document.getElementById('orderModal').classList.remove('hidden');
+      document.getElementById('orderModal').classList.add('flex');
+    };
+    document.getElementById('cancelOrder').onclick = () => {
+      document.getElementById('orderModal').classList.add('hidden');
+      document.getElementById('orderModal').classList.remove('flex');
+    };
+
+    document.getElementById('placeLabOrder').onclick = async () => {
+      const patient = document.getElementById('oPatient').value.trim();
+      const tests = document.getElementById('oTests').value.trim();
+      if (!patient || !tests) return alert('Patient and tests required');
+      await addDoc(collection(db, 'labOrders'), {
+        patient, tests, priority: document.getElementById('oPriority').value,
+        indication: document.getElementById('oIndication').value,
+        status: 'received', result: null, critical: false,
+        orderedAt: serverTimestamp(), orderedBy: auth.currentUser?.uid,
+        orderedByName: profile.fullName || profile.displayName
+      });
+      document.getElementById('orderModal').classList.add('hidden');
+      loadQueue();
+    };
+
+    async function loadQueue() {
+      const snap = await getDocs(query(collection(db, 'labOrders'), orderBy('orderedAt', 'desc'), limit(40)));
+      const el = document.getElementById('labQueue');
+      el.innerHTML = '';
+      const critEl = document.getElementById('critList');
+      critEl.innerHTML = '';
+      snap.forEach(d => {
+        const o = d.data();
+        const t = o.orderedAt?.toDate ? o.orderedAt.toDate().toLocaleString() : '';
+        const html = `<div class="card ${o.critical?'crit':''}">
+          <div class="flex justify-between"><span class="font-bold text-sm">${o.patient}</span>
+            <span class="text-[10px] font-bold uppercase ${o.priority==='STAT'?'text-red-600':o.priority==='Urgent'?'text-amber-600':'text-slate-500'}">${o.priority||'Routine'}</span></div>
+          <div class="text-xs mt-1">${o.tests}</div>
+          <div class="text-[10px] text-slate-400 mt-1">${t} · ${o.status} · ID: ${d.id.slice(0,8)}</div>
+          ${o.result ? `<div class="text-xs mt-2 bg-slate-50 rounded p-2">${o.result}</div>` : ''}
+          <div class="mt-2 flex gap-1">
+            <button data-id="${d.id}" data-act="collect" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded">Specimen collected</button>
+            <button data-id="${d.id}" data-act="fill" class="text-[10px] font-bold bg-violet-100 text-violet-800 px-2 py-0.5 rounded">Enter result</button>
+          </div>
+        </div>`;
+        el.innerHTML += html;
+        if (o.critical) critEl.innerHTML += html;
+      });
+      el.querySelectorAll('button').forEach(btn => {
+        btn.onclick = async () => {
+          if (btn.dataset.act === 'collect') {
+            await updateDoc(doc(db, 'labOrders', btn.dataset.id), { status: 'specimen_collected', collectedAt: serverTimestamp() });
+            loadQueue();
+          }
+          if (btn.dataset.act === 'fill') {
+            document.querySelector('[data-t="results"]').click();
+            document.getElementById('resOrderId').value = btn.dataset.id;
+          }
+        };
+      });
+    }
+
+    document.getElementById('saveResult').onclick = async () => {
+      const id = document.getElementById('resOrderId').value.trim();
+      if (!id) return alert('Order ID required');
+      const critical = document.getElementById('resCritical').checked;
+      await updateDoc(doc(db, 'labOrders', id), {
+        result: document.getElementById('resValue').value,
+        status: 'reported',
+        critical,
+        reportedAt: serverTimestamp(),
+        reportedBy: auth.currentUser?.uid
+      });
+      alert(critical ? 'CRITICAL result saved – notify clinician immediately' : 'Result saved');
+      loadQueue();
+    };
+
+    await loadQueue();
+  </script>
+</body>
+</html>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Pharmacy Manager | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }
+    .field { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .65rem .85rem; font-size: .875rem; }
+    .field:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    .lbl { display: block; font-size: .72rem; font-weight: 700; color: #475569; margin-bottom: .25rem; }
+    .tab-btn { transition: color .15s, border-color .15s; }
+    .chip { white-space: nowrap; font-size: .75rem; font-weight: 700; padding: .4rem .85rem; border-radius: 9999px; background: #fff; border: 1.5px solid #e2e8f0; color: #475569; }
+    .chip.on { background: linear-gradient(135deg,#0d9488,#059669); color: #fff; border-color: transparent; }
+    .pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; }
+    /* extra order statuses not in styles.css */
+    .badge-placed { background: #ffedd5; color: #9a3412; }
+    .badge-ready, .badge-out_for_delivery { background: #e0f2fe; color: #075985; }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .skeleton { background: linear-gradient(90deg,#e2e8f0,#f1f5f9,#e2e8f0); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: .9rem; height: 64px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <!-- Header / hero -->
+  <section class="ah-gradient text-white">
+    <div class="max-w-lg mx-auto px-4 pt-4 pb-14">
+      <div class="flex items-center justify-between">
+        <a href="Dashboard.html" class="text-sm font-semibold text-white/90">← Dashboard</a>
+        <span class="font-extrabold text-sm">Pharmacy Manager</span>
+        <a href="Nearby Services.html" class="text-xs font-semibold text-white/90">Map</a>
+      </div>
+      <div class="mt-5 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl">💊</div>
+        <div class="min-w-0">
+          <h1 id="heroName" class="text-xl font-extrabold truncate">Your Pharmacy</h1>
+          <p id="heroSub" class="text-xs text-white/85">Manage drugs, orders and your location</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-lg mx-auto px-4 -mt-8 relative z-10 space-y-4">
+
+    <!-- Status banner -->
+    <div id="pharmacyStatus" class="ah-card p-4 text-sm"></div>
+
+    <!-- Stats -->
+    <div id="stats" class="grid grid-cols-3 gap-2 hidden">
+      <div class="bg-white rounded-2xl border border-slate-100 p-3 text-center shadow-sm"><p id="stDrugs" class="text-xl font-extrabold text-teal-700">0</p><p class="text-[10px] font-semibold text-slate-500">Drugs listed</p></div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-3 text-center shadow-sm"><p id="stLow" class="text-xl font-extrabold text-amber-600">0</p><p class="text-[10px] font-semibold text-slate-500">Low / out of stock</p></div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-3 text-center shadow-sm"><p id="stNew" class="text-xl font-extrabold text-orange-600">0</p><p class="text-[10px] font-semibold text-slate-500">New orders</p></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-slate-200">
+      <button data-tab="drugs" class="tab-btn active px-4 py-2 text-sm font-semibold border-b-2 border-teal-600 text-teal-700">💊 Drugs</button>
+      <button data-tab="orders" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500">📦 Orders <span id="orderDot" class="hidden ml-1 inline-block w-2 h-2 rounded-full bg-orange-500"></span></button>
+      <button data-tab="profile" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500">🏪 Profile</button>
+    </div>
+
+    <!-- Drugs -->
+    <div id="panel-drugs" class="tab-panel space-y-3">
+      <div class="flex gap-2">
+        <input id="drugSearch" type="search" placeholder="Search your drugs…" class="field" />
+        <button id="addDrugBtn" class="btn-primary text-sm whitespace-nowrap px-4">+ Add</button>
+      </div>
+      <div id="drugsList" class="space-y-2"></div>
+    </div>
+
+    <!-- Orders -->
+    <div id="panel-orders" class="tab-panel hidden space-y-3">
+      <div id="orderChips" class="flex gap-2 overflow-x-auto no-scrollbar">
+        <button class="chip on" data-of="active">Active</button>
+        <button class="chip" data-of="done">Completed / Cancelled</button>
+        <button class="chip" data-of="all">All</button>
+      </div>
+      <div id="ordersList" class="space-y-2"></div>
+    </div>
+
+    <!-- Profile -->
+    <div id="panel-profile" class="tab-panel hidden">
+      <form id="pharmacyForm" class="ah-card p-4 space-y-3" novalidate>
+        <div>
+          <label class="lbl">Pharmacy Name *</label>
+          <input name="name" required maxlength="80" class="field" />
+        </div>
+        <div>
+          <label class="lbl">Street Address *</label>
+          <input name="address" required maxlength="160" class="field" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">City / LGA *</label>
+            <input name="city" required maxlength="60" class="field" />
+          </div>
+          <div>
+            <label class="lbl">Phone *</label>
+            <input name="phone" type="tel" required class="field" placeholder="0803 000 0000" />
+          </div>
+        </div>
+        <div>
+          <label class="lbl">WhatsApp (optional)</label>
+          <input name="whatsapp" type="tel" class="field" placeholder="0803 000 0000" />
+        </div>
+        <div>
+          <label class="lbl">Opening Hours</label>
+          <input name="hours" maxlength="80" class="field" placeholder="Mon-Sat 8am-8pm" />
+        </div>
+        <div>
+          <label class="lbl">PCN premises licence number (optional)</label>
+          <input name="licenseNumber" maxlength="40" class="field" placeholder="Speeds up approval" />
+        </div>
+
+        <!-- Map location -->
+        <div class="rounded-2xl border border-teal-100 bg-teal-50/50 p-3 space-y-2">
+          <p class="text-sm font-bold text-teal-800">📍 Map location</p>
+          <p class="text-xs text-slate-600">Lets patients find you on the "Nearby Services" map and get directions. Do this while you are at the pharmacy for the best accuracy.</p>
+          <p id="geoStatus" class="text-xs font-semibold text-slate-500">Not set yet</p>
+          <div class="flex gap-2">
+            <button type="button" id="geoBtn" class="flex-1 text-xs font-bold text-white bg-teal-600 rounded-lg py-2.5">Use my current location</button>
+            <button type="button" id="geoClear" class="hidden text-xs font-bold text-red-600 bg-red-50 rounded-lg px-3">Clear</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="coordPaste" class="field !py-2 !text-xs" placeholder="Or paste: 4.9267, 6.2676" />
+            <button type="button" id="coordApply" class="text-xs font-bold text-teal-700 bg-white border border-teal-200 rounded-lg px-3">Apply</button>
+          </div>
+          <p class="text-[10px] text-slate-400">Tip: in Google Maps, press and hold on your shop, then copy the numbers at the top.</p>
+        </div>
+
+        <button type="submit" id="savePharmacyBtn" class="btn-primary w-full">Save Pharmacy Profile</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Add / Edit Drug Modal -->
+  <div id="drugModal" class="fixed inset-0 z-50 hidden items-end justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-t-3xl p-5 max-h-[88vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="drugModalTitle" class="font-extrabold text-lg">Add Drug</h2>
+        <button id="closeDrugModal" type="button" class="text-slate-400 text-2xl leading-none px-2">×</button>
+      </div>
+      <form id="drugForm" class="space-y-3">
+        <input type="hidden" name="drugId" />
+        <div>
+          <label class="lbl">Name *</label>
+          <input name="name" required maxlength="100" class="field" placeholder="e.g. Paracetamol 500mg (10 tabs)" />
+        </div>
+        <div>
+          <label class="lbl">Category</label>
+          <input name="category" list="catList" maxlength="50" class="field" />
+          <datalist id="catList">
+            <option>Pain relief</option><option>Antibiotics</option><option>Antimalarials</option><option>Vitamins & supplements</option>
+            <option>Cough & cold</option><option>Stomach & digestion</option><option>Diabetes</option><option>Blood pressure</option>
+            <option>Skin care</option><option>First aid</option><option>Baby care</option><option>Family planning</option><option>Eye & ear</option>
+          </datalist>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl">Price (₦) *</label>
+            <input name="price" type="number" inputmode="decimal" min="0" step="any" required class="field" />
+          </div>
+          <div>
+            <label class="lbl">Stock *</label>
+            <input name="stock" type="number" inputmode="numeric" min="0" step="1" required class="field" />
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Expiry Date</label>
+          <input name="expiry" type="date" class="field" />
+        </div>
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" name="requiresPrescription" class="w-4 h-4" />
+          Requires prescription
+        </label>
+        <button type="submit" id="saveDrugBtn" class="btn-primary w-full">Save Drug</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import {db, requireRole, showToast, escapeHtml, formatCurrency,
+      collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, onSnapshot, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const esc = escapeHtml;
+
+    const profile = await requireRole(['pharmacist', 'admin']);
+    if (profile) init();
+
+    function init() {
+      let pharmacy = null, pharmacyId = null;
+      let drugs = [], orders = [];
+      let geo = null;                // { lat, lng } or null
+      let orderFilter = 'active';
+      let ordersUnsub = null;
+
+      const ACTIVE = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'];
+      const STATUSES = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
+      const PHONE_RE = /^(\+?234|0)[789][01]\d{8}$/;
+
+      /* ---------- helpers ---------- */
+      const cleanPhone = (p) => String(p || '').replace(/[\s\-()]/g, '');
+      const intlPhone = (p) => {
+        const d = cleanPhone(p).replace(/[^\d+]/g, ''); if (!d) return '';
+        if (d.startsWith('+')) return d; if (d.startsWith('234')) return '+' + d; if (d.startsWith('0')) return '+234' + d.slice(1);
+        return '+234' + d;
+      };
+      const fmtDate = (ts) => { try { return ts.toDate().toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
+      const setBusy = (btn, busy, txt) => { btn.disabled = busy; if (txt) btn.dataset.t = btn.dataset.t || btn.textContent; btn.textContent = busy ? txt : (btn.dataset.t || btn.textContent); };
+
+      /* ---------- tabs ---------- */
+      function openTab(name) {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          const on = b.dataset.tab === name;
+          b.classList.toggle('active', on); b.classList.toggle('border-teal-600', on); b.classList.toggle('text-teal-700', on);
+          b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on);
+        });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        $('panel-' + name).classList.remove('hidden');
+        if (name === 'orders') $('orderDot').classList.add('hidden');
+      }
+      document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
+
+      /* ---------- pharmacy load ---------- */
+      async function loadPharmacy() {
+        try {
+          const snap = await getDocs(query(collection(db, 'pharmacies'), where('ownerId', '==', profile.uid)));
+          if (snap.empty) {
+            pharmacy = null; pharmacyId = null;
+            $('pharmacyStatus').innerHTML = `<p class="font-bold text-amber-700">👋 Welcome! Set up your pharmacy</p><p class="text-xs text-slate-500 mt-1">Fill in the <strong>Profile</strong> tab and submit it for approval. Then you can add drugs and receive orders.</p>`;
+            openTab('profile');
+            return;
+          }
+          pharmacy = { id: snap.docs[0].id, ...snap.docs[0].data() };
+          pharmacyId = pharmacy.id;
+          paintStatus(); fillForm();
+          $('stats').classList.remove('hidden');
+          await loadDrugs();
+          listenOrders();
+        } catch (err) {
+          console.error(err);
+          $('pharmacyStatus').innerHTML = `<p class="text-red-600 text-sm">Could not load your pharmacy. Check your connection and refresh.</p>`;
+        }
+      }
+
+      function paintStatus() {
+        const s = pharmacy.status || 'pending';
+        $('heroName').textContent = pharmacy.name || 'Your Pharmacy';
+        $('heroSub').textContent = [pharmacy.city, pharmacy.hours].filter(Boolean).join(' · ') || 'Manage drugs, orders and your location';
+        const note = {
+          pending: '⏳ Under review. You can add drugs now. Patients will see your pharmacy once it is approved.',
+          approved: '✅ Live. Patients can find you and order from you.',
+          rejected: '❌ Not approved. Please check your details and contact support.'
+        }[s] || '';
+        const noGeo = (pharmacy.lat == null || pharmacy.lng == null) ? `<button id="goGeo" class="mt-2 text-xs font-bold text-teal-700 underline">📍 Add your map location so patients can find you</button>` : '';
+        $('pharmacyStatus').innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <p class="font-bold truncate">${esc(pharmacy.name || '')}</p>
+            <span class="badge badge-${esc(s)}">${esc(s)}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">${note}</p>${noGeo}`;
+        const g = $('goGeo'); if (g) g.onclick = () => { openTab('profile'); $('geoBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+      }
+
+      function fillForm() {
+        const f = $('pharmacyForm');
+        f.name.value = pharmacy.name || ''; f.address.value = pharmacy.address || ''; f.city.value = pharmacy.city || '';
+        f.phone.value = pharmacy.phone || ''; f.whatsapp.value = pharmacy.whatsapp || ''; f.hours.value = pharmacy.hours || '';
+        f.licenseNumber.value = pharmacy.licenseNumber || '';
+        const la = Number(pharmacy.lat), ln = Number(pharmacy.lng);
+        setGeo(pharmacy.lat != null && pharmacy.lng != null && Number.isFinite(la) && Number.isFinite(ln) ? { lat: la, lng: ln } : null);
+      }
+
+      /* ---------- map location ---------- */
+      function setGeo(g, extra = '') {
+        geo = g;
+        $('geoStatus').innerHTML = g
+          ? `<span class="text-emerald-700">✔ Saved: ${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}${extra}</span> · <a class="underline text-teal-700" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lng}">check on map</a><br><span class="text-slate-400">Remember to tap Save Pharmacy Profile.</span>`
+          : 'Not set yet';
+        $('geoClear').classList.toggle('hidden', !g);
+      }
+      const inNigeria = (lat, lng) => lat >= 4 && lat <= 14 && lng >= 2.5 && lng <= 15;
+
+      $('geoBtn').addEventListener('click', () => {
+        if (!navigator.geolocation) return showToast('This browser cannot share location. Paste coordinates instead.', 'warning');
+        const btn = $('geoBtn'); btn.disabled = true; btn.textContent = 'Finding location…';
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            btn.disabled = false; btn.textContent = 'Use my current location';
+            const lat = +pos.coords.latitude.toFixed(6), lng = +pos.coords.longitude.toFixed(6);
+            const acc = Math.round(pos.coords.accuracy || 0);
+            setGeo({ lat, lng }, acc ? ` (±${acc} m)` : '');
+            if (acc > 300) showToast('Location is not very accurate. Move near a window or outside and try again.', 'warning');
+            else showToast('Location captured', 'success');
+          },
+          (err) => {
+            btn.disabled = false; btn.textContent = 'Use my current location';
+            showToast(err.code === 1 ? 'Location blocked. Allow it in browser settings or paste coordinates.' : 'Could not get location. Try again or paste coordinates.', 'error');
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      });
+      $('coordApply').addEventListener('click', () => {
+        const m = $('coordPaste').value.match(/(-?\d{1,2}\.\d+)[,\s]+(-?\d{1,3}\.\d+)/);
+        if (!m) return showToast('Use the format: 4.9267, 6.2676', 'warning');
+        const lat = +(+m[1]).toFixed(6), lng = +(+m[2]).toFixed(6);
+        if (!inNigeria(lat, lng) && !confirm('These coordinates look like they are outside Nigeria. Use them anyway?')) return;
+        setGeo({ lat, lng }); $('coordPaste').value = '';
+      });
+      $('geoClear').addEventListener('click', () => setGeo(null));
+
+      /* ---------- save pharmacy ---------- */
+      $('pharmacyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const name = fd.get('name').trim(), address = fd.get('address').trim(), city = fd.get('city').trim();
+        const phone = cleanPhone(fd.get('phone')), whatsapp = cleanPhone(fd.get('whatsapp'));
+        if (!name || !address || !city) return showToast('Name, address and city are required', 'warning');
+        if (!PHONE_RE.test(phone)) return showToast('Enter a valid Nigerian phone number', 'warning');
+        if (whatsapp && !PHONE_RE.test(whatsapp)) return showToast('WhatsApp number is not valid', 'warning');
+
+        const data = {
+          name, address, city, phone, whatsapp,
+          hours: (fd.get('hours') || '').trim(),
+          licenseNumber: (fd.get('licenseNumber') || '').trim(),
+          lat: geo ? geo.lat : null,
+          lng: geo ? geo.lng : null,
+          updatedAt: serverTimestamp()
+        };
+        const btn = $('savePharmacyBtn'); setBusy(btn, true, 'Saving…');
+        try {
+          if (pharmacyId) {
+            await updateDoc(doc(db, 'pharmacies', pharmacyId), data);   // never touches status / ownerId
+            showToast('Pharmacy profile saved', 'success');
+          } else {
+            await addDoc(collection(db, 'pharmacies'), { ...data, ownerId: profile.uid, status: 'pending', createdAt: serverTimestamp() });
+            showToast('Submitted! We will review your pharmacy shortly.', 'success');
+          }
+          await loadPharmacy();
+          openTab('drugs');
+        } catch (err) {
+          console.error(err);
+          showToast(err.code === 'permission-denied' ? 'Not allowed. Your account may still be awaiting approval.' : (err.message || 'Could not save'), 'error');
+        } finally { setBusy(btn, false); }
+      });
+
+      /* ---------- drugs ---------- */
+      async function loadDrugs() {
+        if (!pharmacyId) return;
+        $('drugsList').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+        try {
+          const snap = await getDocs(collection(db, 'pharmacies', pharmacyId, 'drugs'));
+          drugs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          renderDrugs(); updateStats();
+        } catch (err) {
+          console.error(err);
+          $('drugsList').innerHTML = '<p class="text-sm text-red-600 text-center py-6">Could not load drugs.</p>';
+        }
+      }
+
+      function drugFlags(d) {
+        const flags = [];
+        const stock = Number(d.stock) || 0;
+        if (stock === 0) flags.push('<span class="pill bg-red-100 text-red-700">Out of stock</span>');
+        else if (stock <= 5) flags.push('<span class="pill bg-amber-100 text-amber-700">Low stock</span>');
+        if (d.expiry) {
+          const days = Math.floor((new Date(d.expiry) - Date.now()) / 864e5);
+          if (days < 0) flags.push('<span class="pill bg-red-100 text-red-700">Expired</span>');
+          else if (days <= 60) flags.push(`<span class="pill bg-amber-100 text-amber-700">Expires in ${days}d</span>`);
+        }
+        if (d.requiresPrescription) flags.push('<span class="pill bg-violet-100 text-violet-700">Rx</span>');
+        return flags.join(' ');
+      }
+
+      function renderDrugs() {
+        const q = $('drugSearch').value.trim().toLowerCase();
+        const list = drugs.filter(d => !q || (d.name || '').toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q));
+        if (!drugs.length) { $('drugsList').innerHTML = `<div class="text-center py-10 text-slate-400"><div class="text-4xl mb-2">💊</div><p class="text-sm">No drugs yet. Tap <strong>+ Add</strong> to list your first one.</p></div>`; return; }
+        if (!list.length) { $('drugsList').innerHTML = '<p class="text-center text-sm text-slate-400 py-8">No drug matches your search.</p>'; return; }
+        $('drugsList').innerHTML = list.map(d => `
+          <div class="ah-card p-3">
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0">
+                <p class="font-semibold text-sm leading-snug">${esc(d.name)}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${esc(d.category || 'Uncategorised')}</p>
+              </div>
+              <p class="font-extrabold text-sm text-teal-700 shrink-0">${formatCurrency(d.price)}</p>
+            </div>
+            <div class="flex items-center justify-between mt-2 gap-2">
+              <div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-slate-500">Stock: <strong>${Number(d.stock) || 0}</strong></span> ${drugFlags(d)}</div>
+              <div class="flex gap-3 shrink-0">
+                <button data-edit="${esc(d.id)}" class="text-xs font-bold text-teal-600">Edit</button>
+                <button data-del="${esc(d.id)}" class="text-xs font-bold text-red-600">Delete</button>
+              </div>
+            </div>
+          </div>`).join('');
+      }
+      $('drugSearch').addEventListener('input', renderDrugs);
+
+      $('drugsList').addEventListener('click', async (e) => {
+        const ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-del]');
+        if (ed) {
+          const d = drugs.find(x => x.id === ed.dataset.edit); if (!d) return;
+          const f = $('drugForm'); f.reset();
+          f.drugId.value = d.id; f.name.value = d.name || ''; f.category.value = d.category || '';
+          f.price.value = d.price ?? ''; f.stock.value = d.stock ?? ''; f.expiry.value = d.expiry || '';
+          f.requiresPrescription.checked = !!d.requiresPrescription;
+          openModal('Edit Drug');
+        } else if (dl) {
+          const d = drugs.find(x => x.id === dl.dataset.del);
+          if (!confirm(`Delete "${d ? d.name : 'this drug'}"?`)) return;
+          try { await deleteDoc(doc(db, 'pharmacies', pharmacyId, 'drugs', dl.dataset.del)); showToast('Drug deleted', 'success'); loadDrugs(); }
+          catch (err) { showToast(err.message || 'Could not delete', 'error'); }
+        }
+      });
+
+      function openModal(title) {
+        $('drugModalTitle').textContent = title;
+        $('drugModal').classList.remove('hidden'); $('drugModal').classList.add('flex');
+      }
+      function closeModal() { $('drugModal').classList.add('hidden'); $('drugModal').classList.remove('flex'); }
+      $('addDrugBtn').addEventListener('click', () => {
+        if (!pharmacyId) { showToast('Register your pharmacy first (Profile tab)', 'warning'); return openTab('profile'); }
+        $('drugForm').reset(); $('drugForm').drugId.value = ''; openModal('Add Drug');
+      });
+      $('closeDrugModal').addEventListener('click', closeModal);
+      $('drugModal').addEventListener('click', (e) => { if (e.target === $('drugModal')) closeModal(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+      $('drugForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const price = parseFloat(fd.get('price')), stock = parseInt(fd.get('stock'), 10);
+        if (!(price >= 0) || !(stock >= 0)) return showToast('Enter a valid price and stock', 'warning');
+        const data = {
+          name: fd.get('name').trim(),
+          category: (fd.get('category') || '').trim(),
+          price, stock,
+          expiry: fd.get('expiry') || null,
+          requiresPrescription: !!fd.get('requiresPrescription'),
+          updatedAt: serverTimestamp()
+        };
+        const drugId = fd.get('drugId');
+        const btn = $('saveDrugBtn'); setBusy(btn, true, 'Saving…');
+        try {
+          if (drugId) await updateDoc(doc(db, 'pharmacies', pharmacyId, 'drugs', drugId), data);
+          else { data.createdAt = serverTimestamp(); await addDoc(collection(db, 'pharmacies', pharmacyId, 'drugs'), data); }
+          showToast('Drug saved', 'success'); closeModal(); loadDrugs();
+        } catch (err) { console.error(err); showToast(err.message || 'Could not save drug', 'error'); }
+        finally { setBusy(btn, false); }
+      });
+
+      /* ---------- orders (live) ---------- */
+      function listenOrders() {
+        if (ordersUnsub) ordersUnsub();
+        let first = true;
+        $('ordersList').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+        // Must query by pharmacyOwnerId: that is the field the security rules check.
+        ordersUnsub = onSnapshot(
+          query(collection(db, 'orders'), where('pharmacyOwnerId', '==', profile.uid)),
+          (snap) => {
+            orders = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            if (!first) snap.docChanges().forEach(c => {
+              if (c.type === 'added') { showToast('🛒 New order received!', 'success'); if ($('panel-orders').classList.contains('hidden')) $('orderDot').classList.remove('hidden'); }
+            });
+            first = false; renderOrders(); updateStats();
+          },
+          (err) => { console.error(err); $('ordersList').innerHTML = '<p class="text-sm text-red-600 text-center py-6">Could not load orders.</p>'; }
+        );
+      }
+
+      function renderOrders() {
+        const list = orders.filter(o => orderFilter === 'all' ? true : orderFilter === 'active' ? ACTIVE.includes(o.status) : !ACTIVE.includes(o.status));
+        if (!list.length) { $('ordersList').innerHTML = `<div class="text-center py-10 text-slate-400"><div class="text-4xl mb-2">📦</div><p class="text-sm">${orders.length ? 'No orders in this view.' : 'No orders yet.'}</p></div>`; return; }
+        $('ordersList').innerHTML = list.map(o => {
+          const items = (o.items || []).map(i => `${Number(i.qty ?? i.quantity ?? 1)}× ${esc(i.name || 'Item')}`).join(', ');
+          const tel = intlPhone(o.phone), wa = tel.replace('+', '');
+          const isDelivery = o.deliveryMethod === 'delivery';
+          return `
+            <div class="ah-card p-3.5">
+              <div class="flex justify-between items-start gap-2">
+                <div class="min-w-0">
+                  <p class="font-bold text-sm">#${esc(o.id.slice(0, 8).toUpperCase())} · ${esc(o.patientName || 'Customer')}</p>
+                  <p class="text-[11px] text-slate-400">${esc(fmtDate(o.createdAt))}</p>
+                </div>
+                <span class="badge badge-${esc(o.status)}">${esc(String(o.status || '').replace(/_/g, ' '))}</span>
+              </div>
+              <p class="text-xs text-slate-600 mt-2">${items || 'No items'}</p>
+              <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                <span class="text-sm font-extrabold text-teal-700">${formatCurrency(o.total)}</span>
+                <span class="pill ${o.paymentStatus === 'success' ? 'badge-success' : 'badge-pending'}">${o.paymentStatus === 'success' ? 'Paid' : 'Pay on pickup/delivery'}</span>
+                <span class="pill bg-slate-100 text-slate-600">${isDelivery ? '🚚 Delivery' : '🏪 Pickup'}</span>
+                ${o.requiresPrescription ? '<span class="pill bg-violet-100 text-violet-700">Rx needed</span>' : ''}
+              </div>
+              ${isDelivery && o.address ? `<p class="text-xs text-slate-500 mt-2">📍 ${esc(o.address)}</p>` : ''}
+              <div class="flex items-center gap-2 mt-3">
+                <select data-oid="${esc(o.id)}" class="status-select field !py-2 !text-xs flex-1">
+                  ${STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.replace(/_/g, ' ')}</option>`).join('')}
+                </select>
+                ${tel ? `<a href="tel:${esc(tel)}" class="text-xs font-bold text-teal-700 bg-teal-50 rounded-lg px-3 py-2.5">Call</a>
+                <a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener" class="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2.5">Chat</a>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      $('ordersList').addEventListener('change', async (e) => {
+        const sel = e.target.closest('.status-select'); if (!sel) return;
+        try {
+          await updateDoc(doc(db, 'orders', sel.dataset.oid), { status: sel.value, updatedAt: serverTimestamp() });
+          showToast('Order status updated', 'success');
+        } catch (err) { console.error(err); showToast('Could not update status', 'error'); renderOrders(); }
+      });
+      $('orderChips').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-of]'); if (!b) return;
+        orderFilter = b.dataset.of;
+        document.querySelectorAll('#orderChips .chip').forEach(c => c.classList.toggle('on', c === b));
+        renderOrders();
+      });
+
+      /* ---------- stats ---------- */
+      function updateStats() {
+        $('stDrugs').textContent = drugs.length;
+        $('stLow').textContent = drugs.filter(d => (Number(d.stock) || 0) <= 5).length;
+        $('stNew').textContent = orders.filter(o => o.status === 'placed').length;
+      }
+
+      window.addEventListener('beforeunload', () => { if (ordersUnsub) ordersUnsub(); });
+      if (location.hash === '#orders') openTab('orders');
+      loadPharmacy();
+    }
+  </script>
+</body>
+</html>

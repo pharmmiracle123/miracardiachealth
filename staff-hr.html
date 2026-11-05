@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Staff & HR | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>body{padding-bottom:40px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}.field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}.lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}</style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+      <div><h1 class="font-extrabold text-base">Staff &amp; HR</h1><p class="text-[10px] text-slate-400">Directory · Roles · Departments</p></div>
+    </div>
+  </header>
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="card">
+      <p class="text-sm text-slate-600">Staff accounts (doctors, pharmacists, nurses, etc.) are created only by <strong>Admin</strong> from the Admin Dashboard → Users → <em>Add Staff</em>. Patients register themselves on the public Sign up page.</p>
+      <a href="admin.html" class="inline-block mt-3 text-sm font-bold text-teal-700">Open Admin → Users →</a>
+    </div>
+    <div class="flex gap-2">
+      <input id="search" type="search" class="field flex-1" placeholder="Search name, role, department…" />
+      <select id="roleFilter" class="field !w-36">
+        <option value="">All roles</option>
+        <option>doctor</option><option>surgeon</option><option>pharmacist</option><option>nurse</option>
+        <option>lab</option><option>radiologist</option><option>counselor</option><option>support</option>
+        <option>admin</option>
+      </select>
+    </div>
+    <div id="list" class="space-y-2"></div>
+  </main>
+  <script type="module">
+    import { requireRole, applyPlatformBranding, db, collection, getDocs, query, limit, escapeHtml } from './js/config.js';
+    applyPlatformBranding();
+    await requireRole(['admin', 'doctor', 'nurse', 'pharmacist', 'surgeon']);
+    let all = [];
+    const el = document.getElementById('list');
+    const snap = await getDocs(query(collection(db, 'users'), limit(400)));
+    all = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.role && u.role !== 'patient');
+    function render() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const rf = document.getElementById('roleFilter').value;
+      const rows = all.filter(u => {
+        if (rf && u.role !== rf) return false;
+        if (!q) return true;
+        const hay = `${u.displayName||''} ${u.email||''} ${u.role||''} ${u.department||''} ${u.phone||''}`.toLowerCase();
+        return hay.includes(q);
+      });
+      if (!rows.length) {
+        el.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No staff found. Create them from Admin → Users.</p>';
+        return;
+      }
+      el.innerHTML = rows.map(u => `
+        <div class="card flex gap-3 items-start">
+          <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm shrink-0">${escapeHtml((u.displayName||'?')[0])}</div>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold text-sm truncate">${escapeHtml(u.displayName || u.email || u.id)}</p>
+            <p class="text-xs text-slate-500">${escapeHtml(u.role || '')}${u.department ? ' · ' + escapeHtml(u.department) : ''}</p>
+            <p class="text-[11px] text-slate-400 truncate">${escapeHtml(u.email || '')}${u.phone ? ' · ' + escapeHtml(u.phone) : ''}</p>
+          </div>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${u.status==='active'||u.status==='approved'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${escapeHtml(u.status||'pending')}</span>
+        </div>`).join('');
+    }
+    document.getElementById('search').addEventListener('input', render);
+    document.getElementById('roleFilter').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

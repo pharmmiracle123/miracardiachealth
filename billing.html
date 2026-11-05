@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Billing & Invoicing | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Billing & Invoicing</h1>
+          <p class="text-[10px] text-slate-400">Itemized bills · Insurance · Receipts</p>
+        </div>
+      </div>
+      <button id="newBill" class="text-xs font-bold bg-orange-600 text-white rounded-lg px-3 py-1.5">+ Invoice</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div class="card py-3"><div class="text-xl font-extrabold text-orange-700" id="sumDue">₦0</div><div class="text-[10px] font-bold text-slate-500">Outstanding</div></div>
+      <div class="card py-3"><div class="text-xl font-extrabold text-emerald-700" id="sumPaid">₦0</div><div class="text-[10px] font-bold text-slate-500">Paid (period)</div></div>
+      <div class="card py-3"><div class="text-xl font-extrabold text-slate-700" id="sumCount">0</div><div class="text-[10px] font-bold text-slate-500">Invoices</div></div>
+    </div>
+    <div id="billList" class="space-y-2"></div>
+
+    <div id="billModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg">Create Invoice</h2>
+        <div><label class="lbl">Patient name</label><input id="bPatient" class="field" /></div>
+        <div><label class="lbl">Items (one per line: description, amount)</label>
+          <textarea id="bItems" class="field h-28" placeholder="Consultation, 5000&#10;Lab FBC, 3500&#10;Admission day 1, 15000"></textarea>
+        </div>
+        <div><label class="lbl">Discount (₦)</label><input id="bDiscount" type="number" class="field" value="0" /></div>
+        <div><label class="lbl">Insurance / payer</label><input id="bPayer" class="field" placeholder="Self / NHIS / Company name" /></div>
+        <div><label class="lbl">Status</label>
+          <select id="bStatus" class="field"><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select>
+        </div>
+        <div class="flex gap-2">
+          <button id="cancelBill" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="saveBill" class="flex-1 bg-orange-600 text-white rounded-xl py-2.5 font-bold text-sm">Save Invoice</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['admin','doctor','nurse','pharmacist','support']);
+
+    document.getElementById('newBill').onclick = () => {
+      document.getElementById('billModal').classList.remove('hidden');
+      document.getElementById('billModal').classList.add('flex');
+    };
+    document.getElementById('cancelBill').onclick = () => {
+      document.getElementById('billModal').classList.add('hidden');
+      document.getElementById('billModal').classList.remove('flex');
+    };
+
+    function parseItems(text) {
+      return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const parts = l.split(',');
+        const amount = parseFloat(parts.pop()) || 0;
+        return { desc: parts.join(',').trim() || 'Item', amount };
+      });
+    }
+
+    document.getElementById('saveBill').onclick = async () => {
+      const patient = document.getElementById('bPatient').value.trim();
+      const items = parseItems(document.getElementById('bItems').value);
+      if (!patient || !items.length) return alert('Patient and at least one item required');
+      const subtotal = items.reduce((s, i) => s + i.amount, 0);
+      const discount = parseFloat(document.getElementById('bDiscount').value) || 0;
+      const total = Math.max(0, subtotal - discount);
+      await addDoc(collection(db, 'invoices'), {
+        patient, items, subtotal, discount, total,
+        payer: document.getElementById('bPayer').value || 'Self',
+        status: document.getElementById('bStatus').value,
+        createdAt: serverTimestamp(), createdBy: auth.currentUser?.uid,
+        byName: profile.fullName || profile.displayName
+      });
+      document.getElementById('billModal').classList.add('hidden');
+      load();
+    };
+
+    async function load() {
+      const snap = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc'), limit(40)));
+      let due = 0, paid = 0, count = 0;
+      const el = document.getElementById('billList');
+      el.innerHTML = '';
+      snap.forEach(d => {
+        const inv = d.data();
+        count++;
+        if (inv.status === 'paid') paid += inv.total || 0;
+        else due += inv.total || 0;
+        const t = inv.createdAt?.toDate ? inv.createdAt.toDate().toLocaleDateString() : '';
+        el.innerHTML += `<div class="card">
+          <div class="flex justify-between"><span class="font-bold text-sm">${inv.patient}</span>
+            <span class="text-sm font-extrabold">₦${(inv.total||0).toLocaleString()}</span></div>
+          <div class="text-xs text-slate-500 mt-0.5">${(inv.items||[]).map(i=>i.desc).join(', ').slice(0,60)}</div>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-[10px] text-slate-400">${t} · ${inv.payer||'Self'}</span>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+              inv.status==='paid'?'bg-emerald-100 text-emerald-800':inv.status==='partial'?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'
+            }">${inv.status}</span>
+          </div>
+          ${inv.status!=='paid' ? `<button data-id="${d.id}" class="mt-2 text-[11px] font-bold text-emerald-700">Mark paid</button>` : ''}
+        </div>`;
+      });
+      document.getElementById('sumDue').textContent = '₦' + due.toLocaleString();
+      document.getElementById('sumPaid').textContent = '₦' + paid.toLocaleString();
+      document.getElementById('sumCount').textContent = count;
+      el.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.onclick = async () => {
+          await updateDoc(doc(db, 'invoices', btn.dataset.id), { status: 'paid', paidAt: serverTimestamp() });
+          load();
+        };
+      });
+    }
+    await load();
+  </script>
+</body>
+</html>

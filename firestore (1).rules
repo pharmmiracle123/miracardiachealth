@@ -1,0 +1,272 @@
+rules_version = '2';
+service cloud.firestore {
+match /databases/{database}/documents {
+
+function isSignedIn() {
+return request.auth != null;
+}
+function hasUserDoc() {
+return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+}
+function userDoc() {
+return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+}
+function isRole(role) {
+return hasUserDoc() && userDoc().role == role;
+}
+
+function adminEmails() {
+  // Primary admins + three additional. Edit this list in Firebase Console → Firestore → Rules if you need more.
+  return [
+    'onyekamiracle08@gmail.com',
+    'onyekaudechukwum@gmail.com',
+    'onyekamiracle08@yahoo.com',
+    'onyekaudechukwum@yahoo.com',
+    'admin@miracardiachealth.com'
+  ];
+}
+function isAdminEmail() {
+  // Allows listed emails to become admin. email_verified preferred but not required
+  // so first-time Google / email login works even before verification is clicked.
+  return isSignedIn()
+    && 'email' in request.auth.token
+    && request.auth.token.email.lower() in adminEmails();
+}
+function isAdmin() {
+  return isAdminEmail() || isRole('admin');
+}
+
+function isDoctor() {
+return isRole('doctor');
+}
+function isPharmacist() {
+return isRole('pharmacist');
+}
+function isSupport() {
+return isRole('support');
+}
+function isOwner(userId) {
+return isSignedIn() && request.auth.uid == userId;
+}
+
+match /users/{userId} {
+  allow read: if isSignedIn() && (isOwner(userId) || isAdmin() || isSupport());
+
+  // Normal users create as patient / doctor / pharmacist / support
+  // Admin emails may create (or overwrite) with role == "admin"
+  allow create: if isOwner(userId) && (
+    (
+      request.resource.data.role in ['patient', 'doctor', 'pharmacist', 'support']
+      && !('isAdmin' in request.resource.data)
+      && (
+        (request.resource.data.role == 'patient' && request.resource.data.status in ['active', 'pending'])
+        || (request.resource.data.role in ['doctor', 'pharmacist', 'support'] && request.resource.data.status == 'pending')
+      )
+    )
+    || (isAdminEmail() && request.resource.data.role == 'admin' && request.resource.data.status == 'active')
+  );
+
+  // Owner can edit own non-role fields; admin (or admin-email) can change anything including role
+  allow update: if (isOwner(userId)
+      && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'isAdmin']))
+    || isAdmin()
+    || (isAdminEmail() && isOwner(userId));
+
+  allow delete: if isAdmin();
+}
+
+match /doctors/{doctorId} {
+allow read: if true;
+allow create: if isOwner(doctorId) && request.resource.data.status == 'pending';
+allow update: if (isOwner(doctorId)
+&& !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'verified']))
+|| isAdmin();
+allow delete: if isAdmin();
+}
+
+match /pharmacies/{pharmacyId} {
+allow read: if true;
+allow create: if isSignedIn() && (isPharmacist() || isAdmin())
+&& request.resource.data.status == 'pending';
+allow update: if (isSignedIn() && resource.data.ownerId == request.auth.uid
+&& !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'verified']))
+|| isAdmin();
+allow delete: if isAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+
+match /drugs/{drugId} {
+allow read: if true;
+allow create, update, delete: if isSignedIn()
+&& (get(/databases/$(database)/documents/pharmacies/$(pharmacyId)).data.ownerId == request.auth.uid
+|| isAdmin());
+}
+}
+
+match /consultations/{consultId} {
+allow read: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin());
+allow create: if isSignedIn()
+&& request.resource.data.patientId == request.auth.uid
+&& request.resource.data.status == 'paid_pending';
+allow update: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin());
+
+match /messages/{msgId} {
+allow read: if isSignedIn() && (
+get(/databases/$(database)/documents/consultations/$(consultId)).data.patientId == request.auth.uid
+|| get(/databases/$(database)/documents/consultations/$(consultId)).data.doctorId == request.auth.uid
+|| isAdmin());
+allow create: if isSignedIn()
+&& request.resource.data.senderId == request.auth.uid
+&& (
+get(/databases/$(database)/documents/consultations/$(consultId)).data.patientId == request.auth.uid
+|| get(/databases/$(database)/documents/consultations/$(consultId)).data.doctorId == request.auth.uid)
+&& get(/databases/$(database)/documents/consultations/$(consultId)).data.status == 'active';
+allow update: if isSignedIn() && resource.data.senderId == request.auth.uid;
+allow delete: if isAdmin();
+}
+}
+
+match /appointments/{apptId} {
+allow read: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin() || isSupport());
+allow create: if isSignedIn()
+&& (request.resource.data.patientId == request.auth.uid || isSupport() || isAdmin());
+allow update: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin() || isSupport());
+allow delete: if isAdmin();
+}
+
+match /availability/{docId} {
+allow read: if true;
+allow create: if isSignedIn()
+&& (request.resource.data.doctorId == request.auth.uid || isAdmin());
+allow update: if isSignedIn()
+&& (resource.data.doctorId == request.auth.uid || isAdmin());
+allow delete: if isAdmin() || (isSignedIn() && resource.data.doctorId == request.auth.uid);
+}
+
+match /slotLocks/{lockId} {
+allow read: if isSignedIn();
+allow create: if isSignedIn() && request.resource.data.patientId == request.auth.uid;
+allow delete: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin());
+allow update: if isAdmin();
+}
+
+match /orders/{orderId} {
+allow read: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.pharmacyOwnerId == request.auth.uid
+|| isAdmin());
+allow create: if isSignedIn() && request.resource.data.patientId == request.auth.uid;
+allow update: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.pharmacyOwnerId == request.auth.uid
+|| isAdmin());
+allow delete: if isAdmin();
+}
+
+match /prescriptions/{rxId} {
+allow read: if isSignedIn() && (
+resource.data.patientId == request.auth.uid
+|| resource.data.doctorId == request.auth.uid
+|| isAdmin()
+|| (isPharmacist() && resource.data.pharmacyId != null));
+allow create: if isSignedIn() && (isDoctor() || isAdmin());
+allow update: if isSignedIn() && (resource.data.doctorId == request.auth.uid || isAdmin());
+allow delete: if isAdmin();
+}
+
+match /payments/{payId} {
+allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+allow create, update, delete: if isAdmin();
+}
+
+match /supportTickets/{ticketId} {
+allow read: if isSignedIn() && (
+resource.data.userId == request.auth.uid || isSupport() || isAdmin());
+allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+allow update: if isSignedIn() && (
+resource.data.userId == request.auth.uid || isSupport() || isAdmin());
+
+match /messages/{msgId} {
+allow read, create: if isSignedIn() && (
+get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid
+|| isSupport() || isAdmin());
+}
+}
+
+match /tickets/{ticketId} {
+allow read: if isSignedIn() && (
+resource.data.userId == request.auth.uid || isSupport() || isAdmin());
+allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+allow update: if isSignedIn() && (
+resource.data.userId == request.auth.uid || isSupport() || isAdmin());
+}
+
+match /callbacks/{cbId} {
+allow read: if isSupport() || isAdmin();
+allow create: if isSignedIn();
+allow update: if isSupport() || isAdmin();
+allow delete: if isAdmin();
+}
+
+match /reviews/{reviewId} {
+allow read: if true;
+allow create: if isSignedIn() && request.resource.data.patientId == request.auth.uid;
+allow update, delete: if isSignedIn() && (
+resource.data.patientId == request.auth.uid || isAdmin());
+}
+
+match /notifications/{notifId} {
+allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+allow create: if isAdmin() || isSupport() || isDoctor();
+allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+}
+
+match /announcements/{annId} {
+allow read: if true;
+allow write: if isAdmin();
+}
+
+match /settings/{docId} {
+allow read: if true;
+allow write: if isAdmin();
+}
+
+match /studentCourses/{courseId} {
+allow read: if true;
+allow create, update, delete: if isAdmin();
+
+match /questions/{questionId} {
+allow read: if isSignedIn();
+allow create, update, delete: if isAdmin();
+}
+}
+
+match /studentPurchases/{purchaseId} {
+allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+allow update, delete: if isAdmin();
+}
+
+match /studentAccess/{accessId} {
+allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+allow create, update, delete: if isAdmin();
+}
+
+match /{document=**} {
+allow read, write: if false;
+}
+}
+}

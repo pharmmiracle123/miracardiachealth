@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Privacy Policy | MiracardiacHealth</title>
+  <meta name="description" content="How MiracardiacHealth collects, uses and protects your personal and health information." />
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .doc h2 { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 1.75rem 0 .5rem; scroll-margin-top: 80px; }
+    .doc h3 { font-size: .9rem; font-weight: 700; color: #0f766e; margin: 1rem 0 .25rem; }
+    .doc p, .doc li { font-size: .875rem; line-height: 1.65; color: #475569; }
+    .doc p { margin: .5rem 0; }
+    .doc ul { list-style: disc; padding-left: 1.25rem; margin: .5rem 0; }
+    .doc li { margin: .25rem 0; }
+    .doc a { color: #0d9488; font-weight: 600; text-decoration: underline; }
+    .doc table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .8rem; }
+    .doc th, .doc td { border: 1px solid #e2e8f0; padding: .5rem .6rem; text-align: left; vertical-align: top; }
+    .doc th { background: #f0fdfa; color: #0f766e; font-weight: 700; }
+    .doc td { color: #475569; }
+    .table-wrap { overflow-x: auto; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <img class="site-logo w-8 h-8 rounded-xl object-contain shadow" src="icons/icon.svg" alt="MH" />
+        <span class="font-extrabold text-sm text-teal-700">Miracardiac<span class="text-emerald-600">Health</span></span>
+      </a>
+      <a href="terms.html" class="text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-lg">Terms</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="ah-gradient text-white">
+    <div class="max-w-3xl mx-auto px-4 py-10">
+      <p class="text-[11px] font-bold tracking-wide uppercase text-white/80">Legal</p>
+      <h1 class="text-3xl font-extrabold mt-1">Privacy Policy</h1>
+      <p class="text-sm text-white/90 mt-2 max-w-md">Your health information is personal. Here is exactly what we collect, why we collect it, and how we protect it.</p>
+      <p class="text-xs text-white/70 mt-3">Last updated: October 2026</p>
+    </div>
+  </section>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- Quick summary -->
+    <div class="rounded-2xl bg-teal-50 border border-teal-100 p-4">
+      <p class="text-xs font-bold text-teal-800 uppercase tracking-wide mb-2">In short</p>
+      <ul class="space-y-1.5 text-sm text-teal-900">
+        <li>✅ We only collect what we need to run consultations, orders, appointments and the Student Hub.</li>
+        <li>✅ Doctor chats are visible only to you, your doctor and authorised admins.</li>
+      </ul>
+    </div>
+
+    <!-- Contents -->
+    <nav class="mt-5 rounded-2xl bg-white border border-slate-200 p-4">
+      <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Contents</p>
+      <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-teal-700 font-medium list-decimal pl-5">
+        <li><a href="#who">Who we are</a></li>
+        <li><a href="#collect">What we collect</a></li>
+        <li><a href="#use">How we use it</a></li>
+        <li><a href="#basis">Legal basis & consent</a></li>
+        <li><a href="#share">Who we share it with</a></li>
+        <li><a href="#student">Student Hub & watermarks</a></li>
+        <li><a href="#storage">Storage, transfers & retention</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#rights">Your rights</a></li>
+        <li><a href="#children">Children</a></li>
+        <li><a href="#cookies">Cookies & local storage</a></li>
+        <li><a href="#changes">Changes & contact</a></li>
+      </ol>
+    </nav>
+
+    <article class="doc mt-2 bg-white border border-slate-200 rounded-2xl p-5">
+
+      <h2 id="who">1. Who we are</h2>
+      <p>MiracardiacHealth ("we", "us", "our") is an online platform that connects patients with doctors, lets users order medicines from registered pharmacies, book appointments, contact customer care, and gives medical and health students paid access to past questions. We are the <strong>data controller</strong> of the personal data described in this policy.</p>
+      <p>This policy is written to align with the <strong>Nigeria Data Protection Act (NDPA) 2023</strong> and the regulations of the Nigeria Data Protection Commission (NDPC).</p>
+
+      <h2 id="collect">2. What we collect</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Category</th><th>Examples</th><th>When</th></tr>
+          <tr><td><strong>Account data</strong></td><td>Name, email address, phone number, profile photo, role (patient, doctor, pharmacist, support, admin)</td><td>You register or sign in with Google</td></tr>
+          <tr><td><strong>Health data</strong> (sensitive)</td><td>Symptoms and messages in doctor chats, attached images or files, prescriptions, allergies, conditions, blood group, lab results you upload</td><td>You consult a doctor or complete your medical profile</td></tr>
+          <tr><td><strong>Appointments & support</strong></td><td>Appointment dates and type, support tickets, callback requests</td><td>You book or contact customer care</td></tr>
+          <tr><td><strong>Orders</strong></td><td>Drugs ordered, pharmacy, delivery address, phone, prescription images</td><td>You place a pharmacy order</td></tr>
+          <tr><td><strong>Payments</strong></td><td>Payment reference, amount, status. <em>We do not see or store your card number.</em></td><td>You pay through Paystack</td></tr>
+          <tr><td><strong>Professional data</strong></td><td>For doctors and pharmacists: specialty, licence details, pharmacy name, address, opening hours, location</td><td>You apply to join the platform</td></tr>
+          <tr><td><strong>Student Hub data</strong></td><td>Courses purchased, access dates, answers you tap while practising (score is kept on your device)</td><td>You use the Student Hub</td></tr>
+          <tr><td><strong>Technical data</strong></td><td>Device type, browser, approximate location when you choose "Nearby", app install status</td><td>You use the site or app</td></tr>
+        </table>
+      </div>
+
+      <h2 id="use">3. How we use your information</h2>
+      <ul>
+        <li>To create and secure your account and verify who you are.</li>
+        <li>To deliver doctor consultations, appointments, prescriptions and pharmacy orders.</li>
+        <li>To process payments, confirm access and prevent fraud.</li>
+        <li>To let admins approve doctors, pharmacies, consultations and student course access.</li>
+        <li>To provide customer care and respond to complaints.</li>
+        <li>To send service messages such as appointment reminders, payment confirmations and order updates.</li>
+        <li>To protect paid Student Hub content (see section 6) and to enforce our Terms.</li>
+        <li>To improve the platform and keep it safe, fast and reliable.</li>
+      </ul>
+      <p>We do <strong>not</strong> sell your data and we do not use your health conversations for advertising.</p>
+
+      <h2 id="basis">4. Legal basis & consent</h2>
+      <ul>
+        <li><strong>Consent:</strong> for health information you choose to give us. You can withdraw consent at any time, though some services may then stop working.</li>
+        <li><strong>Contract:</strong> to provide the services you request (consultation, order, course access).</li>
+        <li><strong>Legal obligation:</strong> to keep records the law requires.</li>
+        <li><strong>Legitimate interest:</strong> to secure the platform, prevent fraud and improve our services, always balanced against your rights.</li>
+      </ul>
+
+      <h2 id="share">5. Who we share it with</h2>
+      <p>We share only what is needed, and only with:</p>
+      <ul>
+        <li><strong>Your doctor</strong> (what you send in the consultation) and, for orders, <strong>your chosen pharmacy</strong>.</li>
+        <li><strong>Authorised MiracardiacHealth admins and support agents</strong> who need access to approve payments or resolve problems.</li>
+        <li><strong>Service providers:</strong>
+          <ul>
+            <li>Google Firebase (login, database, file storage, hosting of data)</li>
+            <li>Paystack (payment processing)</li>
+            <li>Cloudinary (image and file hosting, if enabled)</li>
+            <li>EmailJS (sending emails, if enabled)</li>
+            <li>rss2json (loading public health headlines; it never receives your personal data)</li>
+          </ul>
+        </li>
+        <li><strong>Authorities</strong>, when the law requires it or to protect someone's life or safety.</li>
+      </ul>
+      <p>These providers process data only to deliver their service to us and have their own privacy and security commitments.</p>
+
+      <h2 id="student">6. Student Hub & watermarks</h2>
+      <p>Student Hub questions are protected, paid content for personal study. While you view a course, a faint watermark showing <strong>your account email, part of your account ID and the date</strong> appears over the content. This is used to discourage and trace unauthorised sharing. We may also blur the screen when you switch apps and block copy, print and similar actions.</p>
+      <p>We cannot technically stop a phone's built-in screenshot, so the watermark is the main safeguard. Sharing your login or course content may lead to suspension without refund.</p>
+
+      <h2 id="storage">7. Storage, transfers & retention</h2>
+      <p>Your data is stored on Google Firebase servers, which may be located outside Nigeria. Where data leaves Nigeria we rely on providers that apply appropriate safeguards, in line with the NDPA.</p>
+      <ul>
+        <li><strong>Account data:</strong> kept while your account is active.</li>
+        <li><strong>Consultation records and prescriptions:</strong> kept for as long as needed for continuity of care and legal record-keeping, unless you request deletion where the law allows.</li>
+        <li><strong>Payment records:</strong> kept as required for accounting and dispute resolution.</li>
+        <li><strong>Support tickets:</strong> kept for a reasonable period to resolve issues and improve service.</li>
+      </ul>
+      <p>When data is no longer needed, we delete or anonymise it.</p>
+
+      <h2 id="security">8. Security</h2>
+      <ul>
+        <li>Data is encrypted in transit (HTTPS) and protected by Firebase security rules that limit who can read each record.</li>
+        <li>Consultation chats can be read only by the patient, the assigned doctor and authorised admins.</li>
+        <li>Admin and doctor accounts are role-controlled and need approval.</li>
+        <li>No online system is 100% secure. Please use a strong password, never share your login, and log out on shared devices.</li>
+      </ul>
+      <p>If a data breach is likely to harm you, we will notify you and the NDPC as the law requires.</p>
+
+      <h2 id="rights">9. Your rights</h2>
+      <p>Under the NDPA you have the right to:</p>
+      <ul>
+        <li>Be informed about how your data is used (this policy).</li>
+        <li>Access a copy of your personal data.</li>
+        <li>Correct data that is wrong or incomplete.</li>
+        <li>Ask us to delete your data, where we have no legal reason to keep it.</li>
+        <li>Restrict or object to certain processing.</li>
+        <li>Withdraw your consent at any time.</li>
+        <li>Receive your data in a portable format.</li>
+        <li>Complain to the <strong>Nigeria Data Protection Commission</strong> if you believe your rights were violated.</li>
+      </ul>
+      <p>To use any of these rights, contact us using the details in section 12. We may need to verify your identity first.</p>
+
+      <h2 id="children">10. Children</h2>
+      <p>MiracardiacHealth is intended for people aged 18 and over. A parent or guardian may use the platform to seek care for a child and must give consent for the child's data. If we learn we hold a child's data without proper consent, we will delete it.</p>
+
+      <h2 id="cookies">11. Cookies & local storage</h2>
+      <p>We do not use advertising cookies. We use your browser's local storage and service worker only to keep you signed in, speed up the app, support offline use, remember preferences (for example, a dismissed install banner) and cache public health headlines. You can clear these any time in your browser settings.</p>
+
+      <div class="rounded-xl bg-amber-50 border border-amber-100 p-3 my-3">
+        <p class="!my-0 text-amber-800"><strong>Medical disclaimer:</strong> MiracardiacHealth does not replace emergency care. In an emergency, call <a href="tel:112">112</a> or go to the nearest hospital.</p>
+      </div>
+
+      <h2 id="changes">12. Changes & contact</h2>
+      <p>We may update this policy from time to time. The "Last updated" date at the top will change, and for important changes we will tell you in the app.</p>
+      <p><strong>Contact our Data Protection Officer:</strong></p>
+      <ul>
+        <li>Email: <a href="mailto:YOUR-SUPPORT-EMAIL@example.com">YOUR-SUPPORT-EMAIL@example.com</a></li>
+        <li>In-app: <a href="customer-care.html">Customer Care</a></li>
+        <li>Address: YOUR BUSINESS ADDRESS, Nigeria</li>
+      </ul>
+    </article>
+
+    <div class="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 py-6">
+      <a href="terms.html" class="text-teal-700 font-semibold">Terms of Service</a>
+      <a href="customer-care.html" class="text-teal-700 font-semibold">Customer Care</a>
+      <a href="index.html" class="text-teal-700 font-semibold">Home</a>
+    </div>
+    <p class="text-center text-[10px] text-slate-400 pb-8">© <span id="yr"></span> MiracardiacHealth. All rights reserved.</p>
+  </main>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
+</body>
+</html>

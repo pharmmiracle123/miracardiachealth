@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Find a Doctor | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <style>
+    @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+    .slide-up{animation:slideUp .22s ease-out}
+    .dot{width:8px;height:8px;border-radius:9999px;display:inline-block}
+    .line-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  </style>
+</head>
+<body class="bg-slate-50">
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="index.html" class="text-slate-500 text-lg">←</a>
+      <h1 class="font-bold text-lg flex-1">Find a Doctor</h1>
+      <button id="myChatsBtn" class="relative text-xl hidden" aria-label="My chats">💬<span id="chatBadge" class="hidden absolute -top-1 -right-2 bg-emerald-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span></button>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 py-4">
+    <!-- Search, sort, filters -->
+    <div class="space-y-3 mb-4">
+      <input id="searchInput" type="search" placeholder="Search by name or specialty..." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white" />
+      <div class="flex gap-2">
+        <select id="sortSel" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white text-slate-600">
+          <option value="avail">Sort: Available first</option>
+          <option value="rating">Sort: Top rated</option>
+          <option value="fee">Sort: Lowest fee</option>
+          <option value="exp">Sort: Most experienced</option>
+        </select>
+        <button id="availBtn" class="shrink-0 px-3 py-2 rounded-xl text-xs font-medium bg-white border border-slate-200 text-slate-600">🟢 Available only</button>
+        <button id="favBtn" class="shrink-0 px-3 py-2 rounded-xl text-xs font-medium bg-white border border-slate-200 text-slate-600">♥ Saved</button>
+      </div>
+      <div id="chips" class="flex gap-2 overflow-x-auto no-scrollbar"></div>
+    </div>
+
+    <!-- My consultations (live) -->
+    <section id="mineBox" class="hidden mb-5">
+      <h2 class="text-sm font-bold text-slate-700 mb-2">💬 My Consultations</h2>
+      <div id="mineList" class="space-y-2"></div>
+    </section>
+
+    <p id="summary" class="text-xs text-slate-400 mb-2"></p>
+    <div id="doctorsList" class="space-y-3">
+      <div class="ah-card p-4 skeleton h-28"></div>
+      <div class="ah-card p-4 skeleton h-28"></div>
+      <div class="ah-card p-4 skeleton h-28"></div>
+    </div>
+
+    <p id="diag" class="text-[11px] text-slate-400 text-center mt-4"></p>
+
+    <!-- Admin tools -->
+    <div id="adminBox" class="hidden mt-5 ah-card p-4 border border-amber-200 bg-amber-50">
+      <p class="text-xs font-bold text-amber-800 mb-1">🛠 Admin tools</p>
+      <p class="text-[11px] text-amber-700 mb-3">Doctors marked <strong>Active</strong> in Admin → Users must appear here. Tap Sync to create or force-approve any missing or hidden doctor profiles so patients can see them.</p>
+      <button id="syncBtn" class="w-full bg-amber-600 text-white rounded-xl py-2 text-sm font-semibold">Sync doctors from Users</button>
+    </div>
+  </main>
+
+  <!-- Bottom sheet (doctor profile / consult request) -->
+  <div id="sheet" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/40">
+    <div class="slide-up bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[88vh] overflow-y-auto">
+      <div class="flex justify-end -mt-1 mb-1"><button id="sheetClose" class="text-slate-400 text-2xl leading-none">×</button></div>
+      <div id="sheetBody"></div>
+    </div>
+  </div>
+
+  <!-- Live chat -->
+  <div id="chat" class="fixed inset-0 z-[60] hidden flex-col bg-slate-100">
+    <div class="bg-white border-b border-slate-200 safe-top shrink-0">
+      <div class="max-w-lg mx-auto w-full px-4 h-14 flex items-center gap-3">
+        <button id="chatBack" class="text-slate-500 text-lg">←</button>
+        <div class="flex-1 min-w-0">
+          <p id="chatTitle" class="font-semibold text-sm truncate">Doctor</p>
+          <p id="chatStatus" class="text-[11px] text-slate-400">Connecting...</p>
+        </div>
+        <button id="chatVideo" class="hidden text-teal-600 text-sm font-medium">📹 Video</button>
+        <a id="chatFull" href="#" class="text-[11px] text-slate-400 underline">Full</a>
+      </div>
+    </div>
+    <div id="chatBanner" class="hidden bg-amber-50 text-amber-800 text-xs text-center py-2 px-4 shrink-0"></div>
+    <div id="chatMsgs" class="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-3 py-3 space-y-2"></div>
+    <div id="chatFoot" class="bg-white border-t border-slate-200 shrink-0 safe-bottom">
+      <div class="max-w-lg mx-auto px-3 py-2 flex items-end gap-2">
+        <label class="cursor-pointer text-slate-400 p-2">
+          <input type="file" id="chatFile" accept="image/*,.pdf" class="hidden" />📎
+        </label>
+        <textarea id="chatInput" rows="1" placeholder="Type a message..." class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28"></textarea>
+        <button id="chatSend" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Home</a>
+    <a href="doctors.html" class="active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Doctors</a>
+    <a href="pharmacy-search.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Pharmacy</a>
+    <a href="Dashboard.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Dashboard</a>
+  </nav>
+
+  <script type="module">
+    import {auth, db, showToast, escapeHtml, formatCurrency, timeAgo,
+      collection, query, where, orderBy, getDocs, addDoc, doc, getDoc, setDoc, updateDoc,
+      onSnapshot, serverTimestamp, onAuthStateChanged, getCurrentUserProfile,
+      payWithPaystack, generateRef, uploadToCloudinary, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = id => document.getElementById(id);
+
+    /* ---------- State ---------- */
+    let all = [];            // approved / active doctors (live from Firestore)
+    let rawCount = 0;        // every doctor record found
+    let me = null;           // signed-in profile (null = browsing as guest)
+    let consults = [];       // this patient's consultations (live)
+    let spec = 'all', onlyAvail = false, onlySaved = false;
+    let favs = new Set();
+    try { favs = new Set(JSON.parse(localStorage.getItem('mh_fav_docs') || '[]')); } catch (_) {}
+
+    /* ---------- Helpers ---------- */
+    const num = v => Number(v) || 0;
+    const ms = t => t ? (t.toMillis ? t.toMillis() : new Date(t).getTime()) : 0;
+    /* Visible to patients: approved, active, verified, or blank status. */
+    const HIDDEN = ['pending', 'rejected', 'suspended', 'inactive', 'disabled', 'blocked', 'deactivated', 'deleted'];
+    const VISIBLE = ['approved', 'active', 'verified', 'live', ''];
+    const isLive = d => {
+      const s = String(d.status || '').trim().toLowerCase();
+      if (HIDDEN.includes(s)) return false;
+      // Explicit allow-list + any unknown non-hidden status still shows
+      if (VISIBLE.includes(s)) return true;
+      return true;
+    };
+    const nm = d => { const n = String(d.name || 'Doctor').trim(); return /^dr\.?\s/i.test(n) ? n : 'Dr. ' + n; };
+    const avatar = d => d.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name || 'Dr')}&background=0d9488&color=fff&size=160`;
+    const img = (d, cls) => `<img src="${escapeHtml(avatar(d))}" class="${cls}" alt="" loading="lazy" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=Dr&background=0d9488&color=fff'" />`;
+    const expired = c => c.expiresAt && ms(c.expiresAt) < Date.now();
+    const saveFavs = () => { try { localStorage.setItem('mh_fav_docs', JSON.stringify([...favs])); } catch (_) {} };
+    const loginFirst = () => { showToast('Please login first', 'warning'); setTimeout(() => location.href = 'Login.html?next=' + encodeURIComponent('doctors.html'), 900); };
+
+    function consultFor(id) {
+      const list = consults.filter(c => c.doctorId === id);
+      return list.find(c => c.status === 'active' && !expired(c)) || list.find(c => c.status === 'paid_pending') || null;
+    }
+
+    /* ---------- Live doctors list ---------- */
+    let autoSynced = false;
+    onSnapshot(collection(db, 'doctors'), snap => {
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rawCount = rows.length;
+      all = rows.filter(isLive);
+      buildChips();
+      render();
+      // Do not sync here: the first Firestore snapshot can arrive before auth/profile loads.
+      // Admin synchronization is triggered after authentication below.
+    }, err => {
+      console.error(err);
+      $('doctorsList').innerHTML = `<p class="text-red-500 text-sm text-center py-8">Could not load doctors.<br><span class="text-xs">${escapeHtml(err.code || err.message || '')}</span><br><span class="text-xs text-slate-400">Check your internet and that the Firestore rules are published.</span></p>`;
+    });
+
+    /* ---------- Filters ---------- */
+    function buildChips() {
+      const specs = [...new Set(all.map(d => String(d.specialty || 'General Practice').trim()).filter(Boolean))].sort();
+      if (spec !== 'all' && !specs.includes(spec)) spec = 'all';
+      const chip = (val, label) => `<button data-spec="${escapeHtml(val)}" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${spec === val ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}">${escapeHtml(label)}</button>`;
+      $('chips').innerHTML = chip('all', 'All') + specs.map(s => chip(s, s)).join('');
+    }
+    $('chips').addEventListener('click', e => {
+      const b = e.target.closest('[data-spec]'); if (!b) return;
+      spec = b.dataset.spec; buildChips(); render();
+    });
+    $('searchInput').addEventListener('input', render);
+    $('sortSel').addEventListener('change', render);
+    $('availBtn').addEventListener('click', () => {
+      onlyAvail = !onlyAvail;
+      $('availBtn').className = 'shrink-0 px-3 py-2 rounded-xl text-xs font-medium ' + (onlyAvail ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600');
+      render();
+    });
+    $('favBtn').addEventListener('click', () => {
+      onlySaved = !onlySaved;
+      $('favBtn').className = 'shrink-0 px-3 py-2 rounded-xl text-xs font-medium ' + (onlySaved ? 'bg-rose-500 text-white' : 'bg-white border border-slate-200 text-slate-600');
+      render();
+    });
+
+    const sorters = {
+      avail: (a, b) => (b.available === true) - (a.available === true) || num(b.rating) - num(a.rating),
+      rating: (a, b) => num(b.rating) - num(a.rating),
+      fee: (a, b) => num(a.consultationFee) - num(b.consultationFee),
+      exp: (a, b) => num(b.experience) - num(a.experience)
+    };
+
+    /* ---------- Render doctors ---------- */
+    function chatBtn(d) {
+      if (me && me.uid === d.id) return `<span class="flex-1 text-center text-xs text-slate-400 py-2">This is your profile</span>`;
+      const c = consultFor(d.id);
+      const base = 'flex-1 rounded-xl py-2 text-sm font-semibold ';
+      if (c && c.status === 'active') return `<button data-chat="${c.id}" class="${base} bg-emerald-600 text-white">💬 Open Live Chat</button>`;
+      if (c) return `<button disabled class="${base} bg-amber-100 text-amber-700">⏳ Awaiting approval</button>`;
+      return `<button data-consult="${d.id}" class="${base} bg-teal-600 text-white">💬 Chat${num(d.consultationFee) ? ' · ' + formatCurrency(num(d.consultationFee)) : ''}</button>`;
+    }
+
+    function render() {
+      const el = $('doctorsList');
+      const q = $('searchInput').value.toLowerCase().trim();
+      let list = all.slice();
+      if (spec !== 'all') list = list.filter(d => String(d.specialty || 'General Practice').trim() === spec);
+      if (onlyAvail) list = list.filter(d => d.available === true);
+      if (onlySaved) list = list.filter(d => favs.has(d.id));
+      if (q) list = list.filter(d => [d.name, d.specialty, d.department, d.bio].some(v => String(v || '').toLowerCase().includes(q)));
+      list.sort(sorters[$('sortSel').value] || sorters.avail);
+
+      const live = all.filter(d => d.available === true).length;
+      $('summary').textContent = all.length ? `${list.length} of ${all.length} doctors · ${live} available now · updates live` : '';
+
+      const hidden = rawCount - all.length;
+      $('diag').textContent = (me && me.role === 'admin' && rawCount) ? `Admin info: ${rawCount} doctor record(s) in database, ${all.length} shown, ${hidden} hidden (pending/rejected/suspended).` : '';
+
+      if (!list.length) {
+        el.innerHTML = `<div class="flex flex-col items-center py-14 text-slate-400"><div class="text-4xl mb-3">🔍</div><p class="text-sm text-center max-w-xs">${all.length ? 'No doctors match your search or filters.' : 'No active doctors yet. Doctors appear here as soon as Admin marks them Active (or uses Sync on this page).'}</p></div>`;
+        return;
+      }
+
+      el.innerHTML = list.map(d => `
+        <div class="ah-card p-4">
+          <div class="flex gap-3" data-open="${d.id}">
+            <div class="relative shrink-0">${img(d, 'w-16 h-16 rounded-xl object-cover')}<span class="dot absolute -bottom-1 -right-1 border-2 border-white ${d.available ? 'bg-emerald-500' : 'bg-slate-300'}" style="width:14px;height:14px"></span></div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-sm truncate">${escapeHtml(nm(d))}</h3>
+                  <p class="text-xs text-teal-600 font-medium">${escapeHtml(d.specialty || 'General Practice')}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="font-bold text-sm text-emerald-700">${num(d.consultationFee) ? formatCurrency(num(d.consultationFee)) : 'Free'}</p>
+                  <p class="text-[10px] text-slate-400">per consult</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mt-1.5 text-xs text-slate-500 flex-wrap">
+                <span>⭐ ${num(d.rating).toFixed(1)}${num(d.reviewCount) ? ' (' + num(d.reviewCount) + ')' : ''}</span><span>·</span>
+                <span>${num(d.experience)} yrs exp</span><span>·</span>
+                <span class="${d.available ? 'text-emerald-600 font-medium' : 'text-slate-400'}">${d.available ? 'Available' : 'Busy'}</span>
+              </div>
+              ${d.bio ? `<p class="text-xs text-slate-500 mt-1.5 line-2">${escapeHtml(d.bio)}</p>` : ''}
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 items-center">
+            ${chatBtn(d)}
+            <button data-book="${d.id}" class="shrink-0 rounded-xl py-2 px-3 text-sm font-semibold bg-white border border-slate-200 text-slate-700">📅 Book</button>
+            <button data-fav="${d.id}" class="shrink-0 w-10 h-9 rounded-xl border border-slate-200 bg-white text-lg ${favs.has(d.id) ? 'text-rose-500' : 'text-slate-300'}">♥</button>
+          </div>
+        </div>`).join('');
+    }
+
+    $('doctorsList').addEventListener('click', e => {
+      const t = e.target.closest('[data-consult],[data-chat],[data-book],[data-fav],[data-open]'); if (!t) return;
+      if (t.dataset.consult) return openConsult(t.dataset.consult);
+      if (t.dataset.chat) return openChat(t.dataset.chat);
+      if (t.dataset.book) return location.href = 'appointments.html?doctor=' + encodeURIComponent(t.dataset.book);
+      if (t.dataset.fav) {
+        const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); saveFavs(); render(); return;
+      }
+      if (t.dataset.open) openProfile(t.dataset.open);
+    });
+
+    /* ---------- Sheet helpers ---------- */
+    const sheetOpen = html => { $('sheetBody').innerHTML = html; $('sheet').classList.remove('hidden'); $('sheet').classList.add('flex'); };
+    const sheetShut = () => { $('sheet').classList.add('hidden'); $('sheet').classList.remove('flex'); };
+    $('sheetClose').onclick = sheetShut;
+    $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) sheetShut(); });
+
+    /* ---------- Doctor profile ---------- */
+    function openProfile(id) {
+      const d = all.find(x => x.id === id); if (!d) return;
+      sheetOpen(`
+        <div class="flex gap-4 mb-3">
+          ${img(d, 'w-20 h-20 rounded-2xl object-cover')}
+          <div class="min-w-0">
+            <p class="font-bold text-base">${escapeHtml(nm(d))}</p>
+            <p class="text-sm text-teal-600 font-medium">${escapeHtml(d.specialty || 'General Practice')}</p>
+            ${d.department ? `<p class="text-xs text-slate-400">${escapeHtml(d.department)}</p>` : ''}
+            <p class="text-xs mt-1 ${d.available ? 'text-emerald-600' : 'text-slate-400'}">● ${d.available ? 'Available now' : 'Currently busy'}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center mb-3">
+          <div class="bg-slate-50 rounded-xl p-2"><p class="font-bold text-sm">⭐ ${num(d.rating).toFixed(1)}</p><p class="text-[10px] text-slate-400">${num(d.reviewCount)} reviews</p></div>
+          <div class="bg-slate-50 rounded-xl p-2"><p class="font-bold text-sm">${num(d.experience)} yrs</p><p class="text-[10px] text-slate-400">Experience</p></div>
+          <div class="bg-slate-50 rounded-xl p-2"><p class="font-bold text-sm text-emerald-700">${num(d.consultationFee) ? formatCurrency(num(d.consultationFee)) : 'Free'}</p><p class="text-[10px] text-slate-400">Per consult</p></div>
+        </div>
+        ${d.licenseNumber ? `<p class="text-xs text-slate-500 mb-2">✅ Licensed · Reg. No. ${escapeHtml(d.licenseNumber)}</p>` : '<p class="text-xs text-slate-500 mb-2">✅ Approved by MiracardiacHealth Admin</p>'}
+        <p class="text-sm text-slate-600 mb-4 whitespace-pre-line">${escapeHtml(d.bio || 'No biography added yet.')}</p>
+        <div class="flex gap-2">
+          <div class="flex-1 flex">${chatBtn(d)}</div>
+          <button id="pfBook" class="rounded-xl py-2 px-4 text-sm font-semibold bg-white border border-slate-200 text-slate-700">📅 Book</button>
+        </div>`);
+      const b = $('sheetBody');
+      b.querySelector('[data-consult]')?.addEventListener('click', e => openConsult(e.currentTarget.dataset.consult));
+      b.querySelector('[data-chat]')?.addEventListener('click', e => { sheetShut(); openChat(e.currentTarget.dataset.chat); });
+      $('pfBook').onclick = () => location.href = 'appointments.html?doctor=' + encodeURIComponent(id);
+    }
+
+    /* ---------- Consult request + payment ---------- */
+    function openConsult(id) {
+      if (!me) return loginFirst();
+      const d = all.find(x => x.id === id); if (!d) return;
+      if (me.uid === d.id) return showToast('You cannot consult yourself', 'warning');
+      const fee = num(d.consultationFee);
+      sheetOpen(`
+        <div class="flex gap-3 mb-4">
+          ${img(d, 'w-14 h-14 rounded-xl object-cover')}
+          <div><p class="font-semibold">${escapeHtml(nm(d))}</p><p class="text-sm text-teal-600">${escapeHtml(d.specialty || '')}</p>
+          <p class="text-sm font-bold text-emerald-700 mt-0.5">${fee ? formatCurrency(fee) : 'No fee set'}</p></div>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">${fee ? 'After payment, an admin will review and activate your live chat (usually within a few hours). Chat stays open for 7 days.' : 'This doctor has no fee set. Your request goes straight to Admin for approval. Chat stays open for 7 days.'}</p>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Brief reason for consult (optional)</label>
+        <textarea id="reason" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm mb-4" placeholder="e.g. Persistent headache for 3 days..."></textarea>
+        <button id="payBtn" class="w-full bg-teal-600 text-white rounded-xl py-3 text-sm font-semibold">${fee ? 'Pay ' + formatCurrency(fee) + ' & Request Chat' : 'Request Chat'}</button>`);
+
+      $('payBtn').onclick = () => {
+        const reason = $('reason').value.trim();
+        const btn = $('payBtn'); btn.disabled = true; btn.textContent = 'Processing...';
+        const reset = () => { btn.disabled = false; btn.textContent = fee ? 'Pay ' + formatCurrency(fee) + ' & Request Chat' : 'Request Chat'; };
+        const create = async (payRef) => {
+          try {
+            await addDoc(collection(db, 'consultations'), {
+              patientId: me.uid,
+              patientName: me.displayName || me.name || me.email || 'Patient',
+              doctorId: d.id,
+              doctorName: d.name || 'Doctor',
+              fee, reason,
+              status: 'paid_pending',
+              paymentRef: payRef || '',
+              paymentStatus: payRef ? 'success' : 'none',
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            showToast(fee ? 'Payment successful! Awaiting admin approval.' : 'Request sent! Awaiting admin approval.', 'success');
+            sheetShut();
+          } catch (e) {
+            showToast('Could not create consult: ' + (e.message || e), 'error'); reset();
+          }
+        };
+        if (!fee) return create('');
+        payWithPaystack({
+          email: me.email, amount: fee, reference: generateRef('CONSULT'),
+          metadata: { doctorId: d.id, patientId: me.uid, purpose: 'consultation' },
+          onSuccess: r => create(r.reference),
+          onCancel: () => { reset(); showToast('Payment cancelled', 'warning'); }
+        });
+      };
+    }
+
+    /* ---------- My consultations (live) ---------- */
+    let unsubC = null;
+    function watchConsults() {
+      if (unsubC) unsubC(); unsubC = null;
+      if (!me) { consults = []; renderMine(); return; }
+      unsubC = onSnapshot(query(collection(db, 'consultations'), where('patientId', '==', me.uid)), snap => {
+        consults = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+        renderMine(); render();
+      }, err => console.warn('consults', err));
+    }
+
+    function stat(c) {
+      if (c.status === 'active') return expired(c) ? ['Expired', 'bg-slate-100 text-slate-500'] : ['Live', 'bg-emerald-100 text-emerald-700'];
+      if (c.status === 'paid_pending') return ['Awaiting approval', 'bg-amber-100 text-amber-700'];
+      if (c.status === 'rejected') return ['Rejected', 'bg-red-100 text-red-600'];
+      return ['Closed', 'bg-slate-100 text-slate-500'];
+    }
+
+    function renderMine() {
+      const box = $('mineBox');
+      if (!consults.length) { box.classList.add('hidden'); $('myChatsBtn').classList.add('hidden'); return; }
+      box.classList.remove('hidden'); $('myChatsBtn').classList.remove('hidden');
+      const liveN = consults.filter(c => c.status === 'active' && !expired(c)).length;
+      $('chatBadge').textContent = liveN; $('chatBadge').classList.toggle('hidden', !liveN);
+      $('mineList').innerHTML = consults.slice(0, 5).map(c => {
+        const [label, cls] = stat(c);
+        return `<div class="ah-card p-3 flex items-center gap-3">
+          <div class="flex-1 min-w-0"><p class="text-sm font-semibold truncate">${escapeHtml(c.doctorName || 'Doctor')}</p>
+          <p class="text-[11px] text-slate-400">${timeAgo(c.createdAt) || 'just now'}${c.reason ? ' · ' + escapeHtml(c.reason.slice(0, 40)) : ''}</p></div>
+          <span class="text-[10px] font-semibold px-2 py-1 rounded-full ${cls}">${label}</span>
+          <button data-chat="${c.id}" class="text-xs font-semibold text-teal-700 px-2">Open</button></div>`;
+      }).join('');
+    }
+    $('mineList').addEventListener('click', e => { const b = e.target.closest('[data-chat]'); if (b) openChat(b.dataset.chat); });
+    $('myChatsBtn').onclick = () => $('mineBox').scrollIntoView({ behavior: 'smooth' });
+
+    /* ---------- Live chat ---------- */
+    let curC = null, unsubM = null, unsubCs = null;
+
+    function chatState() {
+      const c = curC; if (!c) return;
+      const banner = $('chatBanner'), foot = $('chatFoot');
+      const can = c.status === 'active' && !expired(c);
+      const [label] = stat(c);
+      $('chatStatus').textContent = label;
+      $('chatVideo').classList.toggle('hidden', !can);
+      foot.classList.toggle('opacity-50', !can); foot.classList.toggle('pointer-events-none', !can);
+      banner.classList.toggle('hidden', can);
+      banner.textContent = c.status === 'paid_pending' ? '⏳ Awaiting admin approval. This chat opens live the moment it is approved.'
+        : c.status === 'rejected' ? 'This request was rejected by Admin.'
+        : (c.status === 'active' && expired(c)) ? 'This consultation has expired. Request a new one from the doctor’s card.' : 'Consultation closed.';
+    }
+
+    function openChat(cid) {
+      if (!me) return loginFirst();
+      curC = consults.find(c => c.id === cid) || { id: cid, status: 'paid_pending' };
+      $('chatTitle').textContent = curC.doctorName || 'Doctor';
+      $('chatFull').href = 'chat.html?id=' + encodeURIComponent(cid);
+      $('chatMsgs').innerHTML = '<div class="flex justify-center py-10"><div class="spinner"></div></div>';
+      $('chat').classList.remove('hidden'); $('chat').classList.add('flex');
+      chatState();
+      unsubCs = onSnapshot(doc(db, 'consultations', cid), s => { if (s.exists()) { curC = { id: s.id, ...s.data() }; $('chatTitle').textContent = curC.doctorName || 'Doctor'; chatState(); } });
+      unsubM = onSnapshot(query(collection(db, 'consultations', cid, 'messages'), orderBy('createdAt', 'asc')), snap => {
+        const area = $('chatMsgs');
+        if (snap.empty) { area.innerHTML = '<div class="text-center text-slate-400 text-sm py-12">No messages yet. Say hello 👋</div>'; return; }
+        area.innerHTML = snap.docs.map(d => {
+          const m = d.data(), mine = m.senderId === me.uid;
+          let body = '';
+          if (m.type === 'image') body = `<img src="${escapeHtml(m.fileURL || '')}" class="rounded-lg max-w-full max-h-48 mb-1" alt="attachment" />${m.text ? `<p>${escapeHtml(m.text)}</p>` : ''}`;
+          else if (m.type === 'file') body = `<a href="${escapeHtml(m.fileURL || '')}" target="_blank" class="underline">📎 ${escapeHtml(m.fileName || 'File')}</a>${m.text ? `<p class="mt-1">${escapeHtml(m.text)}</p>` : ''}`;
+          else body = `<p class="whitespace-pre-wrap">${escapeHtml(m.text || '')}</p>`;
+          return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="chat-bubble ${mine ? 'mine' : 'theirs'}">${body}<div class="text-[10px] opacity-70 mt-1 ${mine ? 'text-right' : ''}">${m.createdAt ? timeAgo(m.createdAt) : 'sending...'}</div></div></div>`;
+        }).join('');
+        area.scrollTop = area.scrollHeight;
+      }, err => showToast('Chat error: ' + (err.code || err.message), 'error'));
+    }
+
+    function closeChat() {
+      if (unsubM) unsubM(); if (unsubCs) unsubCs(); unsubM = unsubCs = null; curC = null;
+      $('chat').classList.add('hidden'); $('chat').classList.remove('flex');
+    }
+    $('chatBack').onclick = closeChat;
+    $('chatVideo').onclick = () => { if (curC) window.open('https://meet.jit.si/MiracardiacHealth_' + curC.id, '_blank'); };
+
+    async function sendMsg(text, file) {
+      if (!curC || curC.status !== 'active' || expired(curC)) return showToast('Chat is not active', 'warning');
+      if (!text.trim() && !file) return;
+      const btn = $('chatSend'); btn.disabled = true;
+      try {
+        let type = 'text', fileURL = null, fileName = null;
+        if (file) {
+          fileURL = await uploadToCloudinary(file, 'consultations/' + curC.id);
+          fileName = file.name; type = file.type.startsWith('image/') ? 'image' : 'file';
+        }
+        await addDoc(collection(db, 'consultations', curC.id, 'messages'), {
+          senderId: me.uid, senderName: me.displayName || me.email || 'Patient',
+          text: text.trim(), type, fileURL, fileName, read: false, createdAt: serverTimestamp()
+        });
+        $('chatInput').value = ''; $('chatFile').value = '';
+      } catch (e) { showToast('Failed to send: ' + (e.message || e), 'error'); }
+      btn.disabled = false;
+    }
+    $('chatSend').onclick = () => sendMsg($('chatInput').value);
+    $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg($('chatInput').value); } });
+    $('chatFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg($('chatInput').value, f); });
+
+    /* ---------- Admin: sync doctors from Users (compulsory for Active accounts) ---------- */
+    $('syncBtn').onclick = async () => {
+      const btn = $('syncBtn'); btn.disabled = true; btn.textContent = 'Syncing...';
+      try {
+        const us = await getDocs(query(collection(db, 'users'), where('role', 'in', ['doctor', 'surgeon'])));
+        let made = 0, fixed = 0;
+        for (const u of us.docs) {
+          const x = u.data();
+          const st = String(x.status || '').toLowerCase();
+          // Only users marked Active / Approved in Admin must appear on this page
+          if (st !== 'active' && st !== 'approved') continue;
+
+          const ref = doc(db, 'doctors', u.id);
+          const s = await getDoc(ref);
+          const base = {
+            name: x.displayName || x.name || (s.exists() ? s.data().name : null) || 'Doctor',
+            specialty: (s.exists() && s.data().specialty) || x.department || 'General Practice',
+            phone: x.phone || (s.exists() ? s.data().phone : '') || '',
+            photoURL: x.photoURL || (s.exists() ? s.data().photoURL : '') || '',
+            status: 'approved',
+            available: true,
+            ownerId: u.id,
+            updatedAt: serverTimestamp()
+          };
+
+          if (!s.exists()) {
+            await setDoc(ref, {
+              ...base,
+              experience: 0,
+              consultationFee: 0,
+              licenseNumber: '',
+              bio: '',
+              rating: 0,
+              reviewCount: 0,
+              createdAt: serverTimestamp()
+            });
+            made++;
+          } else {
+            const ds = String(s.data().status || '').trim().toLowerCase();
+            // Force-approve any doctor whose user account is Active in Admin
+            // (covers pending, suspended, inactive, blank, etc.)
+            // Always force public visibility fields for Active users
+            await setDoc(ref, {
+              ...base,
+              experience: s.data().experience || 0,
+              consultationFee: s.data().consultationFee || 0,
+              licenseNumber: s.data().licenseNumber || '',
+              bio: s.data().bio || '',
+              rating: s.data().rating || 0,
+              reviewCount: s.data().reviewCount || 0
+            }, { merge: true });
+            fixed++;
+          }
+        }
+        showToast(`Sync done: ${made} created, ${fixed} set to Active/Approved`, 'success');
+      } catch (e) {
+        showToast('Sync failed: ' + (e.code || e.message), 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Sync doctors from Users';
+    };
+
+    /* ---------- Auth (guests can still browse) ---------- */
+    onAuthStateChanged(auth, async user => {
+      if (!user) { me = null; $('adminBox').classList.add('hidden'); watchConsults(); render(); return; }
+      try { me = await getCurrentUserProfile(); } catch (_) { me = null; }
+      if (!me) me = { email: user.email, displayName: user.displayName, role: 'patient' };
+      me.uid = user.uid;
+      const adminEmails = [
+        'onyekamiracle08@gmail.com',
+        'onyekaudechukwum@gmail.com',
+        'onyekamiracle08@yahoo.com',
+        'onyekaudechukwum@yahoo.com',
+        'admin@miracardiachealth.com'
+      ];
+      const isAdmin = me.role === 'admin' || me.isAdmin === true ||
+        adminEmails.includes(String(user.email || '').trim().toLowerCase());
+      $('adminBox').classList.toggle('hidden', !isAdmin);
+      watchConsults(); render();
+
+      // FIX: run sync only after the signed-in profile has loaded. Previously the
+      // doctors snapshot could arrive while me was null, so missing doctor profiles
+      // were never copied from active users into the public doctors collection.
+      if (isAdmin && !autoSynced) {
+        autoSynced = true;
+        setTimeout(() => {
+          const syncButton = $('syncBtn');
+          if (syncButton) syncButton.click();
+        }, 500);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Nursing Station | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Nursing Station</h1>
+          <p class="text-[10px] text-slate-400">Care plans · MAR · Vitals · Handover</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="flex gap-1.5 overflow-x-auto">
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-600 text-white" data-t="patients">My Patients</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="mar">MAR / Meds</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="care">Care Plans</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="handover">Shift Handover</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="tasks">Tasks</button>
+    </div>
+
+    <div id="panel-patients" class="n-panel space-y-2">
+      <p class="text-xs text-slate-500">Patients currently on your assigned wards (from bed board).</p>
+      <div id="nursePatients" class="space-y-2"></div>
+      <a href="inpatient.html" class="block text-center text-sm font-bold text-teal-700 py-2">Open full Ward Board →</a>
+      <a href="emr.html" class="block text-center text-sm font-bold text-indigo-700 py-1">Open EMR for documentation →</a>
+    </div>
+
+    <div id="panel-mar" class="n-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-2">Medication Administration Record</h3>
+        <p class="text-xs text-slate-500 mb-3">Record administration against prescribed times. Always check the 5 Rights: Right patient, drug, dose, route, time.</p>
+        <div class="grid gap-2">
+          <input id="marPatient" class="field" placeholder="Patient name / bed" />
+          <input id="marDrug" class="field" placeholder="Drug name & dose" />
+          <select id="marRoute" class="field"><option>Oral</option><option>IV</option><option>IM</option><option>SC</option><option>Other</option></select>
+          <select id="marStatus" class="field">
+            <option value="given">Given</option>
+            <option value="refused">Refused</option>
+            <option value="held">Held (clinical reason)</option>
+            <option value="not_available">Not available</option>
+          </select>
+          <textarea id="marNote" class="field h-16" placeholder="Optional note / reason held"></textarea>
+          <button id="saveMar" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm">Record Administration</button>
+        </div>
+      </div>
+      <div id="marLog" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-care" class="n-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-2">Nursing Care Plan</h3>
+        <input id="cpPatient" class="field mb-2" placeholder="Patient" />
+        <input id="cpProblem" class="field mb-2" placeholder="Nursing diagnosis / problem" />
+        <textarea id="cpGoal" class="field h-16 mb-2" placeholder="Goal / expected outcome"></textarea>
+        <textarea id="cpInterventions" class="field h-20 mb-2" placeholder="Interventions (one per line)"></textarea>
+        <button id="saveCp" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm">Save Care Plan</button>
+      </div>
+      <div id="cpList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-handover" class="n-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-2">Shift Handover (SBAR / ISBAR)</h3>
+        <p class="text-xs text-slate-500 mb-2">Situation · Background · Assessment · Recommendation</p>
+        <input id="hoPatient" class="field mb-2" placeholder="Patient / bed" />
+        <textarea id="hoSituation" class="field h-14 mb-2" placeholder="Situation"></textarea>
+        <textarea id="hoBackground" class="field h-14 mb-2" placeholder="Background"></textarea>
+        <textarea id="hoAssessment" class="field h-14 mb-2" placeholder="Assessment"></textarea>
+        <textarea id="hoRecommend" class="field h-14 mb-2" placeholder="Recommendation"></textarea>
+        <button id="saveHo" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm">Save Handover Note</button>
+      </div>
+      <div id="hoList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-tasks" class="n-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-2">Nursing Tasks / Reminders</h3>
+        <input id="taskText" class="field mb-2" placeholder="Task (e.g. Wound dressing 14:00 Bed 4)" />
+        <button id="addTask" class="bg-indigo-600 text-white font-bold py-2 rounded-xl text-sm w-full">Add Task</button>
+      </div>
+      <div id="taskList" class="space-y-2"></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, where } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['nurse','doctor','admin']);
+
+    document.querySelectorAll('.n-tab').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.n-tab').forEach(b => { b.classList.remove('bg-indigo-600','text-white'); b.classList.add('border','border-slate-200'); });
+        btn.classList.add('bg-indigo-600','text-white'); btn.classList.remove('border-slate-200');
+        document.querySelectorAll('.n-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById('panel-' + btn.dataset.t).classList.remove('hidden');
+      };
+    });
+
+    // Load occupied beds as "my patients"
+    async function loadPatients() {
+      const snap = await getDocs(query(collection(db, 'beds'), where('status', '==', 'occupied')));
+      const el = document.getElementById('nursePatients');
+      if (snap.empty) {
+        el.innerHTML = '<p class="text-sm text-slate-500 card">No occupied beds. Admit patients from Inpatient board.</p>';
+        return;
+      }
+      el.innerHTML = '';
+      snap.forEach(d => {
+        const b = d.data();
+        el.innerHTML += `<div class="card flex justify-between items-center">
+          <div><div class="font-bold text-sm">${b.patientName||'Patient'}</div><div class="text-xs text-slate-500">${b.bedNo||d.id} · ${b.ward||''} · ${b.diagnosis||''}</div></div>
+          <a href="emr.html" class="text-xs font-bold text-indigo-600">Chart →</a>
+        </div>`;
+      });
+    }
+
+    document.getElementById('saveMar').onclick = async () => {
+      const patient = document.getElementById('marPatient').value.trim();
+      const drug = document.getElementById('marDrug').value.trim();
+      if (!patient || !drug) return alert('Patient and drug required');
+      await addDoc(collection(db, 'mar'), {
+        patient, drug, route: document.getElementById('marRoute').value,
+        status: document.getElementById('marStatus').value,
+        note: document.getElementById('marNote').value,
+        at: serverTimestamp(), by: auth.currentUser?.uid,
+        byName: profile.fullName || profile.displayName || 'Nurse'
+      });
+      alert('MAR entry saved');
+      loadMar();
+    };
+
+    async function loadMar() {
+      const snap = await getDocs(query(collection(db, 'mar'), orderBy('at', 'desc'), limit(20)));
+      document.getElementById('marLog').innerHTML = '';
+      snap.forEach(d => {
+        const m = d.data();
+        const t = m.at?.toDate ? m.at.toDate().toLocaleString() : '';
+        document.getElementById('marLog').innerHTML += `<div class="card text-sm"><div class="font-bold">${m.drug}</div><div class="text-xs text-slate-500">${m.patient} · ${m.route} · <span class="font-semibold">${m.status}</span></div><div class="text-[10px] text-slate-400">${t} · ${m.byName||''}</div></div>`;
+      });
+    }
+
+    document.getElementById('saveCp').onclick = async () => {
+      const patient = document.getElementById('cpPatient').value.trim();
+      if (!patient) return;
+      await addDoc(collection(db, 'carePlans'), {
+        patient, problem: document.getElementById('cpProblem').value,
+        goal: document.getElementById('cpGoal').value,
+        interventions: document.getElementById('cpInterventions').value,
+        at: serverTimestamp(), by: auth.currentUser?.uid, byName: profile.fullName || profile.displayName
+      });
+      alert('Care plan saved');
+      loadCp();
+    };
+
+    async function loadCp() {
+      const snap = await getDocs(query(collection(db, 'carePlans'), orderBy('at', 'desc'), limit(15)));
+      document.getElementById('cpList').innerHTML = '';
+      snap.forEach(d => {
+        const c = d.data();
+        document.getElementById('cpList').innerHTML += `<div class="card"><div class="font-bold text-sm">${c.patient}</div><div class="text-xs text-indigo-700 font-semibold">${c.problem||''}</div><div class="text-xs mt-1 text-slate-600">${c.goal||''}</div><pre class="text-[11px] mt-1 whitespace-pre-wrap text-slate-500">${c.interventions||''}</pre></div>`;
+      });
+    }
+
+    document.getElementById('saveHo').onclick = async () => {
+      const patient = document.getElementById('hoPatient').value.trim();
+      if (!patient) return;
+      await addDoc(collection(db, 'handovers'), {
+        patient,
+        situation: document.getElementById('hoSituation').value,
+        background: document.getElementById('hoBackground').value,
+        assessment: document.getElementById('hoAssessment').value,
+        recommendation: document.getElementById('hoRecommend').value,
+        at: serverTimestamp(), by: auth.currentUser?.uid, byName: profile.fullName || profile.displayName
+      });
+      alert('Handover saved');
+      loadHo();
+    };
+
+    async function loadHo() {
+      const snap = await getDocs(query(collection(db, 'handovers'), orderBy('at', 'desc'), limit(10)));
+      document.getElementById('hoList').innerHTML = '';
+      snap.forEach(d => {
+        const h = d.data();
+        document.getElementById('hoList').innerHTML += `<div class="card text-sm"><div class="font-bold">${h.patient}</div>
+          <div class="text-xs mt-1"><span class="font-semibold">S:</span> ${h.situation||''}</div>
+          <div class="text-xs"><span class="font-semibold">B:</span> ${h.background||''}</div>
+          <div class="text-xs"><span class="font-semibold">A:</span> ${h.assessment||''}</div>
+          <div class="text-xs"><span class="font-semibold">R:</span> ${h.recommendation||''}</div>
+          <div class="text-[10px] text-slate-400 mt-1">${h.byName||''}</div></div>`;
+      });
+    }
+
+    document.getElementById('addTask').onclick = async () => {
+      const text = document.getElementById('taskText').value.trim();
+      if (!text) return;
+      await addDoc(collection(db, 'nurseTasks'), { text, done: false, at: serverTimestamp(), by: auth.currentUser?.uid });
+      document.getElementById('taskText').value = '';
+      loadTasks();
+    };
+
+    async function loadTasks() {
+      const snap = await getDocs(query(collection(db, 'nurseTasks'), orderBy('at', 'desc'), limit(20)));
+      document.getElementById('taskList').innerHTML = '';
+      snap.forEach(d => {
+        const t = d.data();
+        document.getElementById('taskList').innerHTML += `<div class="card text-sm flex justify-between"><span>${t.text}</span><span class="text-[10px] text-slate-400">${t.done?'Done':'Open'}</span></div>`;
+      });
+    }
+
+    await loadPatients();
+    await loadMar();
+    await loadCp();
+    await loadHo();
+    await loadTasks();
+  </script>
+</body>
+</html>

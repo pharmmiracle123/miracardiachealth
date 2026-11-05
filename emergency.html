@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Emergency & Triage | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+    .esi1{border-left:4px solid #dc2626}.esi2{border-left:4px solid #ea580c}.esi3{border-left:4px solid #eab308}.esi4{border-left:4px solid #22c55e}.esi5{border-left:4px solid #3b82f6}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Emergency & Triage</h1>
+          <p class="text-[10px] text-slate-400">ESI triage · Trauma · Rapid registration</p>
+        </div>
+      </div>
+      <button id="triageBtn" class="text-xs font-bold bg-red-600 text-white rounded-lg px-3 py-1.5">+ Triage</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-bold">
+      <div class="bg-red-100 text-red-800 rounded-lg py-2">ESI 1<br>Resusc</div>
+      <div class="bg-orange-100 text-orange-800 rounded-lg py-2">ESI 2<br>Emergent</div>
+      <div class="bg-yellow-100 text-yellow-800 rounded-lg py-2">ESI 3<br>Urgent</div>
+      <div class="bg-green-100 text-green-800 rounded-lg py-2">ESI 4<br>Less urgent</div>
+      <div class="bg-blue-100 text-blue-800 rounded-lg py-2">ESI 5<br>Non-urgent</div>
+    </div>
+    <div id="edBoard" class="space-y-2"></div>
+
+    <div id="triageModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg text-red-700">Triage / Rapid Registration</h2>
+        <div><label class="lbl">Patient name</label><input id="tName" class="field" /></div>
+        <div><label class="lbl">Age / Sex</label><input id="tAgeSex" class="field" placeholder="e.g. 34 M" /></div>
+        <div><label class="lbl">Chief complaint</label><input id="tCc" class="field" /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="lbl">BP</label><input id="tBp" class="field" /></div>
+          <div><label class="lbl">Pulse</label><input id="tPulse" class="field" type="number" /></div>
+          <div><label class="lbl">Temp</label><input id="tTemp" class="field" type="number" step="0.1" /></div>
+          <div><label class="lbl">SpO₂</label><input id="tSpo2" class="field" type="number" /></div>
+        </div>
+        <div><label class="lbl">ESI Level</label>
+          <select id="tEsi" class="field">
+            <option value="1">1 – Resuscitation</option>
+            <option value="2">2 – Emergent</option>
+            <option value="3" selected>3 – Urgent</option>
+            <option value="4">4 – Less urgent</option>
+            <option value="5">5 – Non-urgent</option>
+          </select>
+        </div>
+        <div><label class="lbl">Notes</label><textarea id="tNotes" class="field h-16"></textarea></div>
+        <div class="flex gap-2">
+          <button id="cancelTriage" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="saveTriage" class="flex-1 bg-red-600 text-white rounded-xl py-2.5 font-bold text-sm">Register</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['doctor','nurse','admin','surgeon']);
+
+    document.getElementById('triageBtn').onclick = () => {
+      document.getElementById('triageModal').classList.remove('hidden');
+      document.getElementById('triageModal').classList.add('flex');
+    };
+    document.getElementById('cancelTriage').onclick = () => {
+      document.getElementById('triageModal').classList.add('hidden');
+      document.getElementById('triageModal').classList.remove('flex');
+    };
+
+    document.getElementById('saveTriage').onclick = async () => {
+      const name = document.getElementById('tName').value.trim();
+      if (!name) return alert('Name required');
+      await addDoc(collection(db, 'edEncounters'), {
+        name, ageSex: document.getElementById('tAgeSex').value,
+        chiefComplaint: document.getElementById('tCc').value,
+        bp: document.getElementById('tBp').value, pulse: document.getElementById('tPulse').value,
+        temp: document.getElementById('tTemp').value, spo2: document.getElementById('tSpo2').value,
+        esi: document.getElementById('tEsi').value, notes: document.getElementById('tNotes').value,
+        status: 'waiting', triagedAt: serverTimestamp(),
+        triagedBy: auth.currentUser?.uid, byName: profile.fullName || profile.displayName
+      });
+      document.getElementById('triageModal').classList.add('hidden');
+      load();
+    };
+
+    async function load() {
+      const snap = await getDocs(query(collection(db, 'edEncounters'), orderBy('triagedAt', 'desc'), limit(30)));
+      const el = document.getElementById('edBoard');
+      el.innerHTML = '';
+      snap.forEach(d => {
+        const e = d.data();
+        const t = e.triagedAt?.toDate ? e.triagedAt.toDate().toLocaleTimeString() : '';
+        el.innerHTML += `<div class="card esi${e.esi||'3'}">
+          <div class="flex justify-between"><span class="font-extrabold">${e.name}</span><span class="text-xs font-bold">ESI ${e.esi}</span></div>
+          <div class="text-xs text-slate-600 mt-0.5">${e.chiefComplaint||''} · ${e.ageSex||''}</div>
+          <div class="text-[10px] text-slate-400">Vitals: BP ${e.bp||'—'} HR ${e.pulse||'—'} T ${e.temp||'—'} SpO₂ ${e.spo2||'—'} · ${t}</div>
+          <div class="mt-2 flex gap-1">
+            <button data-id="${d.id}" data-s="in_care" class="text-[10px] font-bold bg-amber-100 px-2 py-0.5 rounded">In care</button>
+            <button data-id="${d.id}" data-s="discharged" class="text-[10px] font-bold bg-emerald-100 px-2 py-0.5 rounded">Discharge</button>
+            <button data-id="${d.id}" data-s="admitted" class="text-[10px] font-bold bg-teal-100 px-2 py-0.5 rounded">Admit</button>
+          </div>
+        </div>`;
+      });
+      el.querySelectorAll('button').forEach(btn => {
+        btn.onclick = async () => {
+          await updateDoc(doc(db, 'edEncounters', btn.dataset.id), { status: btn.dataset.s, updatedAt: serverTimestamp() });
+          load();
+        };
+      });
+    }
+    await load();
+  </script>
+</body>
+</html>

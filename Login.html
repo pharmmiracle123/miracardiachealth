@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Login | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <style>
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .blob { position:absolute; border-radius:9999px; filter:blur(40px); opacity:.4; animation: floaty 9s ease-in-out infinite; }
+    @keyframes floaty { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-18px) scale(1.08)} }
+    .heartbeat { animation: beat 1.4s ease-in-out infinite; display:inline-block; }
+    @keyframes beat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.2)} 30%{transform:scale(1)} 45%{transform:scale(1.12)} 60%{transform:scale(1)} }
+    .ecg-path { stroke-dasharray: 600; stroke-dashoffset: 600; animation: ecg 3.2s linear infinite; }
+    @keyframes ecg { 0%{stroke-dashoffset:600} 70%{stroke-dashoffset:0} 100%{stroke-dashoffset:-600} }
+    .ic { width: 18px; height: 18px; flex-shrink: 0; display: block; }
+    .inp { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .8rem 1rem; font-size: .9rem; transition: border-color .2s, box-shadow .2s; }
+    .inp:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <!-- Header banner -->
+  <section class="relative ah-gradient text-white overflow-hidden">
+    <div class="blob w-48 h-48 bg-cyan-300 -top-10 -left-10"></div>
+    <div class="blob w-48 h-48 bg-emerald-300 top-10 -right-12" style="animation-delay:-3s"></div>
+    <div class="relative max-w-md mx-auto px-5 pt-8 pb-16 text-center">
+      <a href="index.html" class="inline-flex items-center gap-2">
+        <img class="site-logo w-11 h-11 rounded-2xl object-contain shadow" src="icons/icon.svg" alt="MH" />
+        <span class="font-extrabold text-xl">Miracardiac<span class="text-emerald-200">Health</span></span>
+      </a>
+      <svg viewBox="0 0 300 50" class="w-full h-10 mt-4 opacity-90" fill="none">
+        <path class="ecg-path" d="M0 28 H60 L72 28 L82 8 L96 44 L108 20 L116 28 H170 L182 28 L192 10 L206 42 L218 22 L226 28 H300" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1 class="text-2xl font-extrabold mt-2">Welcome back <span class="heartbeat">👋</span></h1>
+      <p class="text-sm text-white/90 mt-1">Log in to chat with doctors, order medicines and study.</p>
+    </div>
+  </section>
+
+  <main class="max-w-md mx-auto px-4 -mt-8 relative z-10 pb-10">
+
+    <!-- ============ LOGIN CARD ============ -->
+    <div id="loginView" class="bg-white rounded-3xl shadow-xl border border-slate-100 p-5">
+      <button id="googleBtn" type="button" class="w-full flex items-center justify-center gap-3 border-[1.5px] border-slate-200 rounded-xl py-3 text-sm font-semibold hover:bg-slate-50 active:scale-[.98] transition">
+        <svg class="ic" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="flex items-center gap-3 my-4">
+        <div class="flex-1 h-px bg-slate-200"></div><span class="text-[11px] font-semibold text-slate-400">OR WITH EMAIL</span><div class="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      <div id="loginMsg" class="hidden mb-3 rounded-xl px-3 py-2.5 text-xs font-medium"></div>
+
+      <form id="loginForm" class="space-y-3" novalidate>
+        <div>
+          <label for="email" class="block text-xs font-bold text-slate-500 mb-1">Email address</label>
+          <input id="email" type="email" autocomplete="email" inputmode="email" class="inp" placeholder="you@example.com" required />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="password" class="block text-xs font-bold text-slate-500">Password</label>
+            <button type="button" id="forgotLink" class="text-xs font-semibold text-teal-700">Forgot password?</button>
+          </div>
+          <div class="relative">
+            <input id="password" type="password" autocomplete="current-password" class="inp pr-12" placeholder="Your password" required />
+            <button type="button" id="togglePw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-1" aria-label="Show password">
+              <svg id="eyeOn" class="ic" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <svg id="eyeOff" class="ic hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+            </button>
+          </div>
+        </div>
+        <button id="loginBtn" type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold py-3 text-sm shadow-lg shadow-teal-600/25 active:scale-[.98] transition disabled:opacity-60">Log in</button>
+      </form>
+
+      <p class="text-center text-sm text-slate-500 mt-5">New here? <a href="Register.html" id="regLink" class="font-bold text-teal-700">Create an account</a></p>
+    </div>
+
+    <!-- ============ FORGOT PASSWORD CARD ============ -->
+    <div id="forgotView" class="hidden bg-white rounded-3xl shadow-xl border border-slate-100 p-5">
+      <button id="backToLogin" class="text-xs font-semibold text-slate-500 flex items-center gap-1 mb-3">
+        <svg class="ic" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg> Back to login
+      </button>
+      <div class="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-2xl mb-2">🔑</div>
+      <h2 class="text-lg font-extrabold">Reset your password</h2>
+      <p class="text-xs text-slate-500 mt-1 mb-4">Enter your account email and we'll send you a link to choose a new password.</p>
+      <div id="forgotMsg" class="hidden mb-3 rounded-xl px-3 py-2.5 text-xs font-medium"></div>
+      <form id="forgotForm" class="space-y-3" novalidate>
+        <input id="resetEmail" type="email" autocomplete="email" inputmode="email" class="inp" placeholder="you@example.com" required />
+        <button id="resetBtn" type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold py-3 text-sm active:scale-[.98] transition disabled:opacity-60">Send reset link</button>
+      </form>
+    </div>
+
+    <div class="text-center mt-5 space-y-2">
+      <a href="index.html" class="text-xs font-semibold text-slate-500">← Back to home</a>
+      <p class="text-[10px] text-slate-400 px-6">By continuing you agree to our <a href="terms.html" class="underline">Terms</a> and <a href="privacy.html" class="underline">Privacy Policy</a>.</p>
+    </div>
+  </main>
+
+  <script type="module">
+    import {auth, db, googleProvider, signInWithPopup, signInWithEmailAndPassword, sendPasswordResetEmail,
+      signOut, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, applyPlatformBranding} from './js/config.js';
+    applyPlatformBranding();
+    import { signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+    const $ = (id) => document.getElementById(id);
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+    /* ---------- Safe redirect target (?next=page.html) ---------- */
+    const params = new URLSearchParams(location.search);
+    function nextUrl() {
+      const n = params.get('next') || '';
+      return /^[\w\- \/]+\.html(\?[\w=&.\-%]*)?$/.test(n) ? n : 'Dashboard.html';
+    }
+    if (params.get('next')) $('regLink').href = 'Register.html?next=' + encodeURIComponent(params.get('next'));
+
+    /* ---------- Messages ---------- */
+    function showMsg(el, text, type = 'error') {
+      el.textContent = text;
+      el.className = 'mb-3 rounded-xl px-3 py-2.5 text-xs font-medium ' + (type === 'error'
+        ? 'bg-red-50 text-red-700 border border-red-100'
+        : 'bg-emerald-50 text-emerald-700 border border-emerald-100');
+    }
+    const hideMsg = (el) => el.classList.add('hidden');
+
+    function friendlyError(e) {
+      const c = (e && e.code) || '';
+      if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-login-credentials'].includes(c)) return 'Incorrect email or password.';
+      if (c === 'auth/invalid-email') return 'Please enter a valid email address.';
+      if (c === 'auth/too-many-requests') return 'Too many attempts. Please wait a few minutes or reset your password.';
+      if (c === 'auth/network-request-failed') return 'Network problem. Check your internet and try again.';
+      if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'Google sign-in was closed before it finished. Tap the button and try again.';
+      if (c === 'auth/popup-blocked') return 'Your browser blocked the Google popup. Allow popups and try again.';
+      if (c === 'auth/unauthorized-domain') return 'Add "' + location.hostname + '" in Firebase > Authentication > Settings > Authorized domains.';
+      if (c === 'auth/operation-not-allowed') return 'This sign-in method is not enabled in Firebase yet.';
+      if (c === 'auth/user-disabled') return 'This account has been disabled. Contact support.';
+      if (c === 'permission-denied') return 'Permission denied while setting up your profile. Publish the latest firestore.rules.';
+      return 'Sign-in failed' + (c ? ' (' + c + ')' : '') + '. Please try again.';
+    }
+
+    function setBusy(on) {
+      $('loginBtn').disabled = on; $('googleBtn').disabled = on;
+      $('loginBtn').textContent = on ? 'Please wait…' : 'Log in';
+    }
+
+    /* ---------- Profile (best effort: never blocks the redirect for long) ---------- */
+    async function checkProfile(user) {
+      try {
+        const ref = doc(db, 'users', user.uid);
+        const snap = await withTimeout(getDoc(ref), 4000);
+        if (snap.exists()) return snap.data();
+        const base = {
+          uid: user.uid, email: user.email || '', displayName: user.displayName || '', photoURL: user.photoURL || '',
+          phone: user.phoneNumber || '', role: 'patient',
+          provider: (user.providerData && user.providerData[0] && user.providerData[0].providerId) || 'password',
+          consent: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        };
+        try { await withTimeout(setDoc(ref, { ...base, status: 'active' }), 4000); }
+        catch (e) { await withTimeout(setDoc(ref, { ...base, status: 'pending' }), 4000); }
+        return null;
+      } catch (e) {
+        console.warn('Profile check skipped (Dashboard will retry):', e);
+        return null;
+      }
+    }
+
+    /* ---------- Go to dashboard (runs once) ---------- */
+    let going = false;
+    async function goToDashboard(user) {
+      if (going) return;
+      going = true;
+      setBusy(true);
+      showMsg($('loginMsg'), 'Signed in. Opening your dashboard…', 'ok');
+      const p = await checkProfile(user);
+      if (p && ['suspended', 'rejected'].includes(p.status)) {
+        try { await signOut(auth); } catch (_) {}
+        showMsg($('loginMsg'), p.status === 'suspended'
+          ? 'Your account is suspended. Please contact customer care.'
+          : 'Your application was not approved. Please contact customer care.');
+        going = false; setBusy(false);
+        return;
+      }
+      location.replace(nextUrl());
+    }
+
+    if (params.get('error') === 'profile') {
+      showMsg($('loginMsg'), 'We could not create your profile. Publish the latest firestore.rules, then try again.');
+    }
+
+    /* ---------- UI helpers ---------- */
+    $('togglePw').addEventListener('click', () => {
+      const show = $('password').type === 'password';
+      $('password').type = show ? 'text' : 'password';
+      $('eyeOn').classList.toggle('hidden', show); $('eyeOff').classList.toggle('hidden', !show);
+    });
+
+    /* ---------- Email login ---------- */
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); hideMsg($('loginMsg'));
+      const email = $('email').value.trim(), pw = $('password').value;
+      if (!email || !pw) { showMsg($('loginMsg'), 'Enter your email and password.'); return; }
+      setBusy(true);
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, pw);
+        await goToDashboard(cred.user);
+      } catch (err) {
+        console.error(err);
+        if (!going) { showMsg($('loginMsg'), friendlyError(err)); setBusy(false); }
+      }
+    });
+
+    /* ---------- Google login (popup, then redirect fallback) ---------- */
+    $('googleBtn').addEventListener('click', async () => {
+      hideMsg($('loginMsg')); setBusy(true);
+      try {
+        const cred = await signInWithPopup(auth, googleProvider);
+        await goToDashboard(cred.user);
+      } catch (err) {
+        console.error(err);
+        if (going) return;
+        if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) {
+          try { await signInWithRedirect(auth, googleProvider); return; }
+          catch (err2) { console.error(err2); showMsg($('loginMsg'), friendlyError(err2)); setBusy(false); return; }
+        }
+        showMsg($('loginMsg'), friendlyError(err)); setBusy(false);
+      }
+    });
+
+    /* ---------- Result after a Google redirect ---------- */
+    getRedirectResult(auth).catch((err) => {
+      console.error(err);
+      if (!going) showMsg($('loginMsg'), friendlyError(err));
+    });
+
+    /* ---------- Forgot password ---------- */
+    $('forgotLink').addEventListener('click', () => {
+      $('resetEmail').value = $('email').value.trim();
+      $('loginView').classList.add('hidden'); $('forgotView').classList.remove('hidden'); hideMsg($('forgotMsg'));
+    });
+    $('backToLogin').addEventListener('click', () => {
+      $('forgotView').classList.add('hidden'); $('loginView').classList.remove('hidden');
+    });
+    $('forgotForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); hideMsg($('forgotMsg'));
+      const email = $('resetEmail').value.trim();
+      if (!/^\S+@\S+\.\S+$/.test(email)) { showMsg($('forgotMsg'), 'Enter a valid email address.'); return; }
+      $('resetBtn').disabled = true; $('resetBtn').textContent = 'Sending…';
+      const okText = 'If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.';
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMsg($('forgotMsg'), okText, 'ok');
+      } catch (err) {
+        console.error(err);
+        if (['auth/user-not-found', 'auth/invalid-email'].includes(err.code)) showMsg($('forgotMsg'), okText, 'ok');
+        else showMsg($('forgotMsg'), friendlyError(err));
+      }
+      $('resetBtn').disabled = false; $('resetBtn').textContent = 'Send reset link';
+    });
+
+    /* ---------- Already signed in? continue automatically ---------- */
+    onAuthStateChanged(auth, (user) => { if (user) goToDashboard(user); });
+
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
+</body>
+</html>

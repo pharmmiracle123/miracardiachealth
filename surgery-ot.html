@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Surgery & Operating Theatre | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body{padding-bottom:40px}
+    .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
+    .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
+    .ot-card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
+    .check-item{display:flex;align-items:flex-start;gap:.5rem;padding:.4rem 0;border-bottom:1px solid #f1f5f9;font-size:.8rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base">Surgery / OT Board</h1>
+          <p class="text-[10px] text-slate-400">Scheduling · WHO Checklist · Post-op</p>
+        </div>
+      </div>
+      <button id="scheduleBtn" class="text-xs font-bold bg-rose-600 text-white rounded-lg px-3 py-1.5">+ Schedule</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="flex gap-2 overflow-x-auto pb-1">
+      <button class="day-btn text-xs font-bold px-3 py-1.5 rounded-full bg-rose-600 text-white" data-day="today">Today</button>
+      <button class="day-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-day="tomorrow">Tomorrow</button>
+      <button class="day-btn text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-day="week">This week</button>
+    </div>
+
+    <div id="otList" class="space-y-3"></div>
+
+    <!-- Schedule modal -->
+    <div id="schedModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg">Schedule Procedure</h2>
+        <div><label class="lbl">Patient name</label><input id="sPatient" class="field" /></div>
+        <div><label class="lbl">Procedure</label><input id="sProc" class="field" placeholder="e.g. Laparoscopic cholecystectomy" /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="lbl">Date</label><input id="sDate" type="date" class="field" /></div>
+          <div><label class="lbl">Time</label><input id="sTime" type="time" class="field" /></div>
+        </div>
+        <div><label class="lbl">Theatre</label>
+          <select id="sTheatre" class="field"><option>OT-1</option><option>OT-2</option><option>OT-3</option><option>OT-Emergency</option></select>
+        </div>
+        <div><label class="lbl">Surgeon</label><input id="sSurgeon" class="field" /></div>
+        <div><label class="lbl">Anaesthetist</label><input id="sAnaes" class="field" /></div>
+        <div><label class="lbl">Priority</label>
+          <select id="sPriority" class="field"><option>Elective</option><option>Urgent</option><option>Emergency</option></select>
+        </div>
+        <div><label class="lbl">Notes / special requirements</label><textarea id="sNotes" class="field h-16"></textarea></div>
+        <div class="flex gap-2">
+          <button id="cancelSched" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Cancel</button>
+          <button id="saveSched" class="flex-1 bg-rose-600 text-white rounded-xl py-2.5 font-bold text-sm">Schedule</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHO Checklist modal -->
+    <div id="whoModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+        <h2 class="font-extrabold text-lg text-rose-700">WHO Surgical Safety Checklist</h2>
+        <p class="text-xs text-slate-500" id="whoCaseTitle"></p>
+        <div>
+          <h3 class="font-bold text-sm text-teal-700 mb-1">Sign In (Before induction)</h3>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Patient confirmed identity, site, procedure, consent</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Site marked / not applicable</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Anaesthesia safety check completed</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Pulse oximeter on patient and functioning</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Known allergies?</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Difficult airway / aspiration risk assessed</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Risk of >500 ml blood loss – IV access & fluids planned</label>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm text-amber-700 mb-1">Time Out (Before incision)</h3>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Team introduced by name & role</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Surgeon, anaesthetist, nurse confirm patient, site, procedure</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Anticipated critical events reviewed</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Antibiotic prophylaxis given within last 60 min</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Essential imaging displayed</label>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm text-emerald-700 mb-1">Sign Out (Before leaving OT)</h3>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Nurse verbally confirms procedure name</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Instrument, sponge and needle counts correct</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Specimen labelled</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Equipment problems addressed</label>
+          <label class="check-item"><input type="checkbox" class="who-c" /> Surgeon, anaesthetist, nurse review recovery & management concerns</label>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button id="closeWho" class="flex-1 border rounded-xl py-2.5 font-bold text-sm">Close</button>
+          <button id="completeWho" class="flex-1 bg-teal-600 text-white rounded-xl py-2.5 font-bold text-sm">Mark Checklist Complete</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
+    applyPlatformBranding();
+    const profile = await requireAuth(['doctor','surgeon','nurse','admin','anaesthetist']);
+
+    let cases = [];
+    let activeCaseId = null;
+
+    async function load() {
+      const snap = await getDocs(query(collection(db, 'otCases'), orderBy('scheduledAt', 'asc'), limit(50)));
+      cases = [];
+      snap.forEach(d => cases.push({ id: d.id, ...d.data() }));
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('otList');
+      if (!cases.length) {
+        list.innerHTML = `<div class="ot-card text-center text-slate-500 text-sm py-8">No procedures scheduled. Tap + Schedule to add.</div>`;
+        return;
+      }
+      list.innerHTML = cases.map(c => {
+        const dt = c.scheduledAt?.toDate ? c.scheduledAt.toDate() : (c.date ? new Date(c.date + 'T' + (c.time||'00:00')) : null);
+        return `
+        <div class="ot-card">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <div class="font-extrabold text-sm">${escape(c.procedure || 'Procedure')}</div>
+              <div class="text-xs text-slate-600 mt-0.5">${escape(c.patientName || '')}</div>
+              <div class="text-[11px] text-slate-400 mt-1">${c.theatre || 'OT'} · ${dt ? dt.toLocaleString() : ''} · ${c.priority || 'Elective'}</div>
+              <div class="text-[11px] mt-0.5">Surgeon: ${escape(c.surgeon || '—')} · Anaes: ${escape(c.anaesthetist || '—')}</div>
+            </div>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+              c.status==='completed'?'bg-emerald-100 text-emerald-800':
+              c.status==='in_progress'?'bg-amber-100 text-amber-800':
+              c.checklistComplete?'bg-teal-100 text-teal-800':'bg-slate-100 text-slate-600'
+            }">${c.status || 'scheduled'}</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-3">
+            <button data-id="${c.id}" data-act="who" class="text-[11px] font-bold bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg">WHO Checklist</button>
+            <button data-id="${c.id}" data-act="start" class="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg">Start</button>
+            <button data-id="${c.id}" data-act="complete" class="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg">Complete</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      list.querySelectorAll('button').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          const act = btn.dataset.act;
+          if (act === 'who') openWho(id);
+          if (act === 'start') { await updateDoc(doc(db, 'otCases', id), { status: 'in_progress', startedAt: serverTimestamp() }); load(); }
+          if (act === 'complete') { await updateDoc(doc(db, 'otCases', id), { status: 'completed', completedAt: serverTimestamp() }); load(); }
+        };
+      });
+    }
+
+    function escape(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+    document.getElementById('scheduleBtn').onclick = () => {
+      document.getElementById('schedModal').classList.remove('hidden');
+      document.getElementById('schedModal').classList.add('flex');
+      document.getElementById('sSurgeon').value = profile.fullName || profile.displayName || '';
+      document.getElementById('sDate').value = new Date().toISOString().slice(0,10);
+    };
+    document.getElementById('cancelSched').onclick = () => {
+      document.getElementById('schedModal').classList.add('hidden');
+      document.getElementById('schedModal').classList.remove('flex');
+    };
+    document.getElementById('saveSched').onclick = async () => {
+      const patientName = document.getElementById('sPatient').value.trim();
+      const procedure = document.getElementById('sProc').value.trim();
+      if (!patientName || !procedure) return alert('Patient and procedure required');
+      const date = document.getElementById('sDate').value;
+      const time = document.getElementById('sTime').value;
+      await addDoc(collection(db, 'otCases'), {
+        patientName, procedure, date, time,
+        theatre: document.getElementById('sTheatre').value,
+        surgeon: document.getElementById('sSurgeon').value,
+        anaesthetist: document.getElementById('sAnaes').value,
+        priority: document.getElementById('sPriority').value,
+        notes: document.getElementById('sNotes').value,
+        status: 'scheduled', checklistComplete: false,
+        scheduledAt: date && time ? new Date(date + 'T' + time) : serverTimestamp(),
+        createdAt: serverTimestamp(), createdBy: auth.currentUser?.uid
+      });
+      document.getElementById('schedModal').classList.add('hidden');
+      load();
+    };
+
+    function openWho(id) {
+      activeCaseId = id;
+      const c = cases.find(x => x.id === id);
+      document.getElementById('whoCaseTitle').textContent = (c?.patientName || '') + ' · ' + (c?.procedure || '');
+      document.querySelectorAll('.who-c').forEach(cb => cb.checked = false);
+      document.getElementById('whoModal').classList.remove('hidden');
+      document.getElementById('whoModal').classList.add('flex');
+    }
+    document.getElementById('closeWho').onclick = () => {
+      document.getElementById('whoModal').classList.add('hidden');
+      document.getElementById('whoModal').classList.remove('flex');
+    };
+    document.getElementById('completeWho').onclick = async () => {
+      if (!activeCaseId) return;
+      await updateDoc(doc(db, 'otCases', activeCaseId), { checklistComplete: true, checklistAt: serverTimestamp(), checklistBy: auth.currentUser?.uid });
+      document.getElementById('whoModal').classList.add('hidden');
+      load();
+    };
+
+    await load();
+  </script>
+</body>
+</html>

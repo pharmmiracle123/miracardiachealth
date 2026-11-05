@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <title>Electronic Medical Records | MiracardiacHealth HMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: 40px; }
+    .tab-btn { font-size:.75rem; font-weight:700; padding:.45rem .8rem; border-radius:.6rem; border:1px solid #e2e8f0; }
+    .tab-btn.active { background:#0d9488; color:#fff; border-color:#0d9488; }
+    .field { width:100%; border:1px solid #e2e8f0; background:#fff; border-radius:.75rem; padding:.55rem .75rem; font-size:.875rem; }
+    .lbl { display:block; font-size:.68rem; font-weight:700; color:#64748b; margin-bottom:.2rem; text-transform:uppercase; letter-spacing:.03em; }
+    .ah-card { background:#fff; border:1px solid #e2e8f0; border-radius:1rem; padding:1rem; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="hms-hub.html" class="text-slate-500 text-lg">←</a>
+        <div>
+          <h1 class="font-extrabold text-base leading-none">Electronic Medical Records</h1>
+          <p class="text-[10px] text-slate-400 mt-0.5">Complete patient chart for all clinicians</p>
+        </div>
+      </div>
+      <button id="newNoteBtn" class="text-xs font-bold bg-teal-600 text-white rounded-lg px-3 py-1.5">+ Note</button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+
+    <!-- Patient search / select -->
+    <section class="ah-card">
+      <label class="lbl">Search patient (name, phone, MRN)</label>
+      <div class="flex gap-2">
+        <input id="patientSearch" class="field flex-1" placeholder="Type to search..." />
+        <button id="searchBtn" class="bg-teal-600 text-white font-bold text-sm px-4 rounded-xl">Search</button>
+      </div>
+      <div id="patientResults" class="mt-2 space-y-1 hidden"></div>
+    </section>
+
+    <!-- Patient header (populated after selection) -->
+    <section id="patientHeader" class="ah-card hidden">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="ptName" class="font-extrabold text-lg"></h2>
+          <p id="ptMeta" class="text-xs text-slate-500 mt-0.5"></p>
+          <div id="allergyBanner" class="mt-2 text-xs font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1 hidden"></div>
+        </div>
+        <div class="text-right text-xs">
+          <div id="ptMrn" class="font-mono font-bold text-teal-700"></div>
+          <div id="ptAgeSex" class="text-slate-500"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div id="tabs" class="flex flex-wrap gap-1.5 hidden">
+      <button class="tab-btn active" data-tab="summary">Summary</button>
+      <button class="tab-btn" data-tab="vitals">Vitals</button>
+      <button class="tab-btn" data-tab="problems">Problems</button>
+      <button class="tab-btn" data-tab="meds">Medications</button>
+      <button class="tab-btn" data-tab="notes">Clinical Notes</button>
+      <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="allergies">Allergies</button>
+      <button class="tab-btn" data-tab="docs">Documents</button>
+    </div>
+
+    <!-- Tab panels -->
+    <div id="panel-summary" class="tab-panel space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Problem List</h3>
+        <div id="summaryProblems" class="text-sm text-slate-600">Select a patient to view.</div>
+      </div>
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Active Medications</h3>
+        <div id="summaryMeds" class="text-sm text-slate-600">—</div>
+      </div>
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Recent Vitals</h3>
+        <div id="summaryVitals" class="text-sm text-slate-600">—</div>
+      </div>
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Latest Clinical Note</h3>
+        <div id="summaryNote" class="text-sm text-slate-600">—</div>
+      </div>
+    </div>
+
+    <div id="panel-vitals" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-3">Record Vitals</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="lbl">BP (mmHg)</label><input id="vBP" class="field" placeholder="120/80" /></div>
+          <div><label class="lbl">Pulse (bpm)</label><input id="vPulse" class="field" type="number" placeholder="72" /></div>
+          <div><label class="lbl">Temp (°C)</label><input id="vTemp" class="field" type="number" step="0.1" placeholder="36.6" /></div>
+          <div><label class="lbl">Resp ( /min)</label><input id="vResp" class="field" type="number" placeholder="16" /></div>
+          <div><label class="lbl">SpO₂ (%)</label><input id="vSpo2" class="field" type="number" placeholder="98" /></div>
+          <div><label class="lbl">Weight (kg)</label><input id="vWeight" class="field" type="number" step="0.1" placeholder="70" /></div>
+          <div><label class="lbl">Height (cm)</label><input id="vHeight" class="field" type="number" placeholder="170" /></div>
+          <div><label class="lbl">Pain (0–10)</label><input id="vPain" class="field" type="number" min="0" max="10" placeholder="0" /></div>
+        </div>
+        <button id="saveVitalsBtn" class="mt-3 w-full bg-teal-600 text-white font-bold py-2.5 rounded-xl text-sm">Save Vitals</button>
+      </div>
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Vitals History</h3>
+        <div id="vitalsHistory" class="space-y-2 text-sm"></div>
+      </div>
+    </div>
+
+    <div id="panel-problems" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Add / Update Problem</h3>
+        <input id="problemText" class="field mb-2" placeholder="e.g. Type 2 Diabetes Mellitus" />
+        <select id="problemStatus" class="field mb-2">
+          <option value="active">Active</option>
+          <option value="resolved">Resolved</option>
+          <option value="chronic">Chronic</option>
+        </select>
+        <button id="addProblemBtn" class="w-full bg-teal-600 text-white font-bold py-2 rounded-xl text-sm">Add Problem</button>
+      </div>
+      <div id="problemsList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-meds" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Medication Reconciliation</h3>
+        <p class="text-xs text-slate-500 mb-3">Document home medications and hospital orders. Always reconcile on admission and discharge.</p>
+        <div class="grid gap-2">
+          <input id="medName" class="field" placeholder="Drug name" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="medDose" class="field" placeholder="Dose (e.g. 500 mg)" />
+            <input id="medFreq" class="field" placeholder="Frequency (e.g. BD)" />
+          </div>
+          <select id="medRoute" class="field">
+            <option>Oral</option><option>IV</option><option>IM</option><option>SC</option><option>Topical</option><option>Inhaled</option><option>Other</option>
+          </select>
+          <button id="addMedBtn" class="bg-teal-600 text-white font-bold py-2 rounded-xl text-sm">Add Medication</button>
+        </div>
+      </div>
+      <div id="medsList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-notes" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">New Clinical Note</h3>
+        <select id="noteType" class="field mb-2">
+          <option value="progress">Progress Note</option>
+          <option value="admission">Admission Note</option>
+          <option value="soap">SOAP Note</option>
+          <option value="operative">Operative Note</option>
+          <option value="discharge">Discharge Summary</option>
+          <option value="consult">Consultation</option>
+          <option value="nursing">Nursing Note</option>
+        </select>
+        <textarea id="noteBody" class="field h-40" placeholder="Subjective / Objective / Assessment / Plan..."></textarea>
+        <button id="saveNoteBtn" class="mt-2 w-full bg-teal-600 text-white font-bold py-2.5 rounded-xl text-sm">Save Note</button>
+      </div>
+      <div id="notesList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-orders" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Place Order</h3>
+        <select id="orderType" class="field mb-2">
+          <option value="lab">Laboratory</option>
+          <option value="imaging">Imaging / Radiology</option>
+          <option value="medication">Medication</option>
+          <option value="procedure">Procedure</option>
+          <option value="consult">Consult / Referral</option>
+          <option value="diet">Diet</option>
+          <option value="other">Other</option>
+        </select>
+        <textarea id="orderDetail" class="field h-24 mb-2" placeholder="Order details, clinical indication..."></textarea>
+        <select id="orderPriority" class="field mb-2">
+          <option value="routine">Routine</option>
+          <option value="urgent">Urgent</option>
+          <option value="stat">STAT</option>
+        </select>
+        <button id="placeOrderBtn" class="w-full bg-teal-600 text-white font-bold py-2.5 rounded-xl text-sm">Place Order</button>
+      </div>
+      <div id="ordersList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-allergies" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Document Allergy / Adverse Reaction</h3>
+        <input id="allergyAgent" class="field mb-2" placeholder="Agent (drug, food, latex...)" />
+        <input id="allergyReaction" class="field mb-2" placeholder="Reaction (rash, anaphylaxis...)" />
+        <select id="allergySeverity" class="field mb-2">
+          <option value="mild">Mild</option>
+          <option value="moderate">Moderate</option>
+          <option value="severe">Severe</option>
+        </select>
+        <button id="addAllergyBtn" class="w-full bg-red-600 text-white font-bold py-2 rounded-xl text-sm">Add Allergy</button>
+      </div>
+      <div id="allergiesList" class="space-y-2"></div>
+    </div>
+
+    <div id="panel-docs" class="tab-panel hidden space-y-3">
+      <div class="ah-card">
+        <h3 class="font-bold text-sm mb-2">Upload Document / Image</h3>
+        <input type="file" id="docFile" accept="image/*,.pdf" class="field mb-2" />
+        <input id="docLabel" class="field mb-2" placeholder="Label (e.g. ECG, Consent form)" />
+        <button id="uploadDocBtn" class="w-full bg-teal-600 text-white font-bold py-2 rounded-xl text-sm">Upload</button>
+      </div>
+      <div id="docsList" class="space-y-2"></div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import {
+      requireAuth, applyPlatformBranding, db, auth,
+      collection, doc, getDoc, setDoc, addDoc, updateDoc, query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp
+    } from './js/config.js';
+
+    applyPlatformBranding();
+    const profile = await requireAuth(['doctor','nurse','admin','surgeon','lab','radiologist','pharmacist','support']);
+    if (!profile) throw new Error('Auth required');
+
+    let currentPatientId = null;
+    let currentPatient = null;
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        const panel = document.getElementById('panel-' + btn.dataset.tab);
+        if (panel) panel.classList.remove('hidden');
+      });
+    });
+
+    // Search patients (users with role patient)
+    async function searchPatients() {
+      const q = document.getElementById('patientSearch').value.trim().toLowerCase();
+      const box = document.getElementById('patientResults');
+      if (q.length < 2) { box.classList.add('hidden'); return; }
+      const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'patient'), limit(30)));
+      const matches = [];
+      snap.forEach(d => {
+        const u = d.data();
+        const hay = `${u.fullName||''} ${u.displayName||''} ${u.phone||''} ${u.email||''} ${u.mrn||''}`.toLowerCase();
+        if (hay.includes(q)) matches.push({ id: d.id, ...u });
+      });
+      box.innerHTML = matches.length ? matches.map(m => `
+        <button data-id="${m.id}" class="w-full text-left px-3 py-2 rounded-lg hover:bg-teal-50 border border-slate-100 text-sm">
+          <span class="font-bold">${m.fullName || m.displayName || 'Patient'}</span>
+          <span class="text-xs text-slate-500 ml-2">${m.phone || m.email || ''} ${m.mrn ? '· MRN '+m.mrn : ''}</span>
+        </button>
+      `).join('') : '<p class="text-xs text-slate-500 p-2">No matches. Patients appear after registration.</p>';
+      box.classList.remove('hidden');
+      box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selectPatient(b.dataset.id)));
+    }
+    document.getElementById('searchBtn').onclick = searchPatients;
+    document.getElementById('patientSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchPatients(); });
+
+    async function selectPatient(uid) {
+      currentPatientId = uid;
+      const snap = await getDoc(doc(db, 'users', uid));
+      currentPatient = snap.exists() ? { id: uid, ...snap.data() } : null;
+      document.getElementById('patientResults').classList.add('hidden');
+      document.getElementById('patientHeader').classList.remove('hidden');
+      document.getElementById('tabs').classList.remove('hidden');
+
+      const p = currentPatient || {};
+      document.getElementById('ptName').textContent = p.fullName || p.displayName || 'Patient';
+      document.getElementById('ptMeta').textContent = [p.phone, p.email].filter(Boolean).join(' · ');
+      document.getElementById('ptMrn').textContent = p.mrn ? 'MRN ' + p.mrn : 'UID ' + uid.slice(0,8);
+      document.getElementById('ptAgeSex').textContent = [p.gender, p.dob ? ageFromDob(p.dob) + ' yrs' : ''].filter(Boolean).join(' · ');
+
+      await loadChart();
+    }
+
+    function ageFromDob(dob) {
+      try {
+        const d = dob.toDate ? dob.toDate() : new Date(dob);
+        return Math.floor((Date.now() - d) / (365.25*24*3600*1000));
+      } catch { return '?'; }
+    }
+
+    async function loadChart() {
+      if (!currentPatientId) return;
+      const chartRef = doc(db, 'emr', currentPatientId);
+      const chartSnap = await getDoc(chartRef);
+      const chart = chartSnap.exists() ? chartSnap.data() : { problems: [], medications: [], allergies: [], vitals: [], notes: [], orders: [], documents: [] };
+
+      // Allergies banner
+      const allergies = chart.allergies || [];
+      const banner = document.getElementById('allergyBanner');
+      if (allergies.length) {
+        banner.textContent = '⚠ ALLERGIES: ' + allergies.map(a => a.agent + (a.reaction ? ' ('+a.reaction+')' : '')).join('; ');
+        banner.classList.remove('hidden');
+      } else banner.classList.add('hidden');
+
+      // Summary
+      document.getElementById('summaryProblems').innerHTML = (chart.problems||[]).length
+        ? (chart.problems||[]).map(p => `<div class="flex justify-between py-1 border-b border-slate-100"><span>${escape(p.text)}</span><span class="text-xs text-slate-400">${p.status||''}</span></div>`).join('')
+        : 'No problems recorded.';
+      document.getElementById('summaryMeds').innerHTML = (chart.medications||[]).length
+        ? (chart.medications||[]).map(m => `<div>${escape(m.name)} ${escape(m.dose||'')} ${escape(m.freq||'')} <span class="text-xs text-slate-400">${m.route||''}</span></div>`).join('')
+        : 'No active medications.';
+      const lastV = (chart.vitals||[]).slice(-1)[0];
+      document.getElementById('summaryVitals').textContent = lastV
+        ? `BP ${lastV.bp||'—'} · HR ${lastV.pulse||'—'} · Temp ${lastV.temp||'—'} · SpO₂ ${lastV.spo2||'—'}%`
+        : 'No vitals yet.';
+      const lastN = (chart.notes||[]).slice(-1)[0];
+      document.getElementById('summaryNote').textContent = lastN ? (lastN.body||'').slice(0,200) + '…' : 'No notes yet.';
+
+      // Lists
+      renderList('problemsList', chart.problems, p => `<div class="ah-card flex justify-between"><div><div class="font-semibold text-sm">${escape(p.text)}</div><div class="text-xs text-slate-400">${p.status} · ${fmt(p.at)}</div></div></div>`);
+      renderList('medsList', chart.medications, m => `<div class="ah-card"><div class="font-semibold text-sm">${escape(m.name)}</div><div class="text-xs text-slate-500">${escape(m.dose||'')} ${escape(m.freq||'')} · ${m.route||''}</div></div>`);
+      renderList('allergiesList', chart.allergies, a => `<div class="ah-card border-red-200 bg-red-50"><div class="font-bold text-sm text-red-800">${escape(a.agent)}</div><div class="text-xs">${escape(a.reaction||'')} · ${a.severity||''}</div></div>`);
+      renderList('notesList', (chart.notes||[]).slice().reverse(), n => `<div class="ah-card"><div class="flex justify-between text-xs text-slate-400 mb-1"><span class="font-bold text-teal-700 uppercase">${n.type||'note'}</span><span>${fmt(n.at)} · ${escape(n.authorName||'')}</span></div><pre class="text-sm whitespace-pre-wrap font-sans">${escape(n.body||'')}</pre></div>`);
+      renderList('ordersList', (chart.orders||[]).slice().reverse(), o => `<div class="ah-card"><div class="flex justify-between"><span class="font-bold text-sm uppercase text-teal-700">${o.type}</span><span class="text-xs ${o.priority==='stat'?'text-red-600 font-bold':''}">${o.priority||'routine'}</span></div><div class="text-sm mt-1">${escape(o.detail||'')}</div><div class="text-xs text-slate-400 mt-1">${fmt(o.at)} · ${o.status||'ordered'}</div></div>`);
+      renderList('vitalsHistory', (chart.vitals||[]).slice().reverse().slice(0,20), v => `<div class="flex flex-wrap gap-2 text-xs border-b border-slate-100 py-1.5"><span class="font-mono">${fmt(v.at)}</span><span>BP ${v.bp||'—'}</span><span>HR ${v.pulse||'—'}</span><span>T ${v.temp||'—'}</span><span>RR ${v.resp||'—'}</span><span>SpO₂ ${v.spo2||'—'}%</span><span>Wt ${v.weight||'—'}</span></div>`);
+      renderList('docsList', chart.documents||[], d => `<div class="ah-card flex justify-between items-center"><div><div class="font-semibold text-sm">${escape(d.label||'Document')}</div><div class="text-xs text-slate-400">${fmt(d.at)}</div></div>${d.url?`<a href="${d.url}" target="_blank" class="text-teal-600 text-xs font-bold">Open</a>`:''}</div>`);
+    }
+
+    function renderList(id, arr, fn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = (arr && arr.length) ? arr.map(fn).join('') : '<p class="text-xs text-slate-400 p-2">None yet.</p>';
+    }
+    function escape(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+    function fmt(t) {
+      if (!t) return '';
+      try { const d = t.toDate ? t.toDate() : new Date(t); return d.toLocaleString(); } catch { return ''; }
+    }
+
+    async function ensureChart() {
+      const ref = doc(db, 'emr', currentPatientId);
+      const s = await getDoc(ref);
+      if (!s.exists()) await setDoc(ref, { patientId: currentPatientId, problems: [], medications: [], allergies: [], vitals: [], notes: [], orders: [], documents: [], updatedAt: serverTimestamp() });
+      return ref;
+    }
+
+    async function pushArray(field, item) {
+      if (!currentPatientId) return alert('Select a patient first');
+      const ref = await ensureChart();
+      const s = await getDoc(ref);
+      const data = s.data() || {};
+      const arr = data[field] || [];
+      arr.push(item);
+      await updateDoc(ref, { [field]: arr, updatedAt: serverTimestamp() });
+      await loadChart();
+    }
+
+    document.getElementById('saveVitalsBtn').onclick = async () => {
+      await pushArray('vitals', {
+        bp: document.getElementById('vBP').value,
+        pulse: document.getElementById('vPulse').value,
+        temp: document.getElementById('vTemp').value,
+        resp: document.getElementById('vResp').value,
+        spo2: document.getElementById('vSpo2').value,
+        weight: document.getElementById('vWeight').value,
+        height: document.getElementById('vHeight').value,
+        pain: document.getElementById('vPain').value,
+        at: new Date().toISOString(),
+        by: auth.currentUser?.uid,
+        byName: profile.fullName || profile.displayName
+      });
+      alert('Vitals saved');
+    };
+
+    document.getElementById('addProblemBtn').onclick = async () => {
+      const text = document.getElementById('problemText').value.trim();
+      if (!text) return;
+      await pushArray('problems', { text, status: document.getElementById('problemStatus').value, at: new Date().toISOString(), by: auth.currentUser?.uid });
+      document.getElementById('problemText').value = '';
+    };
+
+    document.getElementById('addMedBtn').onclick = async () => {
+      const name = document.getElementById('medName').value.trim();
+      if (!name) return;
+      await pushArray('medications', {
+        name, dose: document.getElementById('medDose').value, freq: document.getElementById('medFreq').value,
+        route: document.getElementById('medRoute').value, at: new Date().toISOString(), by: auth.currentUser?.uid
+      });
+      document.getElementById('medName').value = '';
+    };
+
+    document.getElementById('saveNoteBtn').onclick = async () => {
+      const body = document.getElementById('noteBody').value.trim();
+      if (!body) return;
+      await pushArray('notes', {
+        type: document.getElementById('noteType').value, body,
+        at: new Date().toISOString(), authorId: auth.currentUser?.uid,
+        authorName: profile.fullName || profile.displayName || 'Clinician'
+      });
+      document.getElementById('noteBody').value = '';
+      alert('Note saved');
+    };
+
+    document.getElementById('placeOrderBtn').onclick = async () => {
+      const detail = document.getElementById('orderDetail').value.trim();
+      if (!detail) return;
+      await pushArray('orders', {
+        type: document.getElementById('orderType').value, detail,
+        priority: document.getElementById('orderPriority').value,
+        status: 'ordered', at: new Date().toISOString(),
+        by: auth.currentUser?.uid, byName: profile.fullName || profile.displayName
+      });
+      document.getElementById('orderDetail').value = '';
+      alert('Order placed');
+    };
+
+    document.getElementById('addAllergyBtn').onclick = async () => {
+      const agent = document.getElementById('allergyAgent').value.trim();
+      if (!agent) return;
+      await pushArray('allergies', {
+        agent, reaction: document.getElementById('allergyReaction').value,
+        severity: document.getElementById('allergySeverity').value,
+        at: new Date().toISOString(), by: auth.currentUser?.uid
+      });
+      document.getElementById('allergyAgent').value = '';
+    };
+
+    document.getElementById('newNoteBtn').onclick = () => {
+      document.querySelector('[data-tab="notes"]').click();
+      document.getElementById('noteBody').focus();
+    };
+
+    // Document upload uses existing Cloudinary helper if available
+    document.getElementById('uploadDocBtn').onclick = async () => {
+      const file = document.getElementById('docFile').files[0];
+      const label = document.getElementById('docLabel').value.trim() || 'Document';
+      if (!file || !currentPatientId) return alert('Select patient and file');
+      try {
+        // Prefer Cloudinary if configured in config
+        let url = null;
+        if (typeof window.uploadToCloudinary === 'function') {
+          url = await window.uploadToCloudinary(file, 'emr-docs');
+        } else {
+          // Fallback: store metadata only (full upload requires storage rules)
+          url = null;
+        }
+        await pushArray('documents', { label, url, name: file.name, at: new Date().toISOString(), by: auth.currentUser?.uid });
+        alert('Document recorded' + (url ? '' : ' (metadata only – configure upload for full files)'));
+      } catch (e) {
+        alert('Upload error: ' + e.message);
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Support Agent | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-slate-50">
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="Dashboard.html" class="text-slate-500">←</a>
+      <h1 class="font-bold text-lg">Support Queue</h1>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 py-4">
+    <div class="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+      <button data-status="open" class="status-btn active px-3 py-1.5 rounded-full text-xs font-medium bg-teal-600 text-white">Open</button>
+      <button data-status="in_progress" class="status-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600">In Progress</button>
+      <button data-status="resolved" class="status-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600">Resolved</button>
+    </div>
+    <div id="ticketList" class="space-y-2"></div>
+  </main>
+
+  <!-- Ticket Detail Modal -->
+  <div id="ticketModal" class="fixed inset-0 z-50 hidden items-end justify-center bg-black/40">
+    <div class="bg-white w-full max-w-md rounded-t-2xl p-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between mb-3">
+        <h2 id="ticketSubject" class="font-bold text-sm"></h2>
+        <button id="closeTicketModal" class="text-slate-400 text-xl">×</button>
+      </div>
+      <div id="ticketMeta" class="text-xs text-slate-500 mb-3"></div>
+      <div id="ticketMessages" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+      <textarea id="replyText" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Type reply..."></textarea>
+      <div class="flex gap-2">
+        <button id="sendReply" class="btn-primary text-sm flex-1">Send Reply</button>
+        <select id="statusSelect" class="border border-slate-200 rounded-xl px-2 text-xs">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {auth, db, requireRole, showToast, showLoading, showEmpty, escapeHtml, formatDateTime, timeAgo,
+      collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, onSnapshot, serverTimestamp, applyPlatformBranding} from './js/config.js';
+
+    applyPlatformBranding();
+    const profile = await requireRole(['support', 'admin']);
+    let currentStatus = 'open';
+    let currentTicketId = null;
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.status-btn').forEach(b => {
+          b.classList.remove('active', 'bg-teal-600', 'text-white');
+          b.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+        });
+        btn.classList.add('active', 'bg-teal-600', 'text-white');
+        currentStatus = btn.dataset.status;
+        loadTickets();
+      });
+    });
+
+    async function loadTickets() {
+      const el = document.getElementById('ticketList');
+      showLoading(el);
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'supportTickets'),
+          where('status', '==', currentStatus),
+          orderBy('createdAt', 'desc')
+        ));
+        if (snap.empty) { showEmpty(el, 'No tickets', '🎫'); return; }
+        el.innerHTML = snap.docs.map(d => {
+          const t = d.data();
+          return `
+            <div class="ah-card p-3 cursor-pointer ticket-item" data-id="${d.id}">
+              <div class="flex justify-between items-start">
+                <p class="font-semibold text-sm">${escapeHtml(t.subject)}</p>
+                <span class="badge badge-${t.status}">${t.status}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(t.category)} · ${escapeHtml(t.userName || '')} · ${timeAgo(t.createdAt)}</p>
+            </div>`;
+        }).join('');
+        el.querySelectorAll('.ticket-item').forEach(item => {
+          item.onclick = () => openTicket(item.dataset.id);
+        });
+      } catch (e) {
+        el.innerHTML = `<p class="text-red-500 text-sm">${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    async function openTicket(id) {
+      currentTicketId = id;
+      const snap = await getDocSafe(id);
+      if (!snap) return;
+      const t = snap.data();
+      document.getElementById('ticketSubject').textContent = t.subject;
+      document.getElementById('ticketMeta').textContent = `${t.category} · ${t.userName} · ${formatDateTime(t.createdAt)}`;
+      document.getElementById('statusSelect').value = t.status;
+      document.getElementById('ticketModal').classList.remove('hidden');
+      document.getElementById('ticketModal').classList.add('flex');
+
+      // Load messages
+      const msgsSnap = await getDocs(query(collection(db, 'supportTickets', id, 'messages'), orderBy('createdAt', 'asc')));
+      const msgsEl = document.getElementById('ticketMessages');
+      msgsEl.innerHTML = `
+        <div class="bg-slate-50 rounded-xl p-3 text-xs mb-2">
+          <p class="font-medium">Original message:</p>
+          <p class="mt-1">${escapeHtml(t.description)}</p>
+        </div>` + msgsSnap.docs.map(d => {
+        const m = d.data();
+        return `<div class="text-xs ${m.senderId === profile.uid ? 'text-right' : ''}">
+          <span class="inline-block bg-slate-100 rounded-lg px-2 py-1">${escapeHtml(m.text)}</span>
+          <div class="text-[10px] text-slate-400 mt-0.5">${timeAgo(m.createdAt)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    async function getDocSafe(id) {
+      const { getDoc } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
+      const s = await getDoc(doc(db, 'supportTickets', id));
+      return s.exists() ? s : null;
+    }
+
+    document.getElementById('closeTicketModal').onclick = () => {
+      document.getElementById('ticketModal').classList.add('hidden');
+      document.getElementById('ticketModal').classList.remove('flex');
+    };
+
+    document.getElementById('sendReply').onclick = async () => {
+      const text = document.getElementById('replyText').value.trim();
+      if (!text || !currentTicketId) return;
+      await addDoc(collection(db, 'supportTickets', currentTicketId, 'messages'), {
+        senderId: profile.uid,
+        senderName: profile.displayName || 'Agent',
+        text,
+        createdAt: serverTimestamp()
+      });
+      const newStatus = document.getElementById('statusSelect').value;
+      await updateDoc(doc(db, 'supportTickets', currentTicketId), {
+        status: newStatus,
+        assignedTo: profile.uid,
+        updatedAt: serverTimestamp()
+      });
+      document.getElementById('replyText').value = '';
+      showToast('Reply sent', 'success');
+      openTicket(currentTicketId);
+      loadTickets();
+    };
+
+    loadTickets();
+  </script>
+</body>
+</html>

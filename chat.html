@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Consultation Chat | MiracardiacHealth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-slate-100 flex flex-col h-[100dvh]">
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top shrink-0">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+      <a href="Dashboard.html" class="text-slate-500 text-lg">←</a>
+      <div class="flex-1 min-w-0">
+        <h1 id="chatTitle" class="font-semibold text-sm truncate">Consultation</h1>
+        <p id="chatStatus" class="text-[11px] text-slate-400">Loading...</p>
+      </div>
+      <button id="videoBtn" class="text-teal-600 text-sm font-medium hidden">Video</button>
+      <button id="closeConsultBtn" class="text-xs text-red-600 font-medium hidden">Close</button>
+    </div>
+  </header>
+
+  <div id="statusBanner" class="hidden bg-amber-50 text-amber-800 text-xs text-center py-2 px-4"></div>
+
+  <main id="messagesArea" class="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-3 py-3 space-y-2">
+    <div class="flex justify-center py-8">
+      <div class="spinner"></div>
+    </div>
+  </main>
+
+  <div id="typingIndicator" class="hidden max-w-lg mx-auto w-full px-4 text-xs text-slate-400 pb-1">Doctor is typing...</div>
+
+  <footer class="bg-white border-t border-slate-200 shrink-0 safe-bottom">
+    <div class="max-w-lg mx-auto px-3 py-2 flex items-end gap-2">
+      <label class="cursor-pointer text-slate-400 p-2">
+        <input type="file" id="fileInput" accept="image/*,.pdf" class="hidden" />
+        📎
+      </label>
+      <textarea id="msgInput" rows="1" placeholder="Type a message..." class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28" ></textarea>
+      <button id="sendBtn" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0">➤</button>
+    </div>
+  </footer>
+
+  <script type="module">
+    import {auth, db, storage, requireAuth, showToast, escapeHtml, formatDateTime, timeAgo,
+      doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp,
+      ref, uploadBytesResumable, getDownloadURL, applyPlatformBranding, uploadToCloudinary} from './js/config.js';
+
+    applyPlatformBranding();
+    const params = new URLSearchParams(location.search);
+    const consultId = params.get('id');
+    if (!consultId) {
+      alert('Missing consultation ID');
+      location.href = 'Dashboard.html';
+    }
+
+    const profile = await requireAuth();
+    let consult = null;
+    let unsubMsgs = null;
+
+    // Load consultation
+    const consultRef = doc(db, 'consultations', consultId);
+    const consultSnap = await getDoc(consultRef);
+    if (!consultSnap.exists()) {
+      alert('Consultation not found');
+      location.href = 'Dashboard.html';
+    }
+    consult = { id: consultSnap.id, ...consultSnap.data() };
+
+    // Access check
+    if (consult.patientId !== profile.uid && consult.doctorId !== profile.uid && profile.role !== 'admin') {
+      alert('Access denied');
+      location.href = 'Dashboard.html';
+    }
+
+    const isDoctor = profile.uid === consult.doctorId;
+    const otherName = isDoctor ? (consult.patientName || 'Patient') : (consult.doctorName || 'Doctor');
+    document.getElementById('chatTitle').textContent = otherName;
+
+    function updateStatusUI() {
+      const statusEl = document.getElementById('chatStatus');
+      const banner = document.getElementById('statusBanner');
+      const inputArea = document.querySelector('footer');
+      statusEl.textContent = consult.status.replace('_', ' ');
+
+      if (consult.status === 'paid_pending') {
+        banner.classList.remove('hidden');
+        banner.textContent = '⏳ Awaiting admin approval. Chat will open once approved.';
+        inputArea.classList.add('opacity-50', 'pointer-events-none');
+      } else if (consult.status === 'active') {
+        banner.classList.add('hidden');
+        inputArea.classList.remove('opacity-50', 'pointer-events-none');
+        document.getElementById('videoBtn').classList.remove('hidden');
+        if (isDoctor) document.getElementById('closeConsultBtn').classList.remove('hidden');
+      } else if (consult.status === 'completed' || consult.status === 'closed') {
+        banner.classList.remove('hidden');
+        banner.className = 'bg-slate-100 text-slate-600 text-xs text-center py-2 px-4';
+        banner.textContent = 'Consultation closed.';
+        inputArea.classList.add('opacity-50', 'pointer-events-none');
+      } else {
+        banner.classList.remove('hidden');
+        banner.textContent = 'Status: ' + consult.status;
+        inputArea.classList.add('opacity-50', 'pointer-events-none');
+      }
+    }
+    updateStatusUI();
+
+    // Real-time messages
+    const msgsQuery = query(collection(db, 'consultations', consultId, 'messages'), orderBy('createdAt', 'asc'));
+    unsubMsgs = onSnapshot(msgsQuery, (snap) => {
+      const area = document.getElementById('messagesArea');
+      if (snap.empty) {
+        area.innerHTML = `<div class="text-center text-slate-400 text-sm py-12">No messages yet. Say hello!</div>`;
+        return;
+      }
+      area.innerHTML = snap.docs.map(d => {
+        const m = d.data();
+        const mine = m.senderId === profile.uid;
+        const time = m.createdAt ? timeAgo(m.createdAt) : '';
+        let body = '';
+        if (m.type === 'image') {
+          body = `<img src="${escapeHtml(m.fileURL)}" class="rounded-lg max-w-full max-h-48 mb-1" alt="attachment" />`;
+          if (m.text) body += `<p>${escapeHtml(m.text)}</p>`;
+        } else if (m.type === 'file') {
+          body = `<a href="${escapeHtml(m.fileURL)}" target="_blank" class="underline">📎 ${escapeHtml(m.fileName || 'File')}</a>`;
+          if (m.text) body += `<p class="mt-1">${escapeHtml(m.text)}</p>`;
+        } else {
+          body = `<p>${escapeHtml(m.text || '')}</p>`;
+        }
+        return `
+          <div class="flex ${mine ? 'justify-end' : 'justify-start'}">
+            <div class="chat-bubble ${mine ? 'mine' : 'theirs'}">
+              ${body}
+              <div class="text-[10px] opacity-70 mt-1 ${mine ? 'text-right' : ''}">${time}${m.read ? ' · Read' : ''}</div>
+            </div>
+          </div>`;
+      }).join('');
+      area.scrollTop = area.scrollHeight;
+
+      // Play sound for new incoming messages (simple)
+      // (optional - can add Audio later)
+    });
+
+    // Send message
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    async function sendMessage(text = '', file = null) {
+      if (consult.status !== 'active') {
+        showToast('Chat is not active yet', 'warning');
+        return;
+      }
+      if (!text.trim() && !file) return;
+
+      sendBtn.disabled = true;
+      try {
+        let type = 'text';
+        let fileURL = null;
+        let fileName = null;
+
+        if (file) {
+          fileURL = await uploadToCloudinary(file, `consultations/${consultId}`);
+          fileName = file.name;
+          type = file.type.startsWith('image/') ? 'image' : 'file';
+        }
+
+        await addDoc(collection(db, 'consultations', consultId, 'messages'), {
+          senderId: profile.uid,
+          senderName: profile.displayName || profile.email,
+          text: text.trim(),
+          type,
+          fileURL,
+          fileName,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+        msgInput.value = '';
+        document.getElementById('fileInput').value = '';
+      } catch (e) {
+        showToast('Failed to send: ' + e.message, 'error');
+      }
+      sendBtn.disabled = false;
+    }
+
+    sendBtn.addEventListener('click', () => sendMessage(msgInput.value));
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(msgInput.value);
+      }
+    });
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) sendMessage(msgInput.value, file);
+    });
+
+    // Video call (Jitsi)
+    document.getElementById('videoBtn').addEventListener('click', () => {
+      const room = `MiracardiacHealth_${consultId}`;
+      const url = `https://meet.jit.si/${room}`;
+      window.open(url, '_blank');
+    });
+
+    // Doctor close consultation
+    document.getElementById('closeConsultBtn').addEventListener('click', async () => {
+      const summary = prompt('Write a short consultation summary (optional):');
+      if (summary === null) return;
+      try {
+        await updateDoc(consultRef, {
+          status: 'completed',
+          summary: summary || '',
+          closedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        consult.status = 'completed';
+        updateStatusUI();
+        showToast('Consultation closed', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doctors Check & Repair</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f8fafc;color:#0f172a}
+button{display:block;width:100%;padding:12px;margin:8px 0;border:0;border-radius:12px;font-weight:600;font-size:14px;color:#fff;background:#0d9488}
+button.b{background:#d97706}button.c{background:#7c3aed}button:disabled{opacity:.4}
+pre{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:12px;font-size:11px;white-space:pre-wrap;word-break:break-word;min-height:120px}
+</style>
+</head>
+<body>
+<h2 style="margin:0 0 4px">Doctors check &amp; repair</h2>
+<p id="who" style="font-size:13px;color:#475569">Checking login...</p>
+<button id="check">1. Check what is in the database</button>
+<button id="fix" class="b">2. Repair: make Admin's active doctors appear</button>
+<button id="appr" class="c">3. Approve ALL pending doctor records</button>
+<pre id="out">Tap button 1 first.</pre>
+<script type="module">
+import {auth, db, collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, onAuthStateChanged, getCurrentUserProfile} from './js/config.js';
+import {getDocsFromServer} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+const $ = id => document.getElementById(id);
+const out = $('out');
+let me = null;
+const log = (...a) => { out.textContent += '\n' + a.join(' '); };
+const st = x => String(x || '').trim().toLowerCase();
+const HIDDEN = ['pending','rejected','suspended','inactive','disabled','blocked','deactivated','deleted'];
+const isStaff = u => ['doctor','surgeon'].includes(st(u.role));
+const isAdmin = () => me && me.role === 'admin';
+
+async function readAll() {
+  const d = await getDocsFromServer(collection(db, 'doctors'));
+  let u = null;
+  if (isAdmin()) { try { u = await getDocsFromServer(collection(db, 'users')); } catch (e) { log('Could not read users: ' + (e.code || e.message)); } }
+  return { d, u };
+}
+
+$('check').onclick = async () => {
+  out.textContent = 'Checking the live database...';
+  try {
+    const { d, u } = await readAll();
+    const ids = new Set(d.docs.map(x => x.id));
+    let shown = 0;
+    log('\n== DOCTORS COLLECTION: ' + d.size + ' record(s) ==');
+    d.docs.forEach(x => {
+      const v = x.data(), vis = !HIDDEN.includes(st(v.status));
+      if (vis) shown++;
+      log((vis ? '✅ SHOWS ' : '🚫 HIDDEN') + ' | ' + (v.name || '(no name)') + ' | status: ' + (v.status || '(none)') + ' | available: ' + v.available);
+    });
+    log('\nPatients currently see ' + shown + ' doctor(s).');
+    if (u) {
+      const staff = u.docs.filter(x => isStaff(x.data()));
+      log('\n== DOCTOR ACCOUNTS IN USERS: ' + staff.length + ' ==');
+      staff.forEach(x => {
+        const v = x.data();
+        log((ids.has(x.id) ? '✔ has profile' : '✖ NO doctor profile') + ' | ' + (v.displayName || v.name || v.email) + ' | role: ' + v.role + ' | status: ' + (v.status || '(none)'));
+      });
+      log('\nIf any line says NO doctor profile, tap button 2.');
+    } else if (!isAdmin()) log('\nLog in with the ADMIN email to also see doctor accounts.');
+  } catch (e) { log('ERROR: ' + (e.code || e.message)); }
+};
+
+$('fix').onclick = async () => {
+  if (!isAdmin()) return;
+  out.textContent = 'Repairing...';
+  try {
+    const { d, u } = await readAll();
+    if (!u) return log('Cannot read users.');
+    const byId = {}; d.docs.forEach(x => byId[x.id] = x.data());
+    let made = 0, fixed = 0;
+    for (const x of u.docs) {
+      const v = x.data();
+      if (!isStaff(v) || !['active','approved'].includes(st(v.status))) continue;
+      const ref = doc(db, 'doctors', x.id);
+      if (!byId[x.id]) {
+        await setDoc(ref, { name: v.displayName || v.name || (v.email || 'Doctor').split('@')[0], specialty: v.department || 'General Practice', experience: 0, consultationFee: 0, licenseNumber: '', phone: v.phone || '', bio: '', photoURL: v.photoURL || '', status: 'approved', available: true, rating: 0, reviewCount: 0, ownerId: x.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        made++; log('Created profile: ' + (v.displayName || v.email));
+      } else if (['', 'pending'].includes(st(byId[x.id].status))) {
+        await updateDoc(ref, { status: 'approved', available: true, updatedAt: serverTimestamp() });
+        fixed++; log('Approved: ' + (byId[x.id].name || x.id));
+      }
+    }
+    log('\nDone. Created ' + made + ', approved ' + fixed + '. Now open doctors.html and refresh.');
+  } catch (e) { log('ERROR: ' + (e.code || e.message)); }
+};
+
+$('appr').onclick = async () => {
+  if (!isAdmin()) return;
+  if (!confirm('Approve every doctor record that is still pending?')) return;
+  out.textContent = 'Approving...';
+  try {
+    const d = await getDocsFromServer(collection(db, 'doctors'));
+    let n = 0;
+    for (const x of d.docs) {
+      if (st(x.data().status) !== 'pending') continue;
+      await updateDoc(doc(db, 'doctors', x.id), { status: 'approved', available: true, updatedAt: serverTimestamp() });
+      try { await updateDoc(doc(db, 'users', x.id), { status: 'active', role: 'doctor', updatedAt: serverTimestamp() }); } catch (_) {}
+      n++; log('Approved: ' + (x.data().name || x.id));
+    }
+    log('\nDone. ' + n + ' approved.');
+  } catch (e) { log('ERROR: ' + (e.code || e.message)); }
+};
+
+onAuthStateChanged(auth, async u => {
+  if (!u) { $('who').innerHTML = 'Not logged in. <a href="Login.html?next=doctor-check.html">Login as admin first</a>'; $('fix').disabled = $('appr').disabled = true; return; }
+  try { me = await getCurrentUserProfile(); } catch (_) {}
+  if (!me) me = { email: u.email, role: 'unknown' };
+  $('who').textContent = 'Logged in: ' + (u.email || '') + ' · role: ' + me.role + (isAdmin() ? '' : ' (repair buttons need the admin account)');
+  $('fix').disabled = $('appr').disabled = !isAdmin();
+});
+</script>
+</body>
+</html>

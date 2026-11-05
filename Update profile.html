@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
+  <meta name="robots" content="noindex" />
+  <title>Edit Profile | MiracardiacHealth</title>
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: { DEFAULT: '#0d9488', dark: '#0f766e' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <style>
+    .ah-gradient { background: linear-gradient(120deg,#0f766e,#059669,#0ea5e9,#14b8a6,#0f766e); background-size: 300% 300%; animation: gradMove 14s ease infinite; }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .blob { position:absolute; border-radius:9999px; filter:blur(40px); opacity:.4; animation: floaty 9s ease-in-out infinite; }
+    @keyframes floaty { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-18px) scale(1.08)} }
+    .ic { width: 16px; height: 16px; flex-shrink: 0; display: block; }
+    .inp { width: 100%; border: 1.5px solid #e2e8f0; background: #fff; border-radius: .85rem; padding: .75rem 1rem; font-size: .9rem; transition: border-color .2s, box-shadow .2s; }
+    .inp:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+    .inp[readonly] { background: #f8fafc; color: #64748b; }
+    .lbl { display: block; font-size: .72rem; font-weight: 700; color: #64748b; margin-bottom: .25rem; }
+    .skeleton { background: linear-gradient(90deg,#e2e8f0,#f1f5f9,#e2e8f0); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: .75rem; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <!-- Banner -->
+  <section class="relative ah-gradient text-white overflow-hidden">
+    <div class="blob w-40 h-40 bg-cyan-300 -top-8 -left-8"></div>
+    <div class="blob w-40 h-40 bg-emerald-300 top-6 -right-10" style="animation-delay:-3s"></div>
+    <div class="relative max-w-md mx-auto px-4 pt-4 pb-16">
+      <div class="flex items-center justify-between">
+        <a href="Dashboard.html" id="backLink" class="text-sm font-semibold flex items-center gap-1 text-white/90">
+          <svg class="ic" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg> Dashboard
+        </a>
+        <span class="font-extrabold text-sm">Edit Profile</span>
+        <span class="w-16"></span>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-md mx-auto px-4 -mt-10 relative z-10 pb-12">
+
+    <!-- Loading -->
+    <div id="loadingBox" class="bg-white rounded-3xl shadow-xl border border-slate-100 p-5 space-y-3">
+      <div class="skeleton h-24 w-24 rounded-full mx-auto"></div>
+      <div class="skeleton h-10"></div><div class="skeleton h-10"></div><div class="skeleton h-10"></div>
+    </div>
+
+    <div id="content" class="hidden space-y-4">
+
+      <!-- Avatar + identity -->
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-5 text-center">
+        <div class="relative w-28 h-28 mx-auto">
+          <img id="avatar" src="" alt="Profile photo" class="w-28 h-28 rounded-full object-cover ring-4 ring-teal-100 bg-slate-100" />
+          <button id="pickPhoto" type="button" aria-label="Change photo"
+                  class="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-lg border-2 border-white active:scale-95">
+            <svg class="ic" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </button>
+          <input id="photoInput" type="file" accept="image/*" class="hidden" />
+        </div>
+        <p id="photoHint" class="text-[11px] text-slate-400 mt-2">Tap the camera to change your photo</p>
+        <h1 id="shownName" class="text-lg font-extrabold mt-2"></h1>
+        <p id="shownEmail" class="text-xs text-slate-500"></p>
+        <div class="flex items-center justify-center gap-2 mt-2">
+          <span id="roleChip" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 capitalize"></span>
+          <span id="statusChip" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 capitalize"></span>
+        </div>
+        <a id="completeLink" href="#" class="hidden mt-3 inline-block text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2 rounded-xl"></a>
+      </div>
+
+      <div id="msg" class="hidden rounded-xl px-3 py-2.5 text-xs font-medium"></div>
+
+      <!-- Form -->
+      <form id="form" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 space-y-3" novalidate>
+        <h2 class="text-sm font-extrabold">Personal details</h2>
+
+        <div>
+          <label class="lbl" for="name">Full name</label>
+          <input id="name" type="text" autocomplete="name" class="inp" placeholder="e.g. Amaka Okafor" />
+        </div>
+        <div>
+          <label class="lbl" for="email">Email (cannot be changed)</label>
+          <input id="email" type="email" class="inp" readonly />
+        </div>
+        <div>
+          <label class="lbl" for="phone">Phone number</label>
+          <input id="phone" type="tel" inputmode="tel" autocomplete="tel" class="inp" placeholder="08012345678" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl" for="gender">Gender</label>
+            <select id="gender" class="inp">
+              <option value="">Select</option><option>Female</option><option>Male</option><option>Prefer not to say</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="dob">Date of birth</label>
+            <input id="dob" type="date" class="inp" />
+          </div>
+        </div>
+
+        <h2 class="text-sm font-extrabold pt-2">Location</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="lbl" for="state">State</label>
+            <input id="state" list="stateList" class="inp" placeholder="e.g. Bayelsa" />
+            <datalist id="stateList"></datalist>
+          </div>
+          <div>
+            <label class="lbl" for="city">City / Area</label>
+            <input id="city" type="text" class="inp" placeholder="e.g. Yenagoa" />
+          </div>
+        </div>
+        <div>
+          <label class="lbl" for="address">Address (used for deliveries)</label>
+          <textarea id="address" rows="2" class="inp" placeholder="House number, street, landmark"></textarea>
+        </div>
+
+        <!-- Upload progress -->
+        <div id="progressWrap" class="hidden">
+          <div class="h-2 rounded-full bg-slate-100 overflow-hidden"><div id="progressBar" class="h-2 bg-gradient-to-r from-teal-500 to-emerald-500 w-0 transition-all"></div></div>
+          <p id="progressText" class="text-[11px] text-slate-500 mt-1">Uploading photo…</p>
+        </div>
+
+        <button id="saveBtn" type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold py-3 text-sm shadow-lg shadow-teal-600/25 active:scale-[.98] transition disabled:opacity-60">Save changes</button>
+      </form>
+
+      <!-- Account -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 space-y-2">
+        <h2 class="text-sm font-extrabold mb-1">Account & privacy</h2>
+        <button id="pwBtn" type="button" class="w-full flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 active:bg-slate-50">
+          <span>🔑 Change password (email me a link)</span>
+          <svg class="ic text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <a href="privacy.html" class="w-full flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 active:bg-slate-50">
+          <span>🛡️ Privacy Policy</span>
+          <svg class="ic text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="customer-care.html" class="w-full flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 active:bg-slate-50">
+          <span>🗑️ Request account or data deletion</span>
+          <svg class="ic text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <button id="logoutBtn" type="button" class="w-full rounded-xl bg-red-50 text-red-600 font-bold py-3 text-sm active:scale-[.98] transition">Log out</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import {auth, db, storage, ref, uploadBytesResumable, getDownloadURL, updateProfile, sendPasswordResetEmail, signOut,
+      doc, getDoc, updateDoc, serverTimestamp, requireAuth, showToast, escapeHtml, applyPlatformBranding, uploadToCloudinary} from './js/config.js';
+
+    applyPlatformBranding();
+    const $ = (id) => document.getElementById(id);
+    const STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+    $('stateList').innerHTML = STATES.map(s => `<option value="${s}">`).join('');
+
+    const profile = await requireAuth('Login.html?next=' + encodeURIComponent('Update profile.html'));
+    if (!profile) throw new Error('Not logged in');
+    const uid = profile.uid;
+
+    let pendingBlob = null;
+    let previewUrl = '';
+    let dirty = false;
+    let currentPhoto = profile.photoURL || '';
+
+    const fallbackAvatar = (name) => 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name || 'U') + '&background=0d9488&color=fff&size=256&bold=true';
+
+    /* ---------- Fill the form ---------- */
+    function fill() {
+      $('name').value = profile.displayName || '';
+      $('email').value = profile.email || '';
+      $('phone').value = profile.phone || '';
+      $('gender').value = profile.gender || '';
+      $('dob').value = profile.dob || '';
+      $('state').value = profile.state || '';
+      $('city').value = profile.city || '';
+      $('address').value = profile.address || '';
+      $('avatar').src = currentPhoto || fallbackAvatar(profile.displayName || profile.email);
+      $('shownName').textContent = profile.displayName || 'Your name';
+      $('shownEmail').textContent = profile.email || '';
+      $('roleChip').textContent = profile.role || 'patient';
+      const st = profile.status || 'active';
+      $('statusChip').textContent = st;
+      $('statusChip').className = 'text-[11px] font-bold px-2.5 py-1 rounded-full capitalize ' +
+        (['approved', 'active'].includes(st) ? 'bg-emerald-50 text-emerald-700' : st === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700');
+      const dobEl = $('dob'); dobEl.max = new Date().toISOString().slice(0, 10); dobEl.min = '1900-01-01';
+
+      const cl = $('completeLink');
+      if (profile.role === 'doctor') { cl.textContent = 'Complete / edit professional profile →'; cl.href = 'doctor-register.html'; cl.classList.remove('hidden'); }
+      else if (profile.role === 'pharmacist') { cl.textContent = 'Manage my pharmacy →'; cl.href = 'pharmacist.html'; cl.classList.remove('hidden'); }
+      $('loadingBox').classList.add('hidden'); $('content').classList.remove('hidden');
+    }
+    fill();
+
+    /* ---------- Messages ---------- */
+    function showMsg(text, type = 'error') {
+      const el = $('msg'); el.textContent = text;
+      el.className = 'rounded-xl px-3 py-2.5 text-xs font-medium ' + (type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    /* ---------- Unsaved changes guard ---------- */
+    ['name', 'phone', 'gender', 'dob', 'state', 'city', 'address'].forEach(id => $(id).addEventListener('input', () => { dirty = true; }));
+    window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    /* ---------- Photo: pick, crop square, shrink ---------- */
+    $('pickPhoto').addEventListener('click', () => $('photoInput').click());
+    $('avatar').addEventListener('click', () => $('photoInput').click());
+
+    function toSquareBlob(file, size = 512) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+          const out = Math.min(size, side);
+          const c = document.createElement('canvas'); c.width = c.height = out;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out, out);
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, out, out);
+          URL.revokeObjectURL(url);
+          c.toBlob(b => b ? resolve(b) : reject(new Error('Could not process image')), 'image/jpeg', 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a readable image.')); };
+        img.src = url;
+      });
+    }
+    $('photoInput').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0]; e.target.value = '';
+      if (!file) return;
+      if (!file.type.startsWith('image/')) return showMsg('Please choose an image file (JPG or PNG).');
+      if (file.size > 15 * 1024 * 1024) return showMsg('That photo is too large. Choose one under 15 MB.');
+      try {
+        pendingBlob = await toSquareBlob(file);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = URL.createObjectURL(pendingBlob);
+        $('avatar').src = previewUrl; dirty = true;
+        $('photoHint').textContent = 'New photo ready. Tap "Save changes" to apply.';
+        $('msg').classList.add('hidden');
+      } catch (err) { showMsg(err.message || 'Could not use that photo.'); }
+    });
+
+    async function uploadPhoto(blob) {
+      $('progressWrap').classList.remove('hidden');
+      $('progressBar').style.width = '40%';
+      $('progressText').textContent = 'Uploading photo to Cloudinary…';
+      try {
+        const url = await uploadToCloudinary(blob, `profiles/${uid}`);
+        $('progressBar').style.width = '100%';
+        $('progressText').textContent = 'Done';
+        return url;
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    /* ---------- Save ---------- */
+    function validate() {
+      const name = $('name').value.trim();
+      const phone = $('phone').value.replace(/[\s\-()]/g, '');
+      if (name.length < 3 || !/\s/.test(name)) return 'Enter your full name (first and last name).';
+      if (phone && !/^(\+?234|0)?[789][01]\d{8}$/.test(phone)) return 'Enter a valid Nigerian phone number, e.g. 08012345678.';
+      const dob = $('dob').value;
+      if (dob && new Date(dob) > new Date()) return 'Date of birth cannot be in the future.';
+      return '';
+    }
+
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('msg').classList.add('hidden');
+      const err = validate(); if (err) return showMsg(err);
+      const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+      const name = $('name').value.trim();
+      const data = {
+        displayName: name,
+        phone: $('phone').value.replace(/[\s\-()]/g, ''),
+        gender: $('gender').value,
+        dob: $('dob').value,
+        state: $('state').value.trim(),
+        city: $('city').value.trim(),
+        address: $('address').value.trim(),
+        updatedAt: serverTimestamp()
+      };
+      try {
+        if (pendingBlob) {
+          const url = await uploadPhoto(pendingBlob);
+          data.photoURL = url; currentPhoto = url;
+        }
+        await updateDoc(doc(db, 'users', uid), data);
+        try { await updateProfile(auth.currentUser, { displayName: name, ...(data.photoURL ? { photoURL: data.photoURL } : {}) }); } catch (_) {}
+
+        // Keep a doctor's public card in sync (best effort)
+        if (profile.role === 'doctor') {
+          try {
+            const dRef = doc(db, 'doctors', uid);
+            if ((await getDoc(dRef)).exists()) await updateDoc(dRef, { name, ...(data.photoURL ? { photoURL: data.photoURL } : {}), updatedAt: serverTimestamp() });
+          } catch (_) {}
+        }
+
+        Object.assign(profile, data); delete profile.updatedAt;
+        pendingBlob = null; dirty = false;
+        $('shownName').textContent = name;
+        $('photoHint').textContent = 'Tap the camera to change your photo';
+        $('progressWrap').classList.add('hidden'); $('progressBar').style.width = '0%';
+        showToast('Profile updated', 'success');
+        showMsg('Your profile has been saved.', 'ok');
+      } catch (ex) {
+        console.error(ex);
+        const m = ex.code === 'storage/unauthorized' ? 'Photo upload was blocked. Check your Storage rules, and that the image is under 5 MB.'
+                : ex.code === 'permission-denied' ? 'Saving was blocked (permission denied). Contact support.'
+                : 'Could not save your changes. Check your connection and try again.';
+        showMsg(m); $('progressWrap').classList.add('hidden');
+      }
+      btn.disabled = false; btn.textContent = 'Save changes';
+    });
+
+    /* ---------- Account actions ---------- */
+    $('pwBtn').addEventListener('click', async () => {
+      if (!profile.email) return showMsg('No email on this account.');
+      try { await sendPasswordResetEmail(auth, profile.email); showToast('Reset link sent to ' + profile.email, 'success'); }
+      catch (e) { console.error(e); showToast('Could not send the email. Try again later.', 'error'); }
+    });
+    $('logoutBtn').addEventListener('click', async () => {
+      if (dirty && !confirm('You have unsaved changes. Log out anyway?')) return;
+      dirty = false;
+      try { await signOut(auth); } catch (_) {}
+      location.replace('Login.html');
+    });
+
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
+</body>
+</html>
