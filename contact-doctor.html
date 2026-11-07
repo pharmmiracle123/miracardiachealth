@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#0c0a1d" id="metaTheme" />
+<title>MIRACARDIAC CHAT</title>
+<script>
+  (function(){var t=null;try{t=localStorage.getItem('mc_theme')}catch(e){}
+  if(!t)t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  document.documentElement.dataset.theme=t;})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f4ff;--surface:#fff;--surface2:#eeecff;--text:#17133a;--muted:#6f6a96;--line:#e2dfff;--g1:#5b3df5;--g2:#19c8d3;--accent:#ff5d7a;--ok:#12b886;--shadow:0 10px 30px rgba(91,61,245,.14)}
+[data-theme=dark]{--bg:#0c0a1d;--surface:#161331;--surface2:#1f1b42;--text:#efedff;--muted:#9a95c4;--line:#2a2656;--shadow:0 10px 30px rgba(0,0,0,.5)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+h1,h2,.brand{font-family:Sora,Inter,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.orbs{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(420px 320px at 90% -5%,rgba(91,61,245,.22),transparent 70%),radial-gradient(380px 300px at -10% 100%,rgba(25,200,211,.20),transparent 70%)}
+#browse,#chatPanel{position:relative;z-index:1;height:100dvh}
+#browse{overflow:auto;padding-bottom:30px}#browse.hidden{display:none}
+#chatPanel{display:none;flex-direction:column}#chatPanel.open{display:flex}
+.top{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 14px 8px}
+.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;box-shadow:var(--shadow);flex:none}
+.brand{font-weight:800;font-size:17px;letter-spacing:.5px;line-height:1}
+.brand b{background:linear-gradient(90deg,var(--g1),var(--g2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+.ibtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:17px;flex:none}
+.pill{border:0;border-radius:999px;padding:8px 14px;font-weight:600;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));text-decoration:none}
+.ecg{display:block;width:100%;height:30px;margin:2px 0}
+.ecg path{fill:none;stroke:url(#eg);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:600;animation:dash 3.4s linear infinite}
+@keyframes dash{from{stroke-dashoffset:600}to{stroke-dashoffset:-600}}
+.search{margin:6px 14px;display:flex}
+.search input{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:12px 14px;outline:none;font-size:14px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 14px 8px;scrollbar-width:none}
+.chip{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted)}
+.chip.on{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent}
+.rings{display:flex;gap:14px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
+.ring{flex:none;text-align:center;width:62px;background:none;border:0}
+.ring .av{width:54px;height:54px;margin:0 auto 4px}
+.ring span{font-size:10px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{position:relative;width:48px;height:48px;border-radius:50%;padding:2px;background:var(--line);display:grid;place-items:center;font-size:24px;flex:none}
+.av i{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--surface2);font-style:normal}
+.av.on{background:linear-gradient(135deg,var(--g1),var(--g2),var(--accent))}
+.av.on::after{content:"";position:absolute;right:0;bottom:2px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid var(--surface)}
+.card{width:calc(100% - 28px);margin:0 14px 10px;text-align:left;display:flex;align-items:center;gap:12px;padding:12px;border-radius:20px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow)}
+.card:active{transform:scale(.99)}
+.card .nm{font-family:Sora;font-weight:600;font-size:14.5px;display:flex;gap:6px;align-items:center}
+.card .sp{font-size:12px;color:var(--muted);margin-top:2px}
+.card .pv{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .mid{min-width:0;flex:1}
+.new{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px}
+.star{background:none;border:0;font-size:19px;color:var(--muted);padding:4px}.star.on{color:#ffb300}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px}
+/* chat */
+.chead{margin:max(8px,env(safe-area-inset-top)) 10px 0;padding:8px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;position:relative}
+.chead .t{flex:1;min-width:0}.chead .t b{font-family:Sora;font-size:14.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chead .t small{font-size:11.5px;color:var(--muted)}.chead .t small.live{color:var(--ok);font-weight:600}
+.menu{position:absolute;right:8px;top:58px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);z-index:60;display:none;min-width:190px;overflow:hidden}
+.menu.on{display:block}.menu button{display:block;width:100%;text-align:left;padding:12px 16px;background:none;border:0;font-size:14px}.menu button:active{background:var(--surface2)}
+.sbar{display:none;margin:8px 10px 0}.sbar.on{display:block}
+.sbar input{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:10px 14px;outline:none}
+.banner{display:none;margin:8px 10px 0;padding:9px 12px;border-radius:14px;font-size:12px;background:rgba(255,93,122,.12);border:1px solid var(--accent);color:var(--accent)}.banner.on{display:block}.banner.good{background:rgba(18,184,134,.12);border-color:var(--ok);color:var(--ok)}
+.wm{position:absolute;left:0;right:0;top:70px;bottom:70px;z-index:0;display:grid;place-items:center;pointer-events:none;opacity:.08}
+.wm svg{width:88%;max-width:480px}
+#msgs{position:relative;z-index:1;flex:1;overflow-y:auto;padding:10px 12px;scroll-behavior:smooth}
+.day{display:block;width:max-content;margin:12px auto;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:3px 12px;border-radius:999px}
+.row{display:flex;flex-direction:column;margin:6px 0;max-width:84%}
+.row.me{align-items:flex-end;margin-left:auto}.row.them{align-items:flex-start}
+.bub{padding:10px 14px;font-size:14.5px;line-height:1.4;word-break:break-word;white-space:pre-wrap;user-select:none;-webkit-user-select:none}
+.me .bub{color:#fff;background:linear-gradient(135deg,var(--g1),#8a5cff 55%,var(--g2));border-radius:22px 22px 6px 22px;box-shadow:0 6px 16px rgba(91,61,245,.28)}
+.them .bub{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:22px 22px 22px 6px}
+.bub.pending{opacity:.65}.bub.del{font-style:italic;opacity:.6}
+.bub img{display:block;max-width:100%;max-height:230px;border-radius:14px;margin-bottom:4px;cursor:zoom-in}
+.meta{font-size:10.5px;color:var(--muted);margin:3px 6px 0;display:flex;gap:6px;align-items:center}
+.tk{font-weight:700}.tk.read{color:var(--g2)}.tk.fail{color:var(--accent);cursor:pointer}
+.rq{border-left:3px solid var(--g2);background:rgba(127,127,127,.15);border-radius:8px;padding:4px 8px;margin-bottom:6px;font-size:12px;opacity:.9;max-height:44px;overflow:hidden}
+.sym{min-width:200px}.sym h4{margin:0 0 6px;font-family:Sora;font-size:13px}.sym div{font-size:13px;margin:2px 0}
+.sev{height:7px;border-radius:9px;background:rgba(127,127,127,.3);overflow:hidden;margin-top:4px}.sev i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),#ffb300,var(--accent))}
+.typing{display:none;padding:0 18px 2px;font-size:12px;color:var(--g2);font-weight:600;position:relative;z-index:1}.typing.on{display:block}
+.fab{position:absolute;right:16px;bottom:150px;z-index:20;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);display:none;place-items:center}.fab.on{display:grid}
+.fab em{position:absolute;top:-6px;right:-4px;background:var(--accent);color:#fff;border-radius:999px;font-size:10px;padding:1px 6px;font-style:normal}
+.quick{position:relative;z-index:1;display:flex;gap:8px;overflow-x:auto;padding:4px 12px;scrollbar-width:none}
+.quick .chip{color:var(--text)}
+.emo{display:none;position:relative;z-index:1;margin:0 10px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;gap:4px;flex-wrap:wrap;font-size:22px}.emo.on{display:flex}.emo button{background:none;border:0;padding:4px}
+.rbar{display:none;position:relative;z-index:1;margin:0 10px;padding:8px 12px;border-radius:14px 14px 0 0;background:var(--surface2);border-left:4px solid var(--g2);font-size:12px;color:var(--muted);align-items:center;gap:8px}.rbar.on{display:flex}.rbar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp{position:relative;z-index:2;margin:6px 10px max(10px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:6px;padding:6px;border-radius:26px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.comp textarea{flex:1;border:0;outline:0;resize:none;background:transparent;color:var(--text);font:inherit;font-size:15px;padding:10px 4px;max-height:120px;min-height:42px}
+.cb{width:40px;height:40px;border-radius:14px;border:0;background:var(--surface2);display:grid;place-items:center;font-size:19px;flex:none}
+.send{width:44px;height:44px;border-radius:16px;border:0;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;flex:none;box-shadow:0 6px 16px rgba(91,61,245,.35)}
+.send:active{transform:scale(.92)}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:90;background:var(--surface);border-top:1px solid var(--line);border-radius:22px 22px 0 0;display:none;padding:8px 0 20px;box-shadow:0 -10px 40px rgba(0,0,0,.3)}.sheet.on{display:block}
+.sheet button.a{display:block;width:100%;text-align:left;padding:14px 22px;background:none;border:0;font-size:15px}
+.modal{position:fixed;inset:0;z-index:95;background:rgba(10,8,30,.6);display:none;align-items:flex-end}.modal.on{display:flex}
+.modal .box{width:100%;background:var(--surface);border-radius:24px 24px 0 0;padding:18px 18px 24px;max-height:90dvh;overflow:auto}
+.modal label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+.modal input,.modal select,.modal textarea{width:100%;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:11px;font:inherit;outline:none}
+.modal .pill{width:100%;padding:13px;margin-top:16px;font-size:14px}
+#lb{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.92);display:none;place-items:center}#lb.on{display:grid}#lb img{max-width:96vw;max-height:92vh;border-radius:10px}
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:13px;z-index:120;display:none;max-width:90vw}#toast.on{display:block}
+.bub{font-size:calc(14.5px*var(--fs,1))}
+.vc{min-width:210px}.vc h4{margin:0 0 4px;font-family:Sora;font-size:13px}
+.vchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.vchip{padding:4px 9px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(127,127,127,.18)}
+.vchip.l1{background:rgba(255,179,0,.25);color:#b36b00}.vchip.l2{background:rgba(255,93,122,.25);color:#e0264a}
+.me .vchip,.me .vchip.l1,.me .vchip.l2{background:rgba(255,255,255,.26);color:#fff}
+.me .vchip.l2{background:rgba(255,60,90,.65)}
+.sos{display:none;position:relative;z-index:2;margin:4px 10px;padding:10px 12px;border-radius:16px;background:rgba(255,93,122,.14);border:1px solid var(--accent);font-size:12.5px}
+.sos.on{display:block}.sos a{display:inline-block;margin:6px 8px 0 0;padding:7px 12px;border-radius:999px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+.sos button{float:right;background:none;border:0;font-size:16px}
+.cb.rec{background:var(--accent);color:#fff;animation:pls 1s infinite}@keyframes pls{50%{opacity:.55}}
+audio{max-width:230px;height:36px;display:block}
+.locb{display:inline-block;margin-top:6px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.25);color:inherit;text-decoration:none;font-weight:600;font-size:12.5px}
+.them .locb{background:var(--surface2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.trend svg{width:100%;height:70px;display:block}.trend h5{margin:10px 0 2px;font-size:12px;color:var(--muted)}
+.note{font-size:11px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="orbs"></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="eg" x1="0" x2="1"><stop offset="0" stop-color="#5b3df5"/><stop offset="1" stop-color="#19c8d3"/></linearGradient>
+<symbol id="mlogo" viewBox="0 0 32 32"><path d="M5 24V9l6 8 3-5 3 5 6-8v15" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="7" r="2.2" fill="#ff5d7a"/></symbol>
+</defs></svg>
+
+<script>
+window.MIRACARDIAC_DOCTORS = [
+  { name: "Onyeka-Udechukwu Miracle", specialty: "General Practitioner", email: "onyekamiracle08@gmail.com", experience: 15, emoji: "👨‍⚕️" },
+  { name: "Dr. Emeka Okoro", specialty: "Cardiologist", email: "emeka@example.com", experience: 12, emoji: "❤️" },
+  { name: "Dr. Ada Nwosu", specialty: "Pediatrician", email: "ada@example.com", experience: 10, emoji: "🧒" },
+  { name: "Dr. Chioma Eze", specialty: "Dermatologist", email: "chioma@example.com", experience: 9, emoji: "👩‍⚕️" }
+];
+</script>
+
+<!-- BROWSE -->
+<div id="browse">
+  <div class="top">
+    <a href="index.html" class="ibtn" style="text-decoration:none;color:inherit">←</a>
+    <div class="logo"><svg width="26" height="26"><use href="#mlogo"/></svg></div>
+    <div style="flex:1;min-width:0"><div class="brand">MIRACARDIAC <b>CHAT</b></div><div class="sub" id="statusMsg">Private doctor chat</div></div>
+    <button class="ibtn themeBtn" type="button" title="Light / Dark">🌙</button>
+    <a href="doctor-inbox.html" class="ibtn" title="Doctor inbox" style="text-decoration:none">🩺</a>
+    <a href="Login.html?next=contact-doctor.html" id="loginLink" class="pill">Login</a>
+  </div>
+  <svg class="ecg" viewBox="0 0 400 30" preserveAspectRatio="none"><path d="M0 15H120L134 4 150 27 164 9 174 15H260L272 6 284 22 292 15H400"/></svg>
+  <div class="search"><input id="search" placeholder="Search doctors or specialty" /></div>
+  <div class="chips" id="chips"></div>
+  <div class="rings" id="rings"></div>
+  <div id="grid"></div>
+</div>
+
+<!-- CHAT -->
+<div id="chatPanel">
+  <div class="chead">
+    <button class="ibtn" id="btnBack" type="button">←</button>
+    <div class="av" id="chatAv"><i>👨‍⚕️</i></div>
+    <div class="t"><b id="chatName">Doctor</b><small id="chatStatus">MIRACARDIAC CHAT</small></div>
+    <button class="ibtn themeBtn" type="button">🌙</button>
+    <button class="ibtn" id="btnMenu" type="button">⋮</button>
+    <div class="menu" id="menu">
+      <button data-m="search">🔎 Search in chat</button>
+      <button data-m="info">👤 View doctor</button>
+      <button data-m="test">✅ Run chat check</button>
+      <button data-m="star">⭐ Starred messages</button>
+      <button data-m="export">📤 Export conversation</button>
+      <button data-m="trend">📈 My vitals trend</button>
+      <button data-m="size">🔠 Text size</button>
+      <button data-m="notify">🔔 Enable alerts</button>
+      <button data-m="clear">🧹 Clear saved copy on this phone</button>
+      <button data-m="close">✕ Close chat</button>
+    </div>
+  </div>
+  <div class="sbar" id="sbar"><input id="chatSearch" placeholder="Search messages…" /></div>
+  <div class="banner" id="banner"></div>
+  <div class="wm"><svg viewBox="0 0 520 300"><path d="M260 150C260 150 200 108 200 66C200 40 220 24 242 24C252 24 258 30 260 36C262 30 268 24 278 24C300 24 320 40 320 66C320 108 260 150 260 150Z" fill="none" stroke="url(#eg)" stroke-width="4"/><path d="M20 190H170L192 150L222 236L252 120L278 200L296 190H500" fill="none" stroke="url(#eg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="260" y="272" text-anchor="middle" font-family="Sora,Arial" font-weight="800" font-size="27" letter-spacing="3" fill="url(#eg)">MIRACARDIAC CHAT</text></svg></div>
+  <main id="msgs"></main>
+  <button class="fab" id="fab" type="button">⌄<em id="fabN" style="display:none"></em></button>
+  <div class="typing" id="typing">● ● ● doctor is typing…</div>
+  <div class="sos" id="sos"><button id="sosx" type="button">✕</button><span id="sosTxt"></span><br><a href="tel:112">📞 Call 112</a><a href="emergency.html">Emergency page</a></div>
+  <div class="quick">
+    <button class="chip" data-q="symptom">🩺 Symptom card</button>
+    <button class="chip" data-q="vitals">❤️ Vitals card</button>
+    <button class="chip" data-q="loc">📍 Share location</button>
+    <a class="chip" href="appointments.html" style="text-decoration:none">📅 Book appointment</a>
+    <a class="chip" href="pharmacy-search.html" style="text-decoration:none">💊 Pharmacy</a>
+    <a class="chip" href="emergency.html" style="text-decoration:none;color:var(--accent)">🚨 Emergency</a>
+  </div>
+  <div class="emo" id="emo"></div>
+  <div class="rbar" id="rbar"><span id="rtxt"></span><button type="button" id="rx" class="star">✕</button></div>
+  <div class="comp">
+    <button class="cb" id="btnEmo" type="button">😊</button>
+    <label class="cb" style="cursor:pointer"><input type="file" id="fileInput" accept="image/*,.pdf" hidden />📎</label>
+    <button class="cb" id="btnMic" type="button" title="Voice note">🎤</button>
+    <textarea id="msgInput" rows="1" placeholder="Write to your doctor…"></textarea>
+    <button class="send" id="sendBtn" type="button"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 11 2-6h6"/></svg></button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet"></div>
+<div class="modal" id="symModal"><div class="box">
+  <h2 style="margin:0;font-size:17px">🩺 Symptom card</h2>
+  <label>Main symptom</label><input id="sySym" placeholder="e.g. chest pain, fever, headache" />
+  <label>How long?</label><select id="syDur"><option>Today</option><option>1–3 days</option><option>About a week</option><option>Weeks</option><option>Months</option></select>
+  <label>Severity: <b id="sevN">5</b>/10</label><input type="range" id="sySev" min="1" max="10" value="5" />
+  <label>Extra notes (optional)</label><textarea id="syNote" rows="3"></textarea>
+  <button class="pill" id="syGo" type="button">Send to doctor</button>
+  <button class="pill" id="syX" type="button" style="background:var(--surface2);color:var(--text)">Cancel</button>
+</div></div>
+<div class="modal" id="vitModal"><div class="box">
+  <h2 style="margin:0;font-size:17px">❤️ Vitals card</h2>
+  <div class="row2"><div><label>Systolic (top BP)</label><input id="vSys" type="number" inputmode="numeric" placeholder="120"/></div><div><label>Diastolic (bottom)</label><input id="vDia" type="number" inputmode="numeric" placeholder="80"/></div></div>
+  <div class="row2"><div><label>Pulse (bpm)</label><input id="vPulse" type="number" inputmode="numeric" placeholder="72"/></div><div><label>Oxygen SpO₂ (%)</label><input id="vSpo2" type="number" inputmode="numeric" placeholder="98"/></div></div>
+  <div class="row2"><div><label>Temperature (°C)</label><input id="vTemp" type="number" step="0.1" inputmode="decimal" placeholder="36.8"/></div><div><label>Weight (kg)</label><input id="vWt" type="number" step="0.1" inputmode="decimal"/></div></div>
+  <label>Blood sugar (mg/dL, optional)</label><input id="vSugar" type="number" inputmode="numeric"/>
+  <label>Notes (optional)</label><input id="vNote" placeholder="e.g. after exercise, fasting"/>
+  <div class="note">Colour flags use general reference ranges and are a guide only, not a diagnosis.</div>
+  <button class="pill" id="vGo" type="button">Send to doctor</button>
+  <button class="pill" id="vX" type="button" style="background:var(--surface2);color:var(--text)">Cancel</button>
+</div></div>
+<div class="modal" id="trendModal"><div class="box"><h2 style="margin:0;font-size:17px">📈 My vitals trend</h2><div class="trend" id="trendBody"></div>
+  <button class="pill" id="tX" type="button">Close</button></div></div>
+<div class="modal" id="termsModal"><div class="box">
+  <div class="logo" style="margin:0 0 10px"><svg width="26" height="26"><use href="#mlogo"/></svg></div>
+  <h2 style="margin:0;font-size:18px">Welcome to MIRACARDIAC CHAT</h2>
+  <p style="font-size:13.5px;line-height:1.5;color:var(--muted)">Chat privately with your doctor, send symptom and vitals cards, voice notes and photos.<br><br><b style="color:var(--accent)">Not for emergencies.</b> If someone is unconscious, struggling to breathe, has chest pain, seizures or heavy bleeding, call <b>112</b> or go to the nearest hospital now.<br><br>Your messages are visible only to you and your doctor.</p>
+  <button class="pill" id="tOk" type="button">I understand</button></div></div>
+<div id="lb"><img alt="" /></div>
+<div id="toast"></div>
+
+<script type="module">
+import {
+  auth, db, storage, onAuthStateChanged,
+  collection, query, where, getDoc, doc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, orderBy, serverTimestamp,
+  ref, uploadBytesResumable, getDownloadURL,
+  uploadToCloudinary, escapeHtml, applyPlatformBranding
+} from './js/config.js';
+import { uploadAttachment } from './js/attach.js';
+try { applyPlatformBranding(); } catch (_) {}
+
+const $ = id => document.getElementById(id);
+const E = escapeHtml;
+const EDIT_MS = 20 * 60 * 1000, ONLINE_MS = 2.5 * 60 * 1000;
+const DOCTORS = (window.MIRACARDIAC_DOCTORS || []).map(d => {
+  const email = String(d.email || '').trim().toLowerCase();
+  return { ...d, email, id: 'email_' + email.replace(/[^a-z0-9]+/g, '_') };
+});
+const lsGet = (k, f = null) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch (_) { return f; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+const lsDel = k => { try { localStorage.removeItem(k); } catch (_) {} };
+
+let user = null, profile = null, chatId = null, activeDoctor = null;
+let unsubMsgs = null, unsubConsult = null, unsubList = null, unsubPresence = null, retryT = null;
+let server = [], outbox = [], replyTo = null, editingId = null, filterQ = '', filterSpec = 'All';
+let presence = {}, consults = {}, favs = lsGet('mc_fav', []), newCount = 0;
+
+/* ---------- theme ---------- */
+function setTheme(t) {
+  document.documentElement.dataset.theme = t; lsSet('mc_theme', t);
+  document.querySelectorAll('.themeBtn').forEach(b => b.textContent = t === 'dark' ? '☀️' : '🌙');
+  $('metaTheme').content = t === 'dark' ? '#0c0a1d' : '#f5f4ff';
+}
+setTheme(document.documentElement.dataset.theme);
+document.querySelectorAll('.themeBtn').forEach(b => b.onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+function toast(m, ms = 2400) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms); }
+function banner(msg, good) { const b = $('banner'); if (!msg) { b.classList.remove('on'); return; } b.textContent = msg; b.className = 'banner on' + (good ? ' good' : ''); }
+
+/* ---------- auth (wait for restore, never redirect on refresh) ---------- */
+let authDone;
+const authReady = new Promise(r => authDone = r);
+onAuthStateChanged(auth, async u => {
+  user = u || null;
+  $('loginLink').style.display = u ? 'none' : '';
+  if (u) {
+    profile = { uid: u.uid, email: (u.email || '').toLowerCase(), displayName: u.displayName || u.email || 'Patient' };
+    try {
+      const s = await getDoc(doc(db, 'users', u.uid));
+      if (s.exists()) profile = { ...profile, ...s.data() };
+    } catch (_) {}
+    listenConsults();
+  }
+  authDone(u);
+});
+
+/* ---------- presence ---------- */
+function listenPresence() {
+  try {
+    unsubPresence = onSnapshot(collection(db, 'doctorPresence'), snap => {
+      presence = {};
+      snap.forEach(d => {
+        const x = d.data(), em = (x.email || d.id || '').toLowerCase();
+        const last = x.lastSeen?.toMillis ? x.lastSeen.toMillis() : (x.lastSeenMs || 0);
+        presence[em] = { online: !!x.online && Date.now() - last < ONLINE_MS, last };
+      });
+      renderList(); if (activeDoctor) headStatus();
+    }, () => {});
+  } catch (_) {}
+}
+const isOn = em => !!presence[em]?.online;
+function seenText(em) {
+  const p = presence[em]; if (!p) return 'Tap to chat'; if (p.online) return 'online';
+  if (!p.last) return 'offline';
+  const m = Math.round((Date.now() - p.last) / 60000);
+  if (m < 1) return 'last seen just now'; if (m < 60) return 'last seen ' + m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return 'last seen ' + h + ' hr ago';
+  return 'last seen ' + new Date(p.last).toLocaleDateString();
+}
+
+/* ---------- doctor list ---------- */
+const chatDocId = (uid, em) => ('d_' + uid.slice(0, 12) + '_' + em.replace(/[^a-z0-9]/g, '_')).slice(0, 80);
+function listenConsults() {
+  if (unsubList) unsubList();
+  try {
+    unsubList = onSnapshot(query(collection(db, 'consultations'), where('patientId', '==', user.uid)), snap => {
+      consults = {};
+      snap.forEach(d => { const x = d.data(); consults[(x.doctorEmail || '').toLowerCase()] = { id: d.id, ...x, ms: x.updatedAt?.toMillis ? x.updatedAt.toMillis() : 0 }; });
+      renderList();
+    }, () => {});
+  } catch (_) {}
+}
+function renderChips() {
+  const specs = ['All', '★ Favorites', ...new Set(DOCTORS.map(d => d.specialty))];
+  $('chips').innerHTML = specs.map(s => `<button class="chip ${s === filterSpec ? 'on' : ''}" data-s="${E(s)}">${E(s)}</button>`).join('');
+}
+$('chips').onclick = e => { const b = e.target.closest('[data-s]'); if (b) { filterSpec = b.dataset.s; renderChips(); renderList(); } };
+function renderList() {
+  const q = $('search').value.toLowerCase();
+  let list = DOCTORS.filter(d => (!q || (d.name + d.specialty).toLowerCase().includes(q)) &&
+    (filterSpec === 'All' || (filterSpec === '★ Favorites' ? favs.includes(d.email) : d.specialty === filterSpec)));
+  list.sort((a, b) => (favs.includes(b.email) - favs.includes(a.email)) || (isOn(b.email) - isOn(a.email)));
+  const on = DOCTORS.filter(d => isOn(d.email));
+  $('statusMsg').textContent = DOCTORS.length + ' doctors' + (on.length ? ' · ' + on.length + ' online' : '');
+  $('rings').innerHTML = on.map(d => `<button class="ring" data-email="${E(d.email)}"><div class="av on"><i>${d.emoji || '👨‍⚕️'}</i></div><span>${E(d.name.replace('Dr. ', '').split(' ')[0])}</span></button>`).join('');
+  $('grid').innerHTML = list.map(d => {
+    const c = consults[d.email], seen = lsGet('mc_seen_' + (c?.id || ''), 0);
+    const isNew = c && c.lastSenderRole === 'doctor' && c.ms > seen;
+    return `<div class="card" data-email="${E(d.email)}" role="button">
+      <div class="av ${isOn(d.email) ? 'on' : ''}"><i>${d.emoji || '👨‍⚕️'}</i></div>
+      <div class="mid"><div class="nm">${E(d.name)} ${isNew ? '<span class="new">NEW</span>' : ''}</div>
+        <div class="sp">${E(d.specialty)}${d.experience ? ' · ' + d.experience + ' yrs' : ''} · ${E(seenText(d.email))}</div>
+        ${c?.lastMessage ? `<div class="pv">${E(c.lastMessage)}</div>` : ''}</div>
+      <button class="star ${favs.includes(d.email) ? 'on' : ''}" data-fav="${E(d.email)}">★</button></div>`;
+  }).join('') || '<div class="empty">No doctors match.</div>';
+}
+$('search').oninput = renderList;
+const clickOpen = e => {
+  const f = e.target.closest('[data-fav]');
+  if (f) { e.stopPropagation(); const em = f.dataset.fav; favs = favs.includes(em) ? favs.filter(x => x !== em) : [...favs, em]; lsSet('mc_fav', favs); renderList(); return; }
+  const c = e.target.closest('[data-email]'); if (!c) return;
+  const d = DOCTORS.find(x => x.email === c.dataset.email); if (d) openChat(d);
+};
+$('grid').onclick = clickOpen; $('rings').onclick = clickOpen;
+
+/* ---------- open chat ---------- */
+async function ensureConsult() {
+  const r = doc(db, 'consultations', chatId);
+  const patch = { updatedAt: serverTimestamp(), doctorEmail: activeDoctor.email, doctorName: activeDoctor.name };
+  try { await updateDoc(r, patch); return; } catch (_) {}
+  await setDoc(r, {
+    type: 'direct', status: 'active', title: 'MIRACARDIAC CHAT', patientId: user.uid,
+    patientName: profile?.displayName || user.email || 'Patient', patientEmail: (user.email || '').toLowerCase(),
+    doctorId: activeDoctor.id, doctorEmail: activeDoctor.email, doctorName: activeDoctor.name,
+    doctorSpecialty: activeDoctor.specialty || '', fee: 0, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+async function openChat(doctor, auto) {
+  const u = auth.currentUser || await authReady;
+  if (!u) {
+    if (!auto) { toast('Log in to chat'); setTimeout(() => location.href = 'Login.html?next=contact-doctor.html', 600); }
+    return;
+  }
+  if ((u.email || '').toLowerCase() === doctor.email) { toast("That's your own doctor account — use Doctor inbox"); return; }
+  detach();
+  activeDoctor = doctor; chatId = chatDocId(u.uid, doctor.email);
+  lsSet('mc_open_doctor', doctor.email);
+  $('browse').classList.add('hidden'); $('chatPanel').classList.add('open');
+  $('chatName').textContent = doctor.name; $('chatAv').firstElementChild.textContent = doctor.emoji || '👨‍⚕️';
+  headStatus(); banner('');
+  // instantly show what is saved on this phone, then sync
+  server = lsGet('mc_hist_' + chatId, []);
+  outbox = lsGet('mc_out_' + chatId, []).filter(o => !o.fileName);  // attachments cannot survive a reload
+  starred = lsGet('mc_star_' + chatId, []); baseline = false; prevInc = 0; filterStar = false;
+  outbox.forEach(o => { o.state = 'sending'; });
+  render(true);
+  // the consultation must exist BEFORE listening (rules read it) — this was the refresh bug
+  try { await Promise.race([ensureConsult(), new Promise((_, rj) => setTimeout(() => rj({ code: 'timeout' }), 7000))]); }
+  catch (e) { if (e.code !== 'timeout') banner('Could not open chat: ' + (e.code || e.message) + ' — publish the new firestore.rules in Firebase.'); }
+  if (chatId) { listen(chatId); flushAll(); }
+}
+function detach() {
+  [unsubMsgs, unsubConsult].forEach(f => f && f()); unsubMsgs = unsubConsult = null; clearTimeout(retryT);
+}
+
+function listen(id) {
+  const run = () => {
+    if (chatId !== id) return;
+    unsubMsgs = onSnapshot(query(collection(db, 'consultations', id, 'messages'), orderBy('createdAt', 'asc')), { includeMetadataChanges: true }, snap => {
+      const items = [];
+      snap.forEach(d => {
+        const x = d.data();
+        items.push({ id: d.id, ...x, _pend: d.metadata.hasPendingWrites,
+          ms: x.createdAt?.toMillis ? x.createdAt.toMillis() : (x.clientTs || Date.now()) });
+        if (user && x.senderId !== user.uid && !x.read && !d.metadata.hasPendingWrites && document.visibilityState === 'visible')
+          updateDoc(d.ref, { read: true, readAt: serverTimestamp() }).catch(() => {});
+      });
+      const had = server.length; server = items; incoming(items);
+      lsSet('mc_hist_' + id, items.filter(m => !m._pend).slice(-150).map(m => ({ ...m, createdAt: null, fileURL: String(m.fileURL || '').startsWith('data:') ? null : m.fileURL })));
+      const ids = new Set(items.map(m => m.id));
+      outbox = outbox.filter(o => !ids.has(o.clientId)); persistOut();
+      lsSet('mc_seen_' + id, Date.now());
+      if (/^Chat connection/.test($('banner').textContent)) banner('');
+      render(false, items.length > had ? items.length - had : 0);
+    }, err => {
+      banner('Chat connection problem: ' + (err.code || err.message) + ' — retrying… (publish firestore.rules if this stays)');
+      retryT = setTimeout(run, 4000);
+    });
+  };
+  run();
+  unsubConsult = onSnapshot(doc(db, 'consultations', id), s => {
+    const d = s.data() || {};
+    $('typing').classList.toggle('on', Date.now() - (d.typingDoctor || 0) < 5000);
+    clearTimeout(listen._t); if ($('typing').classList.contains('on')) listen._t = setTimeout(() => $('typing').classList.remove('on'), 5200);
+  }, () => {});
+}
+function headStatus() {
+  if (!activeDoctor) return;
+  const on = isOn(activeDoctor.email);
+  $('chatAv').classList.toggle('on', on);
+  const s = $('chatStatus'); s.textContent = on ? 'online now' : seenText(activeDoctor.email); s.className = on ? 'live' : '';
+}
+
+/* ---------- render ---------- */
+const persistOut = () => lsSet('mc_out_' + chatId, outbox.map(o => ({ ...o, file: undefined })));
+function fmtT(ms) { try { return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
+function dayLbl(ms) {
+  const d = new Date(ms), n = new Date(), a = new Date(d.getFullYear(), d.getMonth(), d.getDate()), b = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const k = Math.round((b - a) / 864e5); if (k === 0) return 'Today'; if (k === 1) return 'Yesterday';
+  return d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+function all() {
+  const ids = new Set(server.map(m => m.id));
+  const ob = outbox.filter(o => !ids.has(o.clientId)).map(o => ({ id: o.clientId, senderId: user?.uid, text: o.text, type: o.type, symptom: o.symptom, vitals: o.vitals, geo: o.geo, dur: o.dur, replyTo: o.replyTo, fileURL: o.preview || null, fileName: o.fileName, ms: o.clientTs, _out: o.state, _err: o.err }));
+  return server.concat(ob).sort((a, b) => a.ms - b.ms);
+}
+function tick(m) {
+  if (m._out === 'failed') return '<span class="tk fail" data-retry="' + m.id + '">⚠ not sent · tap to retry</span>';
+  if (m._out === 'sending' || m._pend) return '<span class="tk">🕒</span>';
+  return m.read ? '<span class="tk read">✓✓</span>' : '<span class="tk">✓</span>';
+}
+function render(force, added) {
+  if (!chatId) return;
+  const box = $('msgs'), atBottom = force || box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+  let items = all();
+  if (filterQ) items = items.filter(m => (m.text || '').toLowerCase().includes(filterQ));
+  if (filterStar) items = items.filter(m => starred.includes(m.id));
+  if (!items.length) {
+    box.innerHTML = `<div class="empty"><div class="logo" style="margin:0 auto 12px;width:56px;height:56px"><svg width="34" height="34"><use href="#mlogo"/></svg></div><b style="color:var(--text);font-family:Sora">${filterQ ? 'No matches' : 'Say hello to ' + E(activeDoctor?.name || 'your doctor')}</b><br>${filterQ ? '' : 'Private & saved on your phone and cloud.<br>✓ sent · ✓✓ seen by doctor.<br>Long-press a message for options.'}</div>`;
+    return;
+  }
+  let last = '';
+  box.innerHTML = items.map(m => {
+    const mine = user && m.senderId === user.uid, day = dayLbl(m.ms);
+    const chip = day !== last ? `<span class="day">${E(day)}</span>` : ''; last = day;
+    let body;
+    if (m.deleted) body = '🚫 This message was deleted';
+    else if (m.type === 'symptom' && m.symptom) {
+      const s = m.symptom;
+      body = `<div class="sym"><h4>🩺 Symptom card</h4><div><b>${E(s.symptom)}</b></div><div>Duration: ${E(s.duration)}</div><div>Severity ${+s.severity}/10<div class="sev"><i style="width:${+s.severity * 10}%"></i></div></div>${s.notes ? `<div style="margin-top:6px;opacity:.9">${E(s.notes)}</div>` : ''}</div>`;
+    } else if (m.type === 'vitals' && m.vitals) { body = vitalsHTML(m.vitals); } else if (m.type === 'location' && m.geo) { body = locHTML(m.geo); } else if (m.type === 'audio' && m.fileURL) { body = audioHTML(m); } else if (m.type === 'image' && m.fileURL) body = `<img src="${E(m.fileURL)}" alt="" data-lb="1" loading="lazy" />${m.text ? E(m.text) : ''}`;
+    else if (m.fileURL) body = `<a href="${E(m.fileURL)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">📎 ${E(m.fileName || 'File')}</a>`;
+    else body = E(m.text || '');
+    const rq = m.replyTo && !m.deleted ? `<div class="rq"><b>${E(m.replyTo.name || '')}</b><br>${E((m.replyTo.text || '').slice(0, 80))}</div>` : '';
+    return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>
+      <div class="meta">${starred.includes(m.id) ? '⭐' : ''}${m.edited && !m.deleted ? 'edited · ' : ''}${fmtT(m.ms)} ${mine ? tick(m) : ''}</div></div>`;
+  }).join('');
+  if (atBottom) { box.scrollTop = box.scrollHeight; newCount = 0; } else if (added) { newCount += added; }
+  $('fab').classList.toggle('on', !atBottom); $('fabN').style.display = newCount ? '' : 'none'; $('fabN').textContent = newCount;
+}
+$('msgs').addEventListener('scroll', () => { const b = $('msgs'); if (b.scrollHeight - b.scrollTop - b.clientHeight < 140) { $('fab').classList.remove('on'); newCount = 0; } });
+$('fab').onclick = () => { const b = $('msgs'); b.scrollTop = b.scrollHeight; newCount = 0; $('fab').classList.remove('on'); };
+
+/* ---------- sending: durable outbox + idempotent writes ---------- */
+function enqueue({ text = '', type = 'text', symptom = null, file = null, vitals = null, geo = null, dur = null }) {
+  if (!user || !chatId) { toast('Log in first'); return; }
+  const o = { clientId: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), chatId, text, type, symptom, vitals, geo, dur,
+    replyTo: replyTo ? { ...replyTo } : null, clientTs: Date.now(), state: 'sending', file,
+    fileName: file?.name || null, preview: file && /^(image|audio)\//.test(file.type) ? URL.createObjectURL(file) : null };
+  if (file && type !== 'audio') o.type = file.type.startsWith('image/') ? 'image' : 'file';
+  outbox.push(o); persistOut(); clearReply(); render(true); flush(o);
+}
+async function flush(o) {
+  if (o._busy) return; o._busy = true; o.state = 'sending'; o.err = '';
+  try {
+    await ensureConsult();
+    let fileURL = null, fileName = o.fileName;
+    if (o.file) {
+      fileURL = await uploadAttachment(o.file, o.chatId);
+    }
+    // doc id = clientId → a retry/refresh can never create duplicates
+    await setDoc(doc(db, 'consultations', o.chatId, 'messages', o.clientId), {
+      senderId: user.uid, senderName: profile?.displayName || user.email || 'Patient', senderRole: 'patient',
+      text: o.text, type: o.type, symptom: o.symptom || null, vitals: o.vitals || null, geo: o.geo || null, dur: o.dur || null, fileURL, fileName: fileName || null,
+      replyTo: o.replyTo ? { id: o.replyTo.id, text: String(o.replyTo.text || '').slice(0, 120), name: o.replyTo.name } : null,
+      read: false, deleted: false, clientId: o.clientId, clientTs: o.clientTs, createdAt: serverTimestamp()
+    });
+    updateDoc(doc(db, 'consultations', o.chatId), {
+      lastMessage: ({ symptom: '🩺 Symptom card', vitals: '❤️ Vitals card', audio: '🎤 Voice note', location: '📍 Location' })[o.type] || o.text || (o.type === 'image' ? '📷 Photo' : '📎 File'),
+      lastSenderId: user.uid, lastSenderRole: 'patient', typingPatient: 0, updatedAt: serverTimestamp()
+    }).catch(() => {});
+    o.state = 'sent'; banner('');
+  } catch (e) {
+    o.state = 'failed'; o.err = e.code || e.message;
+    banner(e.code === 'permission-denied'
+      ? 'Message NOT saved: Firebase is rejecting it. Publish the new firestore.rules (Firebase Console → Firestore → Rules → Publish).'
+      : 'Message not sent (' + o.err + '). Tap ⚠ to retry.');
+  }
+  o._busy = false; persistOut(); render(false);
+}
+const flushAll = () => outbox.filter(o => o.state !== 'sent').forEach(flush);
+window.addEventListener('online', () => { if (chatId) flushAll(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && chatId) flushAll(); });
+
+function clearReply() { replyTo = null; editingId = null; $('rbar').classList.remove('on'); }
+function showBar(t) { $('rtxt').textContent = t; $('rbar').classList.add('on'); $('msgInput').focus(); }
+$('rx').onclick = () => { clearReply(); $('msgInput').value = ''; };
+
+async function submit() {
+  const inp = $('msgInput'), text = inp.value.trim();
+  if (editingId) {
+    if (!text) return toast('Message cannot be empty');
+    try { await updateDoc(doc(db, 'consultations', chatId, 'messages', editingId), { text, edited: true, editedAt: serverTimestamp() }); toast('Edited'); }
+    catch (e) { toast(e.message || 'Edit failed'); }
+    clearReply(); inp.value = ''; return;
+  }
+  if (!text) return toast('Type a message');
+  inp.value = ''; inp.style.height = 'auto'; enqueue({ text }); inp.focus();
+}
+$('sendBtn').onclick = e => { e.preventDefault(); submit(); };
+$('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+$('msgInput').addEventListener('input', function () {
+  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  if (chatId && Date.now() - (this._tp || 0) > 2500) { this._tp = Date.now(); updateDoc(doc(db, 'consultations', chatId), { typingPatient: Date.now() }).catch(() => {}); }
+});
+$('fileInput').onchange = e => { const f = e.target.files[0]; if (f) enqueue({ text: $('msgInput').value.trim(), file: f }); $('msgInput').value = ''; e.target.value = ''; };
+
+/* ---------- message actions ---------- */
+$('msgs').addEventListener('click', e => {
+  const r = e.target.closest('[data-retry]');
+  if (r) { const o = outbox.find(x => x.clientId === r.dataset.retry); if (o) flush(o); return; }
+  const im = e.target.closest('[data-lb]'); if (im) { $('lb').firstElementChild.src = im.src; $('lb').classList.add('on'); }
+});
+$('lb').onclick = () => $('lb').classList.remove('on');
+function openSheet(id) {
+  const m = all().find(x => x.id === id); if (!m || m.deleted) return;
+  const mine = user && m.senderId === user.uid, real = server.some(x => x.id === id);
+  let h = '<button class="a" data-a="reply">↩ Reply</button><button class="a" data-a="star">' + (starred.includes(id) ? '☆ Unstar' : '⭐ Star') + '</button>';
+  if (m.text) h += '<button class="a" data-a="copy">⧉ Copy</button>';
+  if (mine && real && m.type === 'text' && Date.now() - m.ms < EDIT_MS) h += '<button class="a" data-a="edit">✎ Edit (20 min)</button>';
+  if (mine && real) h += '<button class="a" data-a="del" style="color:var(--accent)">🗑 Delete for everyone</button>';
+  $('sheet').innerHTML = h + '<button class="a" data-a="x" style="color:var(--muted)">Cancel</button>'; $('sheet').dataset.id = id; $('sheet').classList.add('on');
+}
+$('sheet').onclick = e => {
+  const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
+  const id = $('sheet').dataset.id; $('sheet').classList.remove('on');
+  const m = all().find(x => x.id === id); if (!m) return;
+  if (a === 'reply') { replyTo = { id, text: m.text || (m.type === 'symptom' ? '🩺 Symptom card' : '📎 Attachment'), name: m.senderId === user.uid ? 'You' : activeDoctor.name }; showBar('↩ ' + replyTo.text.slice(0, 60)); }
+  if (a === 'star') { toggleStar(id); return; }
+  if (a === 'copy') navigator.clipboard?.writeText(m.text || '').then(() => toast('Copied'));
+  if (a === 'edit') { editingId = id; $('msgInput').value = m.text; showBar('✎ Editing message'); }
+  if (a === 'del') updateDoc(doc(db, 'consultations', chatId, 'messages', id), { deleted: true, text: '', fileURL: null, symptom: null }).catch(err => toast(err.message));
+};
+let pt; const bub = e => e.target.closest('[data-b]');
+$('msgs').addEventListener('touchstart', e => { const b = bub(e); if (b) pt = setTimeout(() => { navigator.vibrate?.(15); openSheet(b.dataset.b); }, 450); }, { passive: true });
+['touchend', 'touchmove', 'touchcancel'].forEach(v => $('msgs').addEventListener(v, () => clearTimeout(pt), { passive: true }));
+$('msgs').addEventListener('contextmenu', e => { const b = bub(e); if (b) { e.preventDefault(); openSheet(b.dataset.b); } });
+document.addEventListener('click', e => {
+  if (!e.target.closest('#sheet')) $('sheet').classList.remove('on');
+  if (!e.target.closest('#menu') && e.target.id !== 'btnMenu') $('menu').classList.remove('on');
+});
+
+/* ---------- emoji, symptom card, menu ---------- */
+$('emo').innerHTML = '😊 😂 ❤️ 🙏 👍 😢 😷 🤒 🤕 💊 🩺 🙌 😮‍💨 🥱 💪 ✅'.split(' ').map(x => `<button type="button">${x}</button>`).join('');
+$('btnEmo').onclick = () => $('emo').classList.toggle('on');
+$('emo').onclick = e => { const b = e.target.closest('button'); if (b) { $('msgInput').value += b.textContent; $('msgInput').focus(); } };
+document.querySelector('[data-q="symptom"]').onclick = () => $('symModal').classList.add('on');
+$('sySev').oninput = () => $('sevN').textContent = $('sySev').value;
+$('syX').onclick = () => $('symModal').classList.remove('on');
+$('syGo').onclick = () => {
+  const s = $('sySym').value.trim(); if (!s) return toast('Enter your main symptom');
+  const symptom = { symptom: s, duration: $('syDur').value, severity: +$('sySev').value, notes: $('syNote').value.trim() };
+  const text = `🩺 Symptom card\nSymptom: ${s}\nDuration: ${symptom.duration}\nSeverity: ${symptom.severity}/10` + (symptom.notes ? `\nNotes: ${symptom.notes}` : '');
+  enqueue({ type: 'symptom', symptom, text }); $('symModal').classList.remove('on'); $('sySym').value = ''; $('syNote').value = '';
+};
+$('btnMenu').onclick = e => { e.stopPropagation(); $('menu').classList.toggle('on'); };
+$('menu').onclick = async e => {
+  const a = e.target.closest('[data-m]')?.dataset.m; if (!a) return; $('menu').classList.remove('on');
+  if (a === 'star') { filterStar = !filterStar; toast(filterStar ? 'Showing starred only' : 'Showing all'); render(true); }
+  if (a === 'export') exportChat();
+  if (a === 'trend') showTrend();
+  if (a === 'size') { const v = { 1: 1.15, 1.15: 1.3, 1.3: 1 }[lsGet('mc_fs', 1)] || 1; lsSet('mc_fs', v); document.documentElement.style.setProperty('--fs', v); toast('Text size ' + Math.round(v * 100) + '%'); }
+  if (a === 'notify') { try { const r = await Notification.requestPermission(); toast(r === 'granted' ? 'Alerts on 🔔' : 'Alerts blocked in browser settings'); } catch (_) { toast('Alerts not supported here'); } }
+  if (a === 'close') $('btnBack').click();
+  if (a === 'info') toast(activeDoctor.name + ' · ' + activeDoctor.specialty, 3000);
+  if (a === 'search') { $('sbar').classList.toggle('on'); if ($('sbar').classList.contains('on')) $('chatSearch').focus(); else { filterQ = ''; $('chatSearch').value = ''; render(true); } }
+  if (a === 'clear') { lsDel('mc_hist_' + chatId); toast('Cleared local copy — cloud messages stay'); }
+  if (a === 'test') {
+    banner('Running chat check…', true);
+    const pr = await probe(); if (!pr.ok) { banner('❌ ' + pr.msg); return; }
+    try {
+      await ensureConsult();
+      const r = doc(db, 'consultations', chatId, 'messages', 'selftest_' + Date.now());
+      await setDoc(r, { senderId: user.uid, senderRole: 'patient', text: 'check', type: 'text', read: true, deleted: true, clientTs: Date.now(), createdAt: serverTimestamp() });
+      await deleteDoc(r); banner('✅ Chat check passed — messages save to the cloud and survive refresh.', true);
+    } catch (err) { banner('❌ Chat check failed: ' + (err.code || err.message) + ' — publish the new firestore.rules.'); }
+  }
+};
+$('chatSearch').oninput = e => { filterQ = e.target.value.trim().toLowerCase(); render(true); };
+$('btnBack').onclick = () => {
+  detach(); lsDel('mc_open_doctor'); chatId = null; activeDoctor = null; clearReply(); filterQ = '';
+  $('sbar').classList.remove('on'); $('chatPanel').classList.remove('open'); $('browse').classList.remove('hidden'); renderList();
+};
+
+/* ---------- direct Firebase diagnosis (plain-language cause) ---------- */
+async function probe() {
+  const pid = auth.app?.options?.projectId || '?';
+  let tok; try { tok = await auth.currentUser.getIdToken(); } catch (_) { return { ok: false, msg: 'Not logged in — log in again.' }; }
+  const tryDb = async dbId => {
+    const r = await fetch('https://firestore.googleapis.com/v1/projects/' + pid + '/databases/' + encodeURIComponent(dbId) + '/documents/consultations?pageSize=1',
+      { headers: { Authorization: 'Bearer ' + tok } });
+    let j = {}; try { j = await r.json(); } catch (_) {}
+    return { r, m: JSON.stringify(j.error || {}), st: j.error?.status || r.status };
+  };
+  try {
+    const found = [];
+    for (const id of ['default', '(default)']) {
+      const x = await tryDb(id);
+      if (/SERVICE_DISABLED|has not been used|API has not/i.test(x.m)) return { ok: false, msg: 'Cloud Firestore API is DISABLED for project ' + pid + '. Enable it in Google Cloud Console → APIs → Cloud Firestore API.' };
+      if (x.r.ok || x.r.status === 403 || x.st === 'PERMISSION_DENIED') found.push(id);
+    }
+    if (found.length) return { ok: true, msg: 'Firestore database "' + found[0] + '" is reachable in project ' + pid + '.' };
+    return { ok: false, msg: 'No Firestore database named "default" or "(default)" exists in project ' + pid + '. Firebase Console → Firestore Database → Create database.' };
+  } catch (e) {
+    return { ok: false, msg: 'Your phone cannot reach Google Firestore at all (blocked network, VPN, DNS or data-saver). Switch between Wi-Fi and mobile data, turn off any VPN/Private DNS/data saver, then reload.' };
+  }
+}
+let probing = false;
+
+/* ---------- connection watchdog ---------- */
+setInterval(() => {
+  if (!chatId) return;
+  const stuck = all().some(m => m.senderId === user?.uid && (m._out === 'sending' || m._pend) && !['audio', 'image', 'file'].includes(m.type) && Date.now() - m.ms > 10000);
+  if (stuck && !probing && !$('banner').classList.contains('on')) {
+    probing = true; probe().then(r => { banner('Messages saved on your phone, NOT yet delivered. ' + r.msg); setTimeout(() => probing = false, 20000); });
+  }
+  if (false) banner(navigator.onLine === false
+    ? 'You are offline. Messages are saved on your phone and will send automatically when internet returns.'
+    : 'Still connecting to Firebase… your messages are saved and will send automatically. If this stays, check internet/VPN and that Firestore is enabled & rules are published.');
+  if (!stuck && $('banner').textContent.startsWith('Messages saved on your phone')) banner('');
+}, 4000);
+
+/* auto-retry anything still waiting, every 15s; tap the banner to retry now */
+setInterval(() => { if (chatId && user) outbox.filter(o => o.state !== 'sent' && !o._busy).forEach(flush); }, 15000);
+$('banner').onclick = () => { if (chatId) { flushAll(); toast('Retrying…'); } };
+
+
+/* ================= world-class extras ================= */
+let starred = [], filterStar = false, baseline = false, prevInc = 0;
+const ORIG_TITLE = document.title;
+document.documentElement.style.setProperty('--fs', lsGet('mc_fs', 1));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') document.title = ORIG_TITLE; });
+
+function toggleStar(id) {
+  starred = starred.includes(id) ? starred.filter(x => x !== id) : [...starred, id];
+  lsSet('mc_star_' + chatId, starred); render(false);
+}
+function beep() {
+  try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.setValueAtTime(.08, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .25); o.start(); o.stop(c.currentTime + .26); } catch (_) {}
+}
+function incoming(items) {
+  const inc = items.filter(m => user && m.senderId !== user.uid && !m._pend);
+  if (baseline && inc.length > prevInc) {
+    const m = inc[inc.length - 1]; beep(); navigator.vibrate?.(60);
+    if (document.visibilityState === 'hidden') {
+      document.title = '(1) ' + ORIG_TITLE;
+      try { if (Notification.permission === 'granted') new Notification(activeDoctor?.name || 'MIRACARDIAC CHAT', { body: (m.text || 'New message').slice(0, 100) }); } catch (_) {}
+    }
+  }
+  prevInc = inc.length; baseline = true;
+}
+
+/* vitals */
+function vflags(v) {
+  const f = [], add = (k, t, l) => f.push({ k, t, l });
+  if (v.sys && v.dia) { const s = +v.sys, d = +v.dia; add('BP', s + '/' + d, (s >= 180 || d >= 120) ? 2 : (s >= 140 || d >= 90 || s < 90 || d < 60) ? 1 : 0); }
+  if (v.pulse) { const p = +v.pulse; add('Pulse', p + ' bpm', (p > 130 || p < 40) ? 2 : (p > 100 || p < 60) ? 1 : 0); }
+  if (v.spo2) { const o = +v.spo2; add('SpO₂', o + '%', o < 92 ? 2 : o < 95 ? 1 : 0); }
+  if (v.temp) { const t = +v.temp; add('Temp', t + ' °C', (t >= 39.5 || t < 35) ? 2 : (t >= 38 || t < 36) ? 1 : 0); }
+  if (v.sugar) { const g = +v.sugar; add('Sugar', g + ' mg/dL', (g >= 300 || g < 54) ? 2 : (g >= 180 || g < 70) ? 1 : 0); }
+  if (v.weight) add('Weight', v.weight + ' kg', 0);
+  return f;
+}
+function vitalsHTML(v) {
+  return `<div class="vc"><h4>❤️ Vitals card</h4><div class="vchips">${vflags(v).map(x => `<span class="vchip l${x.l}">${E(x.k)} ${E(x.t)}${x.l === 2 ? ' ⚠️' : x.l === 1 ? ' ↑↓' : ' ✓'}</span>`).join('')}</div>${v.note ? `<div style="margin-top:6px;font-size:13px">${E(v.note)}</div>` : ''}</div>`;
+}
+document.querySelector('[data-q="vitals"]').onclick = () => $('vitModal').classList.add('on');
+$('vX').onclick = () => $('vitModal').classList.remove('on');
+$('vGo').onclick = () => {
+  const g = id => $(id).value.trim();
+  const v = { sys: g('vSys'), dia: g('vDia'), pulse: g('vPulse'), spo2: g('vSpo2'), temp: g('vTemp'), weight: g('vWt'), sugar: g('vSugar'), note: g('vNote') };
+  if (!v.sys && !v.pulse && !v.spo2 && !v.temp && !v.sugar && !v.weight) return toast('Enter at least one reading');
+  if ((v.sys && !v.dia) || (!v.sys && v.dia)) return toast('Enter both BP numbers');
+  const fl = vflags(v);
+  const text = '❤️ Vitals card\n' + fl.map(x => x.k + ': ' + x.t + (x.l === 2 ? ' ⚠️ CRITICAL' : x.l === 1 ? ' (out of range)' : '')).join('\n') + (v.note ? '\nNotes: ' + v.note : '');
+  const hist = lsGet('mc_vitals', []); hist.push({ t: Date.now(), sys: +v.sys || null, dia: +v.dia || null, pulse: +v.pulse || null, spo2: +v.spo2 || null }); lsSet('mc_vitals', hist.slice(-40));
+  enqueue({ type: 'vitals', vitals: v, text }); $('vitModal').classList.remove('on');
+  ['vSys','vDia','vPulse','vSpo2','vTemp','vWt','vSugar','vNote'].forEach(i => $(i).value = '');
+  if (fl.some(x => x.l === 2)) showSOS('Some readings are in a dangerous range. Do not wait for a reply — seek urgent care now.');
+};
+function spark(arr, color) {
+  const pts = arr.filter(x => x != null); if (pts.length < 2) return '<div class="note">Not enough readings yet.</div>';
+  const mn = Math.min(...pts), mx = Math.max(...pts), r = (mx - mn) || 1;
+  const d = pts.map((y, i) => (i * 300 / (pts.length - 1)).toFixed(1) + ',' + (60 - ((y - mn) / r) * 50).toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 300 66" preserveAspectRatio="none"><polyline points="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg><div class="note">Low ${mn} · High ${mx} · Latest ${pts[pts.length - 1]}</div>`;
+}
+function showTrend() {
+  const h = lsGet('mc_vitals', []).slice(-12);
+  $('trendBody').innerHTML = !h.length ? '<div class="empty">Send a Vitals card to start your trend.</div>' :
+    '<h5>Systolic BP</h5>' + spark(h.map(x => x.sys), '#5b3df5') + '<h5>Diastolic BP</h5>' + spark(h.map(x => x.dia), '#19c8d3') +
+    '<h5>Pulse</h5>' + spark(h.map(x => x.pulse), '#ff5d7a') + '<h5>Oxygen SpO₂</h5>' + spark(h.map(x => x.spo2), '#12b886') +
+    '<div class="note">Saved on this phone only. Last ' + h.length + ' readings.</div>';
+  $('trendModal').classList.add('on');
+}
+$('tX').onclick = () => $('trendModal').classList.remove('on');
+
+/* location */
+const locHTML = g => `📍 <b>My location</b><br><a class="locb" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${+g.lat},${+g.lng}">Open in Maps</a>`;
+document.querySelector('[data-q="loc"]').onclick = () => {
+  if (!navigator.geolocation) return toast('Location not supported');
+  toast('Getting location…', 4000);
+  navigator.geolocation.getCurrentPosition(p => {
+    const geo = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) };
+    enqueue({ type: 'location', geo, text: '📍 My location: https://www.google.com/maps?q=' + geo.lat + ',' + geo.lng });
+  }, () => toast('Location permission denied'), { enableHighAccuracy: true, timeout: 12000 });
+};
+
+/* voice notes */
+const audioHTML = m => `<audio controls preload="none" src="${E(m.fileURL)}"></audio>${m.dur ? '<div class="meta" style="margin:2px 0 0">🎤 ' + Math.floor(m.dur / 60) + ':' + String(m.dur % 60).padStart(2, '0') + '</div>' : ''}`;
+let rec = null, recChunks = [], recT0 = 0, recTimer = null;
+$('btnMic').onclick = async () => {
+  if (rec) { rec.stop(); return; }
+  if (!window.MediaRecorder || !navigator.mediaDevices) return toast('Voice notes not supported on this browser');
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+    rec = new MediaRecorder(st, { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 32000 }); recChunks = []; recT0 = Date.now();
+    rec.ondataavailable = e => e.data.size && recChunks.push(e.data);
+    rec.onstop = () => {
+      st.getTracks().forEach(t => t.stop()); clearInterval(recTimer);
+      $('btnMic').textContent = '🎤'; $('btnMic').classList.remove('rec'); $('rbar').classList.remove('on');
+      const dur = Math.round((Date.now() - recT0) / 1000), type = rec.mimeType || 'audio/webm'; rec = null;
+      if (dur < 1) return toast('Too short');
+      const file = new File([new Blob(recChunks, { type })], 'voice-note.' + (type.includes('mp4') ? 'm4a' : 'webm'), { type });
+      enqueue({ type: 'audio', file, dur });
+    };
+    rec.start(); $('btnMic').textContent = '⏹'; $('btnMic').classList.add('rec'); $('rbar').classList.add('on');
+    recTimer = setInterval(() => { const s = Math.round((Date.now() - recT0) / 1000); $('rtxt').textContent = '🔴 Recording… ' + s + 's — tap ⏹ to send'; if (s >= 120 && rec) rec.stop(); }, 500);
+  } catch (_) { toast('Allow microphone access to record'); }
+};
+
+/* emergency keyword safety net */
+function showSOS(t) { $('sosTxt').textContent = '⚠️ ' + t; $('sos').classList.add('on'); }
+$('sosx').onclick = () => $('sos').classList.remove('on');
+const EMERG = /chest pain|can'?t breathe|cannot breathe|difficulty breathing|shortness of breath|unconscious|not breathing|seizure|convuls|stroke|heavy bleeding|bleeding (a lot|heavily)|collaps|suicid|kill myself|overdose/i;
+$('msgInput').addEventListener('input', e => { if (EMERG.test(e.target.value)) showSOS('This may be an emergency. Call 112 or go to the nearest hospital now — don\'t wait for a reply.'); });
+
+/* export */
+function exportChat() {
+  const lines = all().filter(m => !m.deleted).map(m => {
+    const who = m.senderId === user.uid ? 'Me' : activeDoctor.name;
+    const t = m.type === 'location' && m.geo ? '[Location] https://www.google.com/maps?q=' + m.geo.lat + ',' + m.geo.lng
+      : m.fileURL ? '[' + (m.type === 'audio' ? 'Voice note' : 'Attachment') + '] ' + m.fileURL + (m.text ? ' ' + m.text : '') : (m.text || '');
+    return '[' + new Date(m.ms).toLocaleString() + '] ' + who + ': ' + t;
+  });
+  const txt = 'MIRACARDIAC CHAT — conversation with ' + activeDoctor.name + '\nExported ' + new Date().toLocaleString() + '\n\n' + lines.join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+  a.download = 'MIRACARDIAC-CHAT-' + new Date().toISOString().slice(0, 10) + '.txt'; document.body.appendChild(a); a.click(); a.remove(); toast('Conversation exported');
+}
+
+/* first-time notice */
+if (!lsGet('mc_terms')) $('termsModal').classList.add('on');
+$('tOk').onclick = () => { lsSet('mc_terms', 1); $('termsModal').classList.remove('on'); };
+
+/* ---------- boot ---------- */
+renderChips(); renderList(); listenPresence();
+authReady.then(() => { const em = lsGet('mc_open_doctor'); const d = DOCTORS.find(x => x.email === em); if (d) openChat(d, true); });
+</script>
+</body>
+</html>

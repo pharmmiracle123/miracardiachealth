@@ -150,6 +150,7 @@
     }
 
     /* ---------- Load profile; never block the dashboard if this fails ---------- */
+    const wt = (p, ms) => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), ms))]);
     async function loadProfile(user) {
       const fallback = {
         uid: user.uid, email: user.email || '', displayName: user.displayName || '',
@@ -157,17 +158,19 @@
       };
       const ref = doc(db, 'users', user.uid);
       try {
-        const snap = await getDoc(ref);
+        // Never wait more than a few seconds: the dashboard must always open
+        const snap = await wt(getDoc(ref), 4000);
         if (snap.exists()) return { profile: { ...fallback, ...snap.data(), uid: user.uid }, problem: '' };
         const base = { ...fallback, provider: (user.providerData && user.providerData[0] && user.providerData[0].providerId) || 'password', consent: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-        try { await setDoc(ref, base); }
+        try { await wt(setDoc(ref, base), 4000); }
         catch (e1) {
-          try { await setDoc(ref, { ...base, status: 'pending' }); }
-          catch (e2) { return { profile: fallback, problem: 'Your profile could not be saved (' + (e2.code || e2.message) + '). Publish the latest firestore.rules.' }; }
+          if (e1.message === 'timeout') { setDoc(ref, base).catch(() => {}); return { profile: fallback, problem: '' }; }
+          try { await wt(setDoc(ref, { ...base, status: 'pending' }), 4000); }
+          catch (e2) { return { profile: fallback, problem: e2.message === 'timeout' ? '' : 'Your profile could not be saved (' + (e2.code || e2.message) + '). Publish the latest firestore.rules.' }; }
         }
         return { profile: fallback, problem: '' };
       } catch (e) {
-        return { profile: fallback, problem: 'Your profile could not be loaded (' + (e.code || e.message) + '). Showing the basic dashboard.' };
+        return { profile: fallback, problem: e.message === 'timeout' ? '' : 'Your profile could not be loaded (' + (e.code || e.message) + '). Showing the basic dashboard.' };
       }
     }
 
@@ -283,11 +286,12 @@
             <p class="text-sm font-semibold text-slate-800 mt-0.5">${esc(tip[1])}</p>
           </div>
         </div>`;
-      const photo = safeHttps(profile.photoURL);
+      // Use the saved photo, else the Google account photo straight from sign-in
+      const photo = safeHttps(profile.photoURL) || safeHttps((authUser && authUser.photoURL) || (auth.currentUser && auth.currentUser.photoURL) || '');
       const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'U';
       const status = profile.status || 'active';
       $('hero').innerHTML = `
-        ${photo ? `<img src="${esc(photo)}" alt="" class="w-14 h-14 rounded-full object-cover border-2 border-white/60" />`
+        ${photo ? `<img src="${esc(photo)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=&quot;w-14 h-14 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-lg font-extrabold&quot;>${esc(initials)}</div>'" class="w-14 h-14 rounded-full object-cover border-2 border-white/60" />`
                 : `<div class="w-14 h-14 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-lg font-extrabold">${esc(initials)}</div>`}
         <div class="flex-1 min-w-0">
           <p class="text-sm font-bold text-white">${greet} ${greetIcon}</p>
@@ -331,7 +335,7 @@
         doctor: [['Pending requests', 'pending', 'text-orange-600'], ['Today', 'today', 'text-teal-700'], ['Active chats', 'chats', 'text-sky-600']],
         pharmacist: [['New orders', 'newOrders', 'text-orange-600'], ['In progress', 'activeOrders', 'text-teal-700'], ['Drugs listed', 'drugs', 'text-sky-600']],
         support: [['Open tickets', 'tickets', 'text-orange-600']],
-        admin: [['Doctors pending', 'pDoctors', 'text-orange-600'], ['Pharmacies pending', 'pPharm', 'text-teal-700'], ['Payments to review', 'pPay', 'text-sky-600']]
+        admin: [['Pharmacies pending', 'pPharm', 'text-teal-700'], ['Payments to review', 'pPay', 'text-sky-600']]
       };
       function paintStats() {
         const cfg = STATS[role] || STATS.patient;
@@ -459,13 +463,13 @@
       if (role === 'admin') {
         show('adminSec');
         const q = (col, field, val) => getDocs(query(collection(db, col), where(field, '==', val))).then(s => s.size);
-        Promise.allSettled([q('doctors', 'status', 'pending'), q('pharmacies', 'status', 'pending'), q('consultations', 'status', 'paid_pending'), q('studentPurchases', 'status', 'paid_pending')])
-          .then(([d, p, c, s]) => {
+        Promise.allSettled([q('pharmacies', 'status', 'pending'), q('consultations', 'status', 'paid_pending'), q('studentPurchases', 'status', 'paid_pending')])
+          .then(([p, c, s]) => {
             const v = (r) => r.status === 'fulfilled' ? r.value : null;
-            counts.pDoctors = v(d) ?? '–'; counts.pPharm = v(p) ?? '–';
+            counts.pPharm = v(p) ?? '–';
             counts.pPay = (v(c) == null && v(s) == null) ? '–' : (v(c) || 0) + (v(s) || 0);
             paintStats();
-            const rows = [['👨‍⚕️', 'Doctors awaiting approval', v(d)], ['💊', 'Pharmacies awaiting approval', v(p)], ['💳', 'Consultation payments', v(c)], ['🎓', 'Student Hub payments', v(s)]];
+            const rows = [['💊', 'Pharmacies awaiting approval', v(p)], ['💳', 'Consultation payments', v(c)], ['🎓', 'Student Hub payments', v(s)]];
             $('adminList').innerHTML = rows.map(([e, l, n]) => `
               <a href="admin.html" class="card flex items-center justify-between">
                 <span class="text-sm font-semibold">${e} ${l}</span>

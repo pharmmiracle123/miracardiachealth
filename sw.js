@@ -4,7 +4,7 @@
 // Bump CACHE_VERSION whenever you change any cached file.
 // ============================================================
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v14';
 const STATIC_CACHE = `mh-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `mh-runtime-${CACHE_VERSION}`;
 

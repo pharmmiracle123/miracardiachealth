@@ -99,33 +99,62 @@ allow create, update, delete: if isSignedIn()
 }
 }
 
-match /consultations/{consultId} {
-allow read: if isSignedIn() && (
-resource.data.patientId == request.auth.uid
-|| resource.data.doctorId == request.auth.uid
-|| isAdmin());
-allow create: if isSignedIn()
-&& request.resource.data.patientId == request.auth.uid
-&& request.resource.data.status == 'paid_pending';
-allow update: if isSignedIn() && (
-resource.data.patientId == request.auth.uid
-|| resource.data.doctorId == request.auth.uid
-|| isAdmin());
-
-match /messages/{msgId} {
-allow read: if isSignedIn() && (
-get(/databases/$(database)/documents/consultations/$(consultId)).data.patientId == request.auth.uid
-|| get(/databases/$(database)/documents/consultations/$(consultId)).data.doctorId == request.auth.uid
-|| isAdmin());
-allow create: if isSignedIn()
-&& request.resource.data.senderId == request.auth.uid
-&& (
-get(/databases/$(database)/documents/consultations/$(consultId)).data.patientId == request.auth.uid
-|| get(/databases/$(database)/documents/consultations/$(consultId)).data.doctorId == request.auth.uid)
-&& get(/databases/$(database)/documents/consultations/$(consultId)).data.status == 'active';
-allow update: if isSignedIn() && resource.data.senderId == request.auth.uid;
-allow delete: if isAdmin();
+function isConsultParticipant() {
+  return isSignedIn() && (
+    resource.data.patientId == request.auth.uid
+    || resource.data.doctorId == request.auth.uid
+    || ('doctorEmail' in resource.data
+        && request.auth.token.email != null
+        && resource.data.doctorEmail == request.auth.token.email.lower())
+    || isAdmin()
+  );
 }
+
+match /consultations/{consultId} {
+  allow read: if isConsultParticipant();
+
+  // Paid consults OR direct MIRACARDIAC HEALTH CHAT (status active + type direct)
+  allow create: if isSignedIn()
+    && request.resource.data.patientId == request.auth.uid
+    && (
+      request.resource.data.status == 'paid_pending'
+      || (request.resource.data.status == 'active' && request.resource.data.type == 'direct')
+    );
+
+  allow update: if isConsultParticipant();
+
+  match /messages/{msgId} {
+    function consultData() {
+      return get(/databases/$(database)/documents/consultations/$(consultId)).data;
+    }
+    function canAccessConsult() {
+      return isSignedIn() && (
+        consultData().patientId == request.auth.uid
+        || consultData().doctorId == request.auth.uid
+        || ('doctorEmail' in consultData()
+            && request.auth.token.email != null
+            && consultData().doctorEmail.lower() == request.auth.token.email.lower())
+        || isAdmin()
+      );
+    }
+    allow read: if canAccessConsult();
+    allow create: if isSignedIn()
+      && request.resource.data.senderId == request.auth.uid
+      && canAccessConsult()
+      && (
+        consultData().status == 'active'
+        || consultData().type == 'direct'
+      );
+    allow update: if isSignedIn() && (
+      (resource.data.senderId == request.auth.uid
+        && request.resource.data.senderId == resource.data.senderId)
+      // the OTHER participant (doctor/patient) may only set read receipts
+      || (canAccessConsult()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read','readAt']))
+    );
+    allow delete: if isAdmin()
+      || (isSignedIn() && resource.data.senderId == request.auth.uid);
+  }
 }
 
 match /appointments/{apptId} {
@@ -354,6 +383,16 @@ match /referrals/{id} {
 match /staffDirectory/{id} {
   allow read: if isSignedIn();
   allow write: if isAdmin() || isClinicalStaff();
+}
+
+
+match /doctorPresence/{emailId} {
+  allow read: if true;
+  // Doctors update their own presence doc (doc id = email slug or uid)
+  allow create, update: if isSignedIn()
+    && request.resource.data.email is string
+    && request.resource.data.email.lower() == request.auth.token.email.lower();
+  allow delete: if isAdmin();
 }
 
 match /{document=**} {

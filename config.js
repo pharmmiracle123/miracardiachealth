@@ -59,6 +59,10 @@ const firebaseConfig = {
 };
 
 
+// Name of your Firestore database. Your console shows it as "default"
+// (no brackets). If you ever create one named "(default)", change this to '(default)'.
+const FIRESTORE_DB_ID = 'default';
+
 // Initialize
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -67,9 +71,9 @@ let db;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-  });
+  }, FIRESTORE_DB_ID);
 } catch (e) {
-  db = getFirestore(app);
+  db = getFirestore(app, FIRESTORE_DB_ID);
 }
 const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();

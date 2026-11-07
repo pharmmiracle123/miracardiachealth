@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Consultation Chat | MiracardiacHealth</title>
+  <title>MIRACARDIAC HEALTH CHAT | MiracardiacHealth</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
@@ -12,11 +12,12 @@
 <body class="bg-slate-100 flex flex-col h-[100dvh]">
   <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top shrink-0">
     <div class="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-      <a href="Dashboard.html" class="text-slate-500 text-lg">←</a>
+      <a href="Dashboard.html" class="text-slate-500 text-lg" aria-label="Back">←</a>
       <div class="flex-1 min-w-0">
-        <h1 id="chatTitle" class="font-semibold text-sm truncate">Consultation</h1>
+        <h1 id="chatTitle" class="font-semibold text-sm truncate">MIRACARDIAC HEALTH CHAT</h1>
         <p id="chatStatus" class="text-[11px] text-slate-400">Loading...</p>
       </div>
+      <span class="hidden sm:inline text-[10px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">Private · Encrypted</span>
       <button id="videoBtn" class="text-teal-600 text-sm font-medium hidden">Video</button>
       <button id="closeConsultBtn" class="text-xs text-red-600 font-medium hidden">Close</button>
     </div>
@@ -34,13 +35,14 @@
 
   <footer class="bg-white border-t border-slate-200 shrink-0 safe-bottom">
     <div class="max-w-lg mx-auto px-3 py-2 flex items-end gap-2">
-      <label class="cursor-pointer text-slate-400 p-2">
-        <input type="file" id="fileInput" accept="image/*,.pdf" class="hidden" />
-        📎
+      <label class="cursor-pointer text-slate-500 p-2 hover:text-teal-600" title="Send photo or PDF">
+        <input type="file" id="fileInput" accept="image/*,.pdf,image/jpeg,image/png,image/webp,image/gif" class="hidden" capture="environment" />
+        <span class="text-xl leading-none">📷</span>
       </label>
-      <textarea id="msgInput" rows="1" placeholder="Type a message..." class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28" ></textarea>
-      <button id="sendBtn" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0">➤</button>
+      <textarea id="msgInput" rows="1" placeholder="Message in MIRACARDIAC HEALTH CHAT…" class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28" ></textarea>
+      <button id="sendBtn" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0" aria-label="Send">➤</button>
     </div>
+    <p class="text-center text-[10px] text-slate-400 pb-1">Photos &amp; documents are sent privately in this consultation</p>
   </footer>
 
   <script type="module">
@@ -78,6 +80,7 @@
     const isDoctor = profile.uid === consult.doctorId;
     const otherName = isDoctor ? (consult.patientName || 'Patient') : (consult.doctorName || 'Doctor');
     document.getElementById('chatTitle').textContent = otherName;
+    document.getElementById('chatTitle').title = 'MIRACARDIAC HEALTH CHAT · ' + otherName;
 
     function updateStatusUI() {
       const statusEl = document.getElementById('chatStatus');

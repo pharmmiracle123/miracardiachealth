@@ -62,7 +62,7 @@
 
     <!-- ============ APPROVALS ============ -->
     <div id="panel-approvals" class="tab-panel space-y-5">
-      <div><h3 class="font-bold mb-2">Pending Doctors</h3><div id="pendingDoctors" class="space-y-2"></div></div>
+      <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3">Doctor registration and the Doctors directory are managed on the public <strong>Contact Doctor</strong> page. Admin no longer approves or lists doctors here.</p>
       <div><h3 class="font-bold mb-2">Pending Pharmacies</h3><div id="pendingPharmacies" class="space-y-2"></div></div>
       <div><h3 class="font-bold mb-2">Pending Support Agents</h3><div id="pendingSupport" class="space-y-2"></div></div>
     </div>
@@ -186,7 +186,7 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
         <div class="flex items-center justify-between gap-2">
           <div>
             <h3 class="font-bold text-sm">Add Staff Account</h3>
-            <p class="text-[11px] text-slate-500">Only Admin can create doctors, pharmacists, nurses and other staff. Patients register themselves.</p>
+            <p class="text-[11px] text-slate-500">Only Admin can create pharmacists, nurses and other staff. Doctor contact is handled on the public Contact Doctor page. Patients register themselves.</p>
           </div>
           <button type="button" id="toggleStaffForm" class="btn-sm bg-teal-600 text-white">+ New staff</button>
         </div>
@@ -196,8 +196,6 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
               <label class="lbl">Role *</label>
               <select id="sfRole" class="field" required>
                 <option value="">Select role</option>
-                <option value="doctor">Doctor</option>
-                <option value="surgeon">Surgeon</option>
                 <option value="pharmacist">Pharmacist</option>
                 <option value="nurse">Nurse</option>
                 <option value="lab">Laboratory</option>
@@ -435,9 +433,8 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
     async function loadStats() {
       const grid = $('statsGrid');
       try {
-        const [users, docsAll, pharmAll, cons, orders, tickets, sCourses, sPend, sApproved] = await Promise.all([
+        const [users, pharmAll, cons, orders, tickets, sCourses, sPend, sApproved] = await Promise.all([
           getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'doctors')),
           getDocs(collection(db, 'pharmacies')),
           getDocs(collection(db, 'consultations')),
           getDocs(collection(db, 'orders')),
@@ -454,14 +451,9 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
           const v = ((s && s.status) || '').toLowerCase();
           return v === 'approved' || v === 'active';
         };
-        const doctorCount = docsAll.docs.filter(d => isLive(d.data())).length;
         const pharmCount = pharmAll.docs.filter(d => isLive(d.data())).length;
-        const activeDoctorUsers = users.docs.filter(d => {
-          const x = d.data();
-          return (x.role === 'doctor' || x.role === 'surgeon') && (x.status === 'active' || x.status === 'approved');
-        }).length;
         const stats = [
-          ['👥', 'Users', users.size], ['👨‍⚕️', 'Doctors', Math.max(doctorCount, activeDoctorUsers)], ['🏥', 'Pharmacies', pharmCount],
+          ['👥', 'Users', users.size], ['🏥', 'Pharmacies', pharmCount],
           ['💬', 'Consultations', cons.size], ['📦', 'Orders', orders.size], ['🎫', 'Open tickets', tickets.size],
           ['📚', 'Student courses', sCourses.size], ['⏳', 'Student payments pending', sPend.size], ['💰', 'Revenue', formatCurrency(revenue)]
         ];
@@ -483,11 +475,8 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
         </div>`;
     }
     async function loadPendingDoctors() {
-      const el = $('pendingDoctors'); showLoading(el);
-      const snap = await getDocs(query(collection(db, 'doctors'), where('status', '==', 'pending')));
-      if (snap.empty) return showEmpty(el, 'No pending doctors', '✅');
-      el.innerHTML = snap.docs.map(d => { const x = d.data();
-        return approvalCard(d, 'doctors', '👨‍⚕️', x.name || 'Doctor', `${x.specialty || ''} · ${x.experience || 0} yrs`, x.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(x.name || 'D'))); }).join('');
+      /* Doctor approvals removed — Contact Doctor / doctors.html is the public page only */
+      return;
     }
     async function loadPendingPharmacies() {
       const el = $('pendingPharmacies'); showLoading(el);
@@ -541,10 +530,18 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
             <div class="flex justify-between gap-2">
               <div class="min-w-0">
                 <p class="font-semibold text-sm truncate">${esc(p.courseTitle || 'Course')}</p>
-                <p class="text-xs text-slate-500 truncate">${esc(p.userName || '')} · ${esc(p.userEmail || p.userId || '')}</p>
+                <p class="text-xs text-slate-700 font-semibold truncate">${esc(p.userName || 'No name given')}</p>
+                <p class="text-xs text-slate-500 truncate">Account: ${esc(p.userEmail || p.userId || '')}</p>
               </div>
               <p class="font-extrabold text-sm text-emerald-700 shrink-0">${formatCurrency(p.amount || 0)}</p>
             </div>
+            ${p.claimPaidAt ? `<div class="rounded-xl bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-600 space-y-0.5">
+              <p class="font-bold text-slate-700">Student says they paid:</p>
+              <p>${esc(p.firstName || '')} ${esc(p.surname || '')} · ${esc(p.claimEmail || '')}</p>
+              <p>${formatCurrency(p.claimAmount || 0)} on ${esc(new Date(p.claimPaidAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }))}</p>
+              ${Number(p.claimAmount) !== Number(p.amount) ? '<p class="text-red-600 font-bold">⚠ Amount on form differs from the price (' + formatCurrency(p.amount || 0) + ')</p>' : ''}
+              <p class="text-slate-500">Check it in Paystack: Transactions → search this reference, status must be Success.</p>
+            </div>` : '<p class="text-[11px] text-amber-600">No payment form filled yet by this student.</p>'}
             <p class="text-[11px] text-slate-400">Ref: <span class="font-mono text-slate-600">${esc(p.reference || p.id)}</span> · ${formatDateTime(p.createdAt)}</p>
             <div class="flex items-center gap-2">
               <select id="dur-${p.id}" class="field !w-auto !py-1.5 text-xs">
@@ -1070,39 +1067,11 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
           const col = btn.dataset.col;
           const approved = act === 'approve';
           btn.innerHTML = '<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin align-middle"></span>';
-          // doctors/pharmacies: status approved|rejected + available flag (Doctors page reads this)
+          // Doctor approvals removed from admin — public Contact Doctor page only
           if (col === 'doctors') {
-            const uref = doc(db, 'users', id);
-            let uData = {};
-            try { const us = await getDoc(uref); if (us.exists()) uData = us.data(); } catch (_) {}
-            const dref = doc(db, 'doctors', id);
-            let dData = {};
-            try { const ds = await getDoc(dref); if (ds.exists()) dData = ds.data(); } catch (_) {}
-            await setDoc(dref, {
-              name: dData.name || uData.displayName || uData.name || 'Doctor',
-              specialty: dData.specialty || uData.department || 'General Practice',
-              phone: dData.phone || uData.phone || '',
-              photoURL: dData.photoURL || uData.photoURL || '',
-              experience: dData.experience || 0,
-              consultationFee: dData.consultationFee || 0,
-              licenseNumber: dData.licenseNumber || '',
-              bio: dData.bio || '',
-              department: dData.department || uData.department || '',
-              status: approved ? 'approved' : 'rejected',
-              available: approved ? true : false,
-              ownerId: id,
-              rating: dData.rating || 0,
-              reviewCount: dData.reviewCount || 0,
-              updatedAt: serverTimestamp(),
-              ...(dData.createdAt ? {} : { createdAt: serverTimestamp() })
-            }, { merge: true });
-            try {
-              await setDoc(uref, {
-                status: approved ? 'active' : 'rejected',
-                role: 'doctor',
-                updatedAt: serverTimestamp()
-              }, { merge: true });
-            } catch (_) {}
+            showToast('Doctor management is disabled in Admin. Use the Contact Doctor page.', 'warning');
+            btn.disabled = false;
+            return;
           } else if (col === 'pharmacies') {
             await updateDoc(doc(db, col, id), {
               status: approved ? 'approved' : 'rejected',
@@ -1122,7 +1091,7 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
               updatedAt: serverTimestamp()
             });
           }
-          showToast(approved ? '✓ Approved — doctor will show on Doctors page' : 'Rejected', approved ? 'success' : 'warning');
+          showToast(approved ? '✓ Approved' : 'Rejected', approved ? 'success' : 'warning');
           reloadApprovals();
           if (typeof loadStats === 'function') loadStats();
         } else if (act === 'consult-approve') {
