@@ -3,6 +3,7 @@
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
+  setPersistence, browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
@@ -66,6 +67,8 @@ const FIRESTORE_DB_ID = 'default';
 // Initialize
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// Keep sign-in saved in localStorage (most reliable across laptop browsers)
+try { setPersistence(auth, browserLocalPersistence).catch(() => {}); } catch (_) {}
 // Local cache: repeat visits show saved data instantly, then refresh from the server
 let db;
 try {
