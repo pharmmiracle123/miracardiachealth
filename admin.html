@@ -530,18 +530,10 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
             <div class="flex justify-between gap-2">
               <div class="min-w-0">
                 <p class="font-semibold text-sm truncate">${esc(p.courseTitle || 'Course')}</p>
-                <p class="text-xs text-slate-700 font-semibold truncate">${esc(p.userName || 'No name given')}</p>
-                <p class="text-xs text-slate-500 truncate">Account: ${esc(p.userEmail || p.userId || '')}</p>
+                <p class="text-xs text-slate-500 truncate">${esc(p.userName || '')} · ${esc(p.userEmail || p.userId || '')}</p>
               </div>
               <p class="font-extrabold text-sm text-emerald-700 shrink-0">${formatCurrency(p.amount || 0)}</p>
             </div>
-            ${p.claimPaidAt ? `<div class="rounded-xl bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-600 space-y-0.5">
-              <p class="font-bold text-slate-700">Student says they paid:</p>
-              <p>${esc(p.firstName || '')} ${esc(p.surname || '')} · ${esc(p.claimEmail || '')}</p>
-              <p>${formatCurrency(p.claimAmount || 0)} on ${esc(new Date(p.claimPaidAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }))}</p>
-              ${Number(p.claimAmount) !== Number(p.amount) ? '<p class="text-red-600 font-bold">⚠ Amount on form differs from the price (' + formatCurrency(p.amount || 0) + ')</p>' : ''}
-              <p class="text-slate-500">Check it in Paystack: Transactions → search this reference, status must be Success.</p>
-            </div>` : '<p class="text-[11px] text-amber-600">No payment form filled yet by this student.</p>'}
             <p class="text-[11px] text-slate-400">Ref: <span class="font-mono text-slate-600">${esc(p.reference || p.id)}</span> · ${formatDateTime(p.createdAt)}</p>
             <div class="flex items-center gap-2">
               <select id="dur-${p.id}" class="field !w-auto !py-1.5 text-xs">

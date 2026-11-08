@@ -3,6 +3,7 @@
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
+  setPersistence, browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
@@ -66,14 +67,12 @@ const FIRESTORE_DB_ID = 'default';
 // Initialize
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// Keep sign-in saved in localStorage (most reliable across laptop browsers)
+try { setPersistence(auth, browserLocalPersistence).catch(() => {}); } catch (_) {}
 // Local cache: repeat visits show saved data instantly, then refresh from the server
 let db;
 try {
   db = initializeFirestore(app, {
-    // Mobile browsers / data-saver / some networks block Firestore's streaming
-    // connection, leaving writes stuck as "sending". Long-polling always works.
-    experimentalForceLongPolling: true,
-    useFetchStreams: false,
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   }, FIRESTORE_DB_ID);
 } catch (e) {
@@ -87,24 +86,6 @@ const googleProvider = new GoogleAuthProvider();
 // Get it from: https://dashboard.paystack.com/#/settings/developers
 // Use pk_test_... for testing, pk_live_... for production.
 const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-
-
-// ---------- Free Student Hub access (no payment required) ----------
-// These emails unlock ALL paid courses automatically (MBBS past questions, etc.).
-// Add or remove addresses as needed. Matching is case-insensitive.
-const FREE_ACCESS_EMAILS = [
-  "onyekamiracle08@gmail.com",
-  "onyekaudechukwum@gmail.com",
-  "onyekamiracle08@yahoo.com",
-  "onyekaudechukwum@yahoo.com",
-  "admin@miracardiachealth.com"
-];
-
-function hasFreeStudentAccess(email) {
-  if (!email) return false;
-  const e = String(email).trim().toLowerCase();
-  return FREE_ACCESS_EMAILS.some((x) => String(x).trim().toLowerCase() === e);
-}
 
 // ---------- Cloudinary (image / file storage – same credentials used on past projects) ----------
 // Create a free account at https://cloudinary.com → Dashboard → copy Cloud name.
@@ -307,10 +288,6 @@ async function getCurrentUserProfile() {
 }
 
 async function requireAuth(redirect = "Login.html") {
-  if (Array.isArray(redirect)) {
-    return requireRole(redirect);
-  }
-
   return new Promise((resolve) => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       unsub();
@@ -339,7 +316,7 @@ async function requireAuth(redirect = "Login.html") {
 }
 
 async function requireRole(allowedRoles = [], redirect = "Dashboard.html") {
-  const profile = await requireAuth("Login.html");
+  const profile = await requireAuth();
   if (!profile) return null;
   if (!allowedRoles.includes(profile.role) && allowedRoles.includes("admin") && auth.currentUser && await claimAdmin(auth.currentUser)) {
     profile.role = "admin";
@@ -513,7 +490,5 @@ export {
   showError,
   distanceKm,
   payWithPaystack,
-  generateRef,
-  FREE_ACCESS_EMAILS,
-  hasFreeStudentAccess
+  generateRef
 };

@@ -191,7 +191,6 @@
     import {auth, db, onAuthStateChanged, doc, setDoc, collection, query, where, getDocs, onSnapshot,
       serverTimestamp, escapeHtml, formatCurrency, showToast, payWithPaystack, generateRef, applyPlatformBranding,
       hasFreeStudentAccess} from './js/config.js';
-    import { askPaymentDetails } from './js/payform.js';
 
     applyPlatformBranding();
     /** @param {string} id @returns {HTMLElement} */
@@ -369,15 +368,9 @@
     function renderPending() {
       const box = $('pendingBox');
       const pend = [...purchases.values()].filter(p => p.status === 'paid_pending');
-      let lp = null; try { lp = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch (_) {}
-      const needs = lp && lp.needsDetails && currentUser && lp.userId === currentUser.uid ? lp : null;
-      const needsHTML = needs ? `<div class="mb-2 rounded-2xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-800"><p class="font-bold">Payment form not completed</p><p class="mt-1">${escapeHtml(needs.courseTitle || 'Course')} · Ref <span class="font-mono">${escapeHtml(needs.reference || '')}</span></p><button id="fillPayForm" type="button" class="mt-2 rounded-xl bg-rose-600 px-3 py-1.5 font-bold text-white">Complete payment form</button></div>` : '';
-      if (!pend.length) {
-        if (!needsHTML) { box.classList.add('hidden'); return; }
-        box.classList.remove('hidden'); box.innerHTML = needsHTML; return;
-      }
+      if (!pend.length) { box.classList.add('hidden'); return; }
       box.classList.remove('hidden');
-      box.innerHTML = needsHTML + `<div class="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+      box.innerHTML = `<div class="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
         <p class="mb-1 flex items-center gap-1.5 font-bold">${svg('clock', 'ic-sm', 2.2)} Waiting for approval</p>
         ${pend.map(p => `<p>• ${escapeHtml(p.courseTitle || 'Course')} · Ref <span class="font-mono">${escapeHtml(p.reference || '')}</span></p>`).join('')}
         <p class="mt-1 text-amber-700">Your course unlocks automatically as soon as our team approves your payment. If it takes too long, contact Support with your reference.</p></div>`;
@@ -393,11 +386,6 @@
         const raw = localStorage.getItem(PENDING_KEY); if (!raw) return;
         const p = JSON.parse(raw);
         if (!currentUser || p.userId !== currentUser.uid) return;
-        if (p.needsDetails) {
-          const d = await askPaymentDetails({ user: currentUser, amount: p.amount, courseTitle: p.courseTitle, reference: p.reference });
-          if (!d) return;
-          Object.assign(p, d); delete p.needsDetails;
-        }
         await savePurchase(p);
         localStorage.removeItem(PENDING_KEY);
         showToast('Your earlier payment has been recorded.', 'success');
@@ -421,17 +409,9 @@
           const ref = (res && res.reference) || reference;
           /** @type {PurchaseRecord} */
           const record = { reference: ref, userId: currentUser.uid, userEmail: currentUser.email, userName: currentUser.displayName || '', courseId: c.id, courseTitle: c.title || '', amount: Number(c.price || 0) };
-          const d = await askPaymentDetails({ user: currentUser, amount: record.amount, courseTitle: record.courseTitle, reference: ref });
-          if (!d) {
-            try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...record, needsDetails: true })); } catch (_) {}
-            showToast('Please complete the payment form so we can approve you.', 'warning');
-            renderPending();
-            return;
-          }
-          Object.assign(record, d);
           try {
             await savePurchase(record);
-            showToast('Details received! We will approve your access shortly.', 'success');
+            showToast('Payment received! Awaiting approval.', 'success');
           } catch (e) {
             console.error(e);
             try { localStorage.setItem(PENDING_KEY, JSON.stringify(record)); } catch (_) {}
@@ -615,7 +595,6 @@
     $('shuffleBtn').addEventListener('click', () => { applyFilters(true); showToast('Questions shuffled', 'info'); });
 
     /* =================== INIT =================== */
-    $('pendingBox').addEventListener('click', (e) => { if (/** @type {HTMLElement} */ (e.target).closest('#fillPayForm')) retryPendingSave(); });
     loadCourses();
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   </script>

@@ -239,7 +239,6 @@ import {
   ref, uploadBytesResumable, getDownloadURL,
   uploadToCloudinary, escapeHtml, applyPlatformBranding
 } from './js/config.js';
-import { uploadAttachment } from './js/attach.js';
 try { applyPlatformBranding(); } catch (_) {}
 
 const $ = id => document.getElementById(id);
@@ -474,7 +473,7 @@ function render(force, added) {
       body = `<div class="sym"><h4>🩺 Symptom card</h4><div><b>${E(s.symptom)}</b></div><div>Duration: ${E(s.duration)}</div><div>Severity ${+s.severity}/10<div class="sev"><i style="width:${+s.severity * 10}%"></i></div></div>${s.notes ? `<div style="margin-top:6px;opacity:.9">${E(s.notes)}</div>` : ''}</div>`;
     } else if (m.type === 'vitals' && m.vitals) { body = vitalsHTML(m.vitals); } else if (m.type === 'location' && m.geo) { body = locHTML(m.geo); } else if (m.type === 'audio' && m.fileURL) { body = audioHTML(m); } else if (m.type === 'image' && m.fileURL) body = `<img src="${E(m.fileURL)}" alt="" data-lb="1" loading="lazy" />${m.text ? E(m.text) : ''}`;
     else if (m.fileURL) body = `<a href="${E(m.fileURL)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">📎 ${E(m.fileName || 'File')}</a>`;
-    else body = E(m.text || '');
+    else body = E(m.text || (m.type === 'image' ? '📷 Photo' : m.type === 'audio' ? '🎤 Voice note' : ''));
     const rq = m.replyTo && !m.deleted ? `<div class="rq"><b>${E(m.replyTo.name || '')}</b><br>${E((m.replyTo.text || '').slice(0, 80))}</div>` : '';
     return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>
       <div class="meta">${starred.includes(m.id) ? '⭐' : ''}${m.edited && !m.deleted ? 'edited · ' : ''}${fmtT(m.ms)} ${mine ? tick(m) : ''}</div></div>`;
@@ -485,12 +484,33 @@ function render(force, added) {
 $('msgs').addEventListener('scroll', () => { const b = $('msgs'); if (b.scrollHeight - b.scrollTop - b.clientHeight < 140) { $('fab').classList.remove('on'); newCount = 0; } });
 $('fab').onclick = () => { const b = $('msgs'); b.scrollTop = b.scrollHeight; newCount = 0; $('fab').classList.remove('on'); };
 
+const wt = (p, ms) => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), ms))]);
+const readDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('read failed')); r.readAsDataURL(f); });
+async function shrinkImage(file) {
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Unreadable image')); i.src = url; });
+  let max = 1100, q = .72, out = '';
+  for (let k = 0; k < 5; k++) {
+    const sc = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    out = c.toDataURL('image/jpeg', q); if (out.length < 700000) break; max *= .75; q -= .08;
+  }
+  URL.revokeObjectURL(url); return out;
+}
+// Cloudinary if configured; otherwise store the (compressed) file inline so it ALWAYS sends
+async function prepareFile(file, folder) {
+  try { return await wt(uploadToCloudinary(file, folder), 30000); } catch (_) {}
+  const d = file.type.startsWith('image/') ? await shrinkImage(file) : await readDataURL(file);
+  if (d.length > 800000) throw new Error('File too large (about 600 KB max). Send a smaller photo or shorter voice note.');
+  return d;
+}
+
 /* ---------- sending: durable outbox + idempotent writes ---------- */
 function enqueue({ text = '', type = 'text', symptom = null, file = null, vitals = null, geo = null, dur = null }) {
   if (!user || !chatId) { toast('Log in first'); return; }
   const o = { clientId: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), chatId, text, type, symptom, vitals, geo, dur,
     replyTo: replyTo ? { ...replyTo } : null, clientTs: Date.now(), state: 'sending', file,
-    fileName: file?.name || null, preview: file && /^(image|audio)\//.test(file.type) ? URL.createObjectURL(file) : null };
+    fileName: file?.name || null, preview: file && (file.type.startsWith('image/') || file.type.startsWith('audio/')) ? URL.createObjectURL(file) : null };
   if (file && type !== 'audio') o.type = file.type.startsWith('image/') ? 'image' : 'file';
   outbox.push(o); persistOut(); clearReply(); render(true); flush(o);
 }
@@ -499,9 +519,7 @@ async function flush(o) {
   try {
     await ensureConsult();
     let fileURL = null, fileName = o.fileName;
-    if (o.file) {
-      fileURL = await uploadAttachment(o.file, o.chatId);
-    }
+    if (o.file) fileURL = await prepareFile(o.file, 'chats/' + o.chatId);
     // doc id = clientId → a retry/refresh can never create duplicates
     await setDoc(doc(db, 'consultations', o.chatId, 'messages', o.clientId), {
       senderId: user.uid, senderName: profile?.displayName || user.email || 'Patient', senderRole: 'patient',
@@ -654,7 +672,7 @@ let probing = false;
 /* ---------- connection watchdog ---------- */
 setInterval(() => {
   if (!chatId) return;
-  const stuck = all().some(m => m.senderId === user?.uid && (m._out === 'sending' || m._pend) && !['audio', 'image', 'file'].includes(m.type) && Date.now() - m.ms > 10000);
+  const stuck = all().some(m => m.senderId === user?.uid && (m._out === 'sending' || m._pend) && Date.now() - m.ms > 10000);
   if (stuck && !probing && !$('banner').classList.contains('on')) {
     probing = true; probe().then(r => { banner('Messages saved on your phone, NOT yet delivered. ' + r.msg); setTimeout(() => probing = false, 20000); });
   }
@@ -760,7 +778,7 @@ $('btnMic').onclick = async () => {
   try {
     const st = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-    rec = new MediaRecorder(st, { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 32000 }); recChunks = []; recT0 = Date.now();
+    rec = new MediaRecorder(st, mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); recChunks = []; recT0 = Date.now();
     rec.ondataavailable = e => e.data.size && recChunks.push(e.data);
     rec.onstop = () => {
       st.getTracks().forEach(t => t.stop()); clearInterval(recTimer);
@@ -771,7 +789,7 @@ $('btnMic').onclick = async () => {
       enqueue({ type: 'audio', file, dur });
     };
     rec.start(); $('btnMic').textContent = '⏹'; $('btnMic').classList.add('rec'); $('rbar').classList.add('on');
-    recTimer = setInterval(() => { const s = Math.round((Date.now() - recT0) / 1000); $('rtxt').textContent = '🔴 Recording… ' + s + 's — tap ⏹ to send'; if (s >= 120 && rec) rec.stop(); }, 500);
+    recTimer = setInterval(() => { const s = Math.round((Date.now() - recT0) / 1000); $('rtxt').textContent = '🔴 Recording… ' + s + 's — tap ⏹ to send'; if (s >= 90 && rec) rec.stop(); }, 500);
   } catch (_) { toast('Allow microphone access to record'); }
 };
 

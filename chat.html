@@ -8,6 +8,45 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},secondary:'#059669'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .msg-row { display: flex; flex-direction: column; margin-bottom: 0.35rem; }
+    .msg-row.mine { align-items: flex-end; }
+    .msg-row.theirs { align-items: flex-start; }
+    .chat-bubble { position: relative; user-select: none; -webkit-user-select: none; cursor: pointer; }
+    .chat-bubble.deleted { opacity: 0.65; font-style: italic; }
+    .chat-bubble.editing-highlight { outline: 2px solid #0d9488; outline-offset: 2px; }
+    .meta-line { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+    .msg-row.mine .meta-line { text-align: right; }
+    .action-sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
+      background: #fff; border-radius: 1rem 1rem 0 0;
+      box-shadow: 0 -8px 30px rgba(0,0,0,.15);
+      padding: 0.5rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+      transform: translateY(110%); transition: transform .22s ease;
+      max-width: 28rem; margin: 0 auto;
+    }
+    .action-sheet.on { transform: translateY(0); }
+    .action-sheet .a {
+      display: block; width: 100%; text-align: left;
+      padding: 0.85rem 1.25rem; font-size: 0.95rem; font-weight: 500;
+      background: none; border: none; color: #0f172a; cursor: pointer;
+    }
+    .action-sheet .a:active, .action-sheet .a:hover { background: #f1f5f9; }
+    .action-sheet .a.danger { color: #dc2626; }
+    .action-sheet .a.muted { color: #64748b; }
+    .edit-bar {
+      display: none; align-items: center; gap: 0.5rem;
+      background: #f0fdfa; border-bottom: 1px solid #99f6e4;
+      padding: 0.45rem 0.75rem; font-size: 0.8rem; color: #0f766e;
+    }
+    .edit-bar.on { display: flex; }
+    .edit-bar button { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: #dc2626; }
+    .reply-preview {
+      display: none; padding: 0.4rem 0.75rem; font-size: 0.75rem;
+      background: #f8fafc; border-left: 3px solid #0d9488; color: #475569;
+    }
+    .reply-preview.on { display: block; }
+  </style>
 </head>
 <body class="bg-slate-100 flex flex-col h-[100dvh]">
   <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top shrink-0">
@@ -25,7 +64,7 @@
 
   <div id="statusBanner" class="hidden bg-amber-50 text-amber-800 text-xs text-center py-2 px-4"></div>
 
-  <main id="messagesArea" class="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-3 py-3 space-y-2">
+  <main id="messagesArea" class="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-3 py-3 space-y-1">
     <div class="flex justify-center py-8">
       <div class="spinner"></div>
     </div>
@@ -33,21 +72,34 @@
 
   <div id="typingIndicator" class="hidden max-w-lg mx-auto w-full px-4 text-xs text-slate-400 pb-1">Doctor is typing...</div>
 
+  <div id="editBar" class="edit-bar max-w-lg mx-auto w-full">
+    <span id="editBarText">✎ Editing message</span>
+    <button type="button" id="cancelEdit">Cancel</button>
+  </div>
+  <div id="replyPreview" class="reply-preview max-w-lg mx-auto w-full">
+    <span id="replyPreviewText"></span>
+    <button type="button" id="cancelReply" class="float-right text-red-500 font-semibold text-xs">✕</button>
+  </div>
+
   <footer class="bg-white border-t border-slate-200 shrink-0 safe-bottom">
     <div class="max-w-lg mx-auto px-3 py-2 flex items-end gap-2">
       <label class="cursor-pointer text-slate-500 p-2 hover:text-teal-600" title="Send photo or PDF">
         <input type="file" id="fileInput" accept="image/*,.pdf,image/jpeg,image/png,image/webp,image/gif" class="hidden" capture="environment" />
         <span class="text-xl leading-none">📷</span>
       </label>
-      <textarea id="msgInput" rows="1" placeholder="Message in MIRACARDIAC HEALTH CHAT…" class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28" ></textarea>
+      <textarea id="msgInput" rows="1" placeholder="Message in MIRACARDIAC HEALTH CHAT…" class="flex-1 border border-slate-200 rounded-2xl px-3 py-2 text-sm resize-none max-h-28"></textarea>
       <button id="sendBtn" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0" aria-label="Send">➤</button>
     </div>
     <p class="text-center text-[10px] text-slate-400 pb-1">Photos &amp; documents are sent privately in this consultation</p>
   </footer>
 
+  <!-- Action sheet for long-press / right-click -->
+  <div id="actionSheet" class="action-sheet" role="dialog" aria-label="Message actions"></div>
+  <div id="sheetBackdrop" class="fixed inset-0 bg-black/30 z-70 hidden" style="z-index:70"></div>
+
   <script type="module">
     import {auth, db, storage, requireAuth, showToast, escapeHtml, formatDateTime, timeAgo,
-      doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp,
+      doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp,
       ref, uploadBytesResumable, getDownloadURL, applyPlatformBranding, uploadToCloudinary} from './js/config.js';
 
     applyPlatformBranding();
@@ -58,9 +110,23 @@
       location.href = 'Dashboard.html';
     }
 
+    const EDIT_MS = 20 * 60 * 1000; // 20 minutes
+    const HIDDEN_KEY = 'mc_hidden_msgs_' + consultId;
+
     const profile = await requireAuth();
     let consult = null;
     let unsubMsgs = null;
+    let messagesCache = [];
+    let editingId = null;
+    let replyTo = null;
+    let longPressTimer = null;
+
+    function getHiddenIds() {
+      try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); } catch { return []; }
+    }
+    function setHiddenIds(ids) {
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+    }
 
     // Load consultation
     const consultRef = doc(db, 'consultations', consultId);
@@ -86,13 +152,13 @@
       const statusEl = document.getElementById('chatStatus');
       const banner = document.getElementById('statusBanner');
       const inputArea = document.querySelector('footer');
-      statusEl.textContent = consult.status.replace('_', ' ');
+      statusEl.textContent = (consult.status || '').replace('_', ' ');
 
       if (consult.status === 'paid_pending') {
         banner.classList.remove('hidden');
         banner.textContent = '⏳ Awaiting admin approval. Chat will open once approved.';
         inputArea.classList.add('opacity-50', 'pointer-events-none');
-      } else if (consult.status === 'active') {
+      } else if (consult.status === 'active' || consult.status === 'open' || consult.type === 'direct') {
         banner.classList.add('hidden');
         inputArea.classList.remove('opacity-50', 'pointer-events-none');
         document.getElementById('videoBtn').classList.remove('hidden');
@@ -110,51 +176,238 @@
     }
     updateStatusUI();
 
-    // Real-time messages
-    const msgsQuery = query(collection(db, 'consultations', consultId, 'messages'), orderBy('createdAt', 'asc'));
-    unsubMsgs = onSnapshot(msgsQuery, (snap) => {
+    // Real-time consultation status
+    onSnapshot(consultRef, (snap) => {
+      if (snap.exists()) {
+        consult = { id: snap.id, ...snap.data() };
+        updateStatusUI();
+      }
+    });
+
+    function msgMs(m) {
+      if (m.createdAt?.toMillis) return m.createdAt.toMillis();
+      if (m.createdAt?.seconds) return m.createdAt.seconds * 1000;
+      return 0;
+    }
+
+    function renderFromCache() {
       const area = document.getElementById('messagesArea');
-      if (snap.empty) {
+      const hidden = new Set(getHiddenIds());
+      const visible = messagesCache.filter(m => !hidden.has(m.id));
+      if (!visible.length) {
         area.innerHTML = `<div class="text-center text-slate-400 text-sm py-12">No messages yet. Say hello!</div>`;
         return;
       }
-      area.innerHTML = snap.docs.map(d => {
-        const m = d.data();
+      area.innerHTML = visible.map(m => {
         const mine = m.senderId === profile.uid;
-        const time = m.createdAt ? timeAgo(m.createdAt) : '';
+        const time = m.ms ? timeAgo({ toDate: () => new Date(m.ms) }) : '';
         let body = '';
-        if (m.type === 'image') {
-          body = `<img src="${escapeHtml(m.fileURL)}" class="rounded-lg max-w-full max-h-48 mb-1" alt="attachment" />`;
+        if (m.deleted) {
+          body = `<p class="italic opacity-80">🚫 This message was deleted</p>`;
+        } else if (m.type === 'image' && m.fileURL) {
+          body = `<img src="${escapeHtml(m.fileURL)}" class="rounded-lg max-w-full max-h-48 mb-1" alt="attachment" loading="lazy" />`;
           if (m.text) body += `<p>${escapeHtml(m.text)}</p>`;
-        } else if (m.type === 'file') {
-          body = `<a href="${escapeHtml(m.fileURL)}" target="_blank" class="underline">📎 ${escapeHtml(m.fileName || 'File')}</a>`;
+        } else if (m.type === 'file' && m.fileURL) {
+          body = `<a href="${escapeHtml(m.fileURL)}" target="_blank" rel="noopener" class="underline">📎 ${escapeHtml(m.fileName || 'File')}</a>`;
           if (m.text) body += `<p class="mt-1">${escapeHtml(m.text)}</p>`;
         } else {
           body = `<p>${escapeHtml(m.text || '')}</p>`;
         }
+        const edited = m.edited && !m.deleted ? ' · edited' : '';
+        const read = m.read && mine ? ' · Read' : '';
         return `
-          <div class="flex ${mine ? 'justify-end' : 'justify-start'}">
-            <div class="chat-bubble ${mine ? 'mine' : 'theirs'}">
+          <div class="msg-row ${mine ? 'mine' : 'theirs'}">
+            <div class="chat-bubble ${mine ? 'mine' : 'theirs'} ${m.deleted ? 'deleted' : ''}" data-msg-id="${m.id}">
               ${body}
-              <div class="text-[10px] opacity-70 mt-1 ${mine ? 'text-right' : ''}">${time}${m.read ? ' · Read' : ''}</div>
+              <div class="meta-line">${time}${edited}${read}</div>
             </div>
           </div>`;
       }).join('');
       area.scrollTop = area.scrollHeight;
+    }
 
-      // Play sound for new incoming messages (simple)
-      // (optional - can add Audio later)
+    function renderMessages(docs) {
+      messagesCache = docs.map(d => {
+        const data = typeof d.data === 'function' ? d.data() : d;
+        return { id: d.id, ...data, ms: msgMs(data) };
+      });
+      renderFromCache();
+    }
+
+    // Real-time messages
+    const msgsQuery = query(collection(db, 'consultations', consultId, 'messages'), orderBy('createdAt', 'asc'));
+    unsubMsgs = onSnapshot(msgsQuery, (snap) => {
+      renderMessages(snap.docs);
+    }, (err) => {
+      document.getElementById('messagesArea').innerHTML =
+        `<div class="text-center text-red-500 text-sm py-12">Failed to load messages: ${escapeHtml(err.message)}</div>`;
     });
 
-    // Send message
+    // ---- Action sheet (long-press / right-click) ----
+    const sheet = document.getElementById('actionSheet');
+    const backdrop = document.getElementById('sheetBackdrop');
+
+    function closeSheet() {
+      sheet.classList.remove('on');
+      backdrop.classList.add('hidden');
+    }
+
+    function openSheet(msgId) {
+      const m = messagesCache.find(x => x.id === msgId);
+      if (!m || m.deleted) return;
+      const mine = m.senderId === profile.uid;
+      const age = Date.now() - (m.ms || 0);
+      const canEdit = mine && m.type === 'text' && !m.deleted && age < EDIT_MS;
+      const canDeleteEveryone = mine && !m.deleted;
+
+      let html = '';
+      if (m.text && !m.deleted) {
+        html += `<button type="button" class="a" data-act="copy">⧉ Copy</button>`;
+      }
+      if (canEdit) {
+        html += `<button type="button" class="a" data-act="edit">✎ Edit (20 min window)</button>`;
+      }
+      if (canDeleteEveryone) {
+        html += `<button type="button" class="a danger" data-act="del-everyone">🗑 Delete for everyone</button>`;
+      }
+      html += `<button type="button" class="a" data-act="del-me">Hide for me</button>`;
+      html += `<button type="button" class="a muted" data-act="cancel">Cancel</button>`;
+
+      sheet.innerHTML = html;
+      sheet.dataset.msgId = msgId;
+      sheet.classList.add('on');
+      backdrop.classList.remove('hidden');
+    }
+
+    backdrop.addEventListener('click', closeSheet);
+
+    sheet.addEventListener('click', async (e) => {
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (!act) return;
+      const msgId = sheet.dataset.msgId;
+      closeSheet();
+      const m = messagesCache.find(x => x.id === msgId);
+      if (!m) return;
+
+      if (act === 'cancel') return;
+
+      if (act === 'copy') {
+        try {
+          await navigator.clipboard.writeText(m.text || '');
+          showToast('Copied', 'success');
+        } catch {
+          showToast('Could not copy', 'error');
+        }
+        return;
+      }
+
+      if (act === 'edit') {
+        editingId = msgId;
+        document.getElementById('msgInput').value = m.text || '';
+        document.getElementById('editBar').classList.add('on');
+        document.getElementById('editBarText').textContent = '✎ Editing message';
+        document.getElementById('msgInput').focus();
+        return;
+      }
+
+      if (act === 'del-everyone') {
+        if (!confirm('Delete this message for everyone? This cannot be undone.')) return;
+        try {
+          await updateDoc(doc(db, 'consultations', consultId, 'messages', msgId), {
+            deleted: true,
+            text: '',
+            fileURL: null,
+            fileName: null,
+            deletedAt: serverTimestamp()
+          });
+          showToast('Message deleted for everyone', 'success');
+        } catch (err) {
+          showToast('Delete failed: ' + err.message, 'error');
+        }
+        return;
+      }
+
+      if (act === 'del-me') {
+        const hidden = getHiddenIds();
+        if (!hidden.includes(msgId)) {
+          hidden.push(msgId);
+          setHiddenIds(hidden);
+        }
+        renderFromCache();
+        showToast('Hidden for you', 'success');
+        return;
+      }
+    });
+
+    // Long-press and context menu on messages
+    const areaEl = document.getElementById('messagesArea');
+    areaEl.addEventListener('contextmenu', (e) => {
+      const bub = e.target.closest('[data-msg-id]');
+      if (bub) {
+        e.preventDefault();
+        openSheet(bub.dataset.msgId);
+      }
+    });
+    areaEl.addEventListener('touchstart', (e) => {
+      const bub = e.target.closest('[data-msg-id]');
+      if (!bub) return;
+      longPressTimer = setTimeout(() => {
+        try { navigator.vibrate?.(12); } catch {}
+        openSheet(bub.dataset.msgId);
+      }, 480);
+    }, { passive: true });
+    ['touchend', 'touchmove', 'touchcancel'].forEach(ev => {
+      areaEl.addEventListener(ev, () => { clearTimeout(longPressTimer); longPressTimer = null; }, { passive: true });
+    });
+    // Desktop: also allow click on bubble meta for accessibility (double-click open)
+    areaEl.addEventListener('dblclick', (e) => {
+      const bub = e.target.closest('[data-msg-id]');
+      if (bub) openSheet(bub.dataset.msgId);
+    });
+
+    // Cancel edit
+    document.getElementById('cancelEdit').onclick = () => {
+      editingId = null;
+      document.getElementById('editBar').classList.remove('on');
+      document.getElementById('msgInput').value = '';
+    };
+
+    // Send / Edit message
     const msgInput = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
 
     async function sendMessage(text = '', file = null) {
-      if (consult.status !== 'active') {
+      const canChat = consult.status === 'active' || consult.status === 'open' || consult.type === 'direct';
+      if (!canChat) {
         showToast('Chat is not active yet', 'warning');
         return;
       }
+
+      // Edit mode
+      if (editingId) {
+        const t = (text || msgInput.value || '').trim();
+        if (!t) {
+          showToast('Message cannot be empty', 'warning');
+          return;
+        }
+        sendBtn.disabled = true;
+        try {
+          await updateDoc(doc(db, 'consultations', consultId, 'messages', editingId), {
+            text: t,
+            edited: true,
+            editedAt: serverTimestamp()
+          });
+          editingId = null;
+          document.getElementById('editBar').classList.remove('on');
+          msgInput.value = '';
+          showToast('Message updated', 'success');
+        } catch (e) {
+          showToast('Edit failed: ' + e.message, 'error');
+        }
+        sendBtn.disabled = false;
+        return;
+      }
+
       if (!text.trim() && !file) return;
 
       sendBtn.disabled = true;
@@ -169,18 +422,26 @@
           type = file.type.startsWith('image/') ? 'image' : 'file';
         }
 
-        await addDoc(collection(db, 'consultations', consultId, 'messages'), {
+        const payload = {
           senderId: profile.uid,
-          senderName: profile.displayName || profile.email,
+          senderName: profile.displayName || profile.fullName || profile.email,
           text: text.trim(),
           type,
           fileURL,
           fileName,
           read: false,
+          deleted: false,
           createdAt: serverTimestamp()
-        });
+        };
+        if (replyTo) {
+          payload.replyTo = replyTo;
+        }
+
+        await addDoc(collection(db, 'consultations', consultId, 'messages'), payload);
         msgInput.value = '';
         document.getElementById('fileInput').value = '';
+        replyTo = null;
+        document.getElementById('replyPreview').classList.remove('on');
       } catch (e) {
         showToast('Failed to send: ' + e.message, 'error');
       }

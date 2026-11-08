@@ -98,9 +98,7 @@
       auth, db, onAuthStateChanged, doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot,
       serverTimestamp, payWithPaystack, generateRef, showToast, escapeHtml
     } from './js/config.js';
-    import { askPaymentDetails } from './js/payform.js';
 
-    const PENDING_KEY = 'mh_pending_mbbs_purchase';
     const PASS = window.MBBS_PASS_PERCENT || 75;
     const PRICE = 1000;
     const COURSE_ID = 'mbbs_progressive_quiz'; // Firestore studentAccess key
@@ -174,23 +172,8 @@
       $('gateStatus').textContent = 'Payment required to unlock all progressive sets.';
       $('payBtn').classList.remove('hidden');
       $('loginBtn').classList.add('hidden');
-      $('gateHint').textContent = 'Paystack · ₦1,000 · valid 30 days · opens after we confirm your payment';
+      $('gateHint').textContent = 'Paystack · ₦1,000 · valid 30 days · auto-activates after successful payment';
       showGate();
-    }
-
-    async function resumePendingForm(u) {
-      try {
-        const raw = localStorage.getItem(PENDING_KEY); if (!raw) return;
-        const p = JSON.parse(raw); if (p.userId !== u.uid) return;
-        if (p.needsDetails) {
-          const d = await askPaymentDetails({ user: u, amount: p.amount, courseTitle: p.courseTitle, reference: p.reference });
-          if (!d) return;
-          Object.assign(p, d); delete p.needsDetails;
-        }
-        await setDoc(doc(db, 'studentPurchases', p.reference), { ...p, createdAt: serverTimestamp() });
-        localStorage.removeItem(PENDING_KEY);
-        showToast('Details received! We will approve your access shortly.', 'success');
-      } catch (e) { console.warn('resume pending purchase', e); }
     }
 
     async function watchAccess(uid) {
@@ -227,7 +210,6 @@
           updateGateUI();
         } else {
           await watchAccess(u.uid);
-          resumePendingForm(u);
         }
       } else {
         if (unsubAccess) { unsubAccess(); unsubAccess = null; }
@@ -253,30 +235,28 @@
         },
         onSuccess: async (res) => {
           const ref = (res && res.reference) || reference;
-          const base = {
-            reference: ref, userId: user.uid, userEmail: user.email, userName: user.displayName || '',
-            courseId: COURSE_ID, courseTitle: 'MBBS Progressive Quiz (100x100)', amount: PRICE,
-            status: 'paid_pending', purpose: 'student_course'
-          };
-          const d = await askPaymentDetails({ user, amount: PRICE, courseTitle: base.courseTitle, reference: ref });
-          if (!d) {
-            try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...base, needsDetails: true })); } catch (_) {}
-            $('gateStatus').textContent = 'Payment noted. Please refresh this page and complete the payment form so we can approve you.';
-            showToast('Complete the payment form to get approved.', 'warning');
-            return;
-          }
           try {
-            await setDoc(doc(db, 'studentPurchases', ref), { ...base, ...d, createdAt: serverTimestamp() });
+            await setDoc(doc(db, 'studentPurchases', ref), {
+              reference: ref,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || '',
+              courseId: COURSE_ID,
+              courseTitle: 'MBBS Progressive Quiz (100x100)',
+              amount: PRICE,
+              status: 'paid_pending',
+              purpose: 'student_course',
+              createdAt: serverTimestamp()
+            });
           } catch (e) {
             console.error(e);
-            try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...base, ...d })); } catch (_) {}
           }
           // Try Cloud Function verify (auto-grant) if deployed
           try {
             const projectId = (await import('./js/config.js')).firebaseConfig?.projectId;
             // Client-side best effort: show pending; CF webhook will set studentAccess
-            showToast('Details received! We will approve your access shortly.', 'success');
-            $('gateStatus').textContent = 'Details received — your access opens as soon as we approve it (usually a few minutes).';
+            showToast('Payment received! Activating access…', 'success');
+            $('gateStatus').textContent = 'Payment received — activating (usually a few seconds)…';
             $('payBtn').classList.add('hidden');
             // Poll access for up to ~20s
             let tries = 0;
@@ -290,7 +270,7 @@
                 updateGateUI();
               } else if (tries > 15) {
                 clearInterval(poll);
-                $('gateStatus').textContent = 'Submitted. Your access opens once we approve it. Keep this reference: ' + ref;
+                $('gateStatus').textContent = 'Payment recorded. If access does not open in a minute, contact Support with ref: ' + ref;
                 $('payBtn').classList.remove('hidden');
               }
             }, 1500);

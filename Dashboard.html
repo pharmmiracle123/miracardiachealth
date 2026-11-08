@@ -141,11 +141,13 @@
       return new Promise((resolve) => {
         let done = false;
         const finish = (u) => { if (!done) { done = true; resolve(u); } };
-        onAuthStateChanged(auth, (u) => {
-          if (u) return finish(u);
-          setTimeout(() => finish(auth.currentUser || null), 1500);
-        });
-        setTimeout(() => finish(auth.currentUser || null), 8000);
+        onAuthStateChanged(auth, (u) => { if (u) finish(u); });
+        (auth.authStateReady ? auth.authStateReady() : Promise.resolve()).then(() => { if (auth.currentUser) finish(auth.currentUser); });
+        let n = 0;
+        const iv = setInterval(() => {            // poll up to ~5s for the saved sign-in to be restored
+          if (auth.currentUser) { clearInterval(iv); finish(auth.currentUser); }
+          else if (++n > 20) { clearInterval(iv); finish(null); }
+        }, 250);
       });
     }
 

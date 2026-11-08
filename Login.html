@@ -56,7 +56,7 @@
     import {auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged,
       doc, getDoc, setDoc, serverTimestamp, applyPlatformBranding} from './js/config.js';
     applyPlatformBranding();
-    import { signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { signInWithRedirect, getRedirectResult, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
     const $ = (id) => document.getElementById(id);
     const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
@@ -146,8 +146,9 @@
           return;
         }
       } catch (e) { console.warn(e); }
-      // Small delay so auth persistence can flush on mobile
-      setTimeout(() => { location.replace(nextUrl()); }, 250);
+      // Make sure the sign-in is fully saved in the browser BEFORE leaving this page
+      try { await auth.authStateReady?.(); await user.getIdToken(); } catch (_) {}
+      setTimeout(() => { location.replace(nextUrl()); }, 700);
     }
 
     $('googleBtn').addEventListener('click', async () => {
@@ -168,11 +169,17 @@
         }
       }
       try {
+        try { await setPersistence(auth, browserLocalPersistence); } catch (_) {}
         const cred = await signInWithPopup(auth, googleProvider);
         await goNext(cred.user);
       } catch (err) {
         if (going) return;
-        if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/popup-closed-by-user'].includes(err.code)) {
+        if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+          showMsg('The Google window was closed before finishing. Tap Continue with Google and complete the sign-in.');
+          $('googleBtn').disabled = false;
+          return;
+        }
+        if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) {
           try {
             localStorage.setItem('mh_prefer_redirect', '1');
             showMsg('Using Google redirect…', 'ok');
