@@ -4,7 +4,7 @@
 // Bump CACHE_VERSION whenever you change any cached file.
 // ============================================================
 
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const STATIC_CACHE = `mh-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `mh-runtime-${CACHE_VERSION}`;
 
@@ -15,7 +15,10 @@ const PRECACHE = [
   'manifest.json',
   'css/styles.css',
   'js/config.js',
-  'icons/icon.svg'
+  'icons/icon.svg',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/apple-touch-icon.png'
 ];
 
 // Trusted third-party hosts whose static assets are safe to cache

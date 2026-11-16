@@ -603,14 +603,51 @@ document.addEventListener('click', e => { if (!e.target.closest('#sheet')) $('sh
 /* ---------- alerts, menu, export ---------- */
 const ORIG_TITLE = document.title;
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') document.title = ORIG_TITLE; });
-function beep() { try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.setValueAtTime(.08, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .25); o.start(); o.stop(c.currentTime + .26); } catch (_) {} }
+function beep() {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.setValueAtTime(.12, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .35); o.start(); o.stop(c.currentTime + .36);
+  } catch (_) {}
+}
+async function showMsgNotification(title, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const opts = {
+      body: (body || 'New message').slice(0, 120),
+      icon: 'icons/icon.svg',
+      badge: 'icons/icon.svg',
+      tag: 'mc-chat-msg',
+      renotify: true,
+      vibrate: [100, 50, 100],
+      data: { url: location.href }
+    };
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title || 'MIRACARDIAC CHAT', opts);
+    } else {
+      new Notification(title || 'MIRACARDIAC CHAT', opts);
+    }
+  } catch (_) {}
+}
 function incoming(items) {
   const inc = items.filter(m => m.senderId !== user.uid && !m._pend);
   if (baseline && inc.length > prevInc) {
-    const m = inc[inc.length - 1]; beep(); navigator.vibrate?.(60);
-    if (document.visibilityState === 'hidden') { document.title = '(1) ' + ORIG_TITLE; try { if (Notification.permission === 'granted') new Notification($('patientTitle').textContent, { body: (m.text || 'New message').slice(0, 100) }); } catch (_) {} }
+    const m = inc[inc.length - 1];
+    const preview = (m.text || (m.fileURL ? '📎 Attachment' : m.type === 'location' ? '📍 Location' : m.type === 'vitals' ? '❤️ Vitals' : 'New message')).slice(0, 100);
+    const title = ($('patientTitle') && $('patientTitle').textContent) || 'Patient';
+
+    beep();
+    navigator.vibrate?.([100, 50, 100]);
+    document.title = '💬 ' + title;
+    showMsgNotification(title, preview);
+
+    if (document.visibilityState === 'visible') {
+      toast('💬 ' + title + ': ' + preview, 5000);
+    }
   }
-  prevInc = inc.length; baseline = true;
+  prevInc = inc.length;
+  baseline = true;
 }
 $('btnMenu').onclick = e => { e.stopPropagation(); $('menu').classList.toggle('on'); };
 $('menu').onclick = async e => {
@@ -618,7 +655,14 @@ $('menu').onclick = async e => {
   if (a === 'close') $('btnBack').click();
   if (a === 'search') { $('sbar').classList.toggle('on'); if ($('sbar').classList.contains('on')) $('chatSearch').focus(); else { filterQ = ''; $('chatSearch').value = ''; render(true); } }
   if (a === 'size') { const v = { 1: 1.15, 1.15: 1.3, 1.3: 1 }[lsGet('mc_fs', 1)] || 1; lsSet('mc_fs', v); document.documentElement.style.setProperty('--fs', v); toast('Text size ' + Math.round(v * 100) + '%'); }
-  if (a === 'notify') { try { const r = await Notification.requestPermission(); toast(r === 'granted' ? 'Alerts on 🔔' : 'Alerts blocked in browser settings'); } catch (_) { toast('Alerts not supported here'); } }
+  if (a === 'notify') {
+    try {
+      const r = await Notification.requestPermission();
+      if (r === 'granted') toast('Alerts on 🔔 — you will get pop-ups like WhatsApp');
+      else if (r === 'denied') toast('Alerts blocked. Open phone Settings → Apps → Browser → Notifications and allow them');
+      else toast('Permission not granted yet');
+    } catch (_) { toast('Alerts not supported on this browser'); }
+  }
   if (a === 'export') {
     const name = $('patientTitle').textContent;
     const lines = all().filter(m => !m.deleted).map(m => '[' + new Date(m.ms).toLocaleString() + '] ' + (m.senderId === user.uid ? 'Doctor' : name) + ': ' + (m.type === 'location' && m.geo ? '[Location] https://www.google.com/maps?q=' + m.geo.lat + ',' + m.geo.lng : m.fileURL && !String(m.fileURL).startsWith('data:') ? '[Attachment] ' + m.fileURL : (m.text || '[Attachment]')));
