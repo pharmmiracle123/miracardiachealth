@@ -37,6 +37,7 @@ import {
   writeBatch,
   runTransaction,
   getDocs,
+  collectionGroup,
   arrayUnion,
   arrayRemove,
   increment
@@ -73,6 +74,10 @@ try { setPersistence(auth, browserLocalPersistence).catch(() => {}); } catch (_)
 let db;
 try {
   db = initializeFirestore(app, {
+    // Mobile browsers / data-saver / some networks block Firestore's streaming
+    // connection, leaving writes stuck as "sending". Long-polling always works.
+    experimentalForceLongPolling: true,
+    useFetchStreams: false,
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   }, FIRESTORE_DB_ID);
 } catch (e) {
@@ -87,9 +92,27 @@ const googleProvider = new GoogleAuthProvider();
 // Use pk_test_... for testing, pk_live_... for production.
 const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
+
 // ---------- Paystack Subaccount (settlement destination / owner) ----------
 // Payments settle into this subaccount. Leave empty "" to use main account.
 const PAYSTACK_SUBACCOUNT = "ACCT_8lqvpvuhaz03una";
+
+// ---------- Free Student Hub access (no payment required) ----------
+// These emails unlock ALL paid courses automatically (MBBS past questions, etc.).
+// Add or remove addresses as needed. Matching is case-insensitive.
+const FREE_ACCESS_EMAILS = [
+  "onyekamiracle08@gmail.com",
+  "onyekaudechukwum@gmail.com",
+  "onyekamiracle08@yahoo.com",
+  "onyekaudechukwum@yahoo.com",
+  "admin@miracardiachealth.com"
+];
+
+function hasFreeStudentAccess(email) {
+  if (!email) return false;
+  const e = String(email).trim().toLowerCase();
+  return FREE_ACCESS_EMAILS.some((x) => String(x).trim().toLowerCase() === e);
+}
 
 // ---------- Cloudinary (image / file storage – same credentials used on past projects) ----------
 // Create a free account at https://cloudinary.com → Dashboard → copy Cloud name.
@@ -146,8 +169,8 @@ async function applyPlatformBranding() {
 
 // ---------- Helpers ----------
 function escapeHtml(str) {
-  if (typeof str !== "string") return "";
-  return str
+  if (str === null || str === undefined) return "";
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -292,6 +315,10 @@ async function getCurrentUserProfile() {
 }
 
 async function requireAuth(redirect = "Login.html") {
+  if (Array.isArray(redirect)) {
+    return requireRole(redirect);
+  }
+
   return new Promise((resolve) => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       unsub();
@@ -320,7 +347,7 @@ async function requireAuth(redirect = "Login.html") {
 }
 
 async function requireRole(allowedRoles = [], redirect = "Dashboard.html") {
-  const profile = await requireAuth();
+  const profile = await requireAuth("Login.html");
   if (!profile) return null;
   if (!allowedRoles.includes(profile.role) && allowedRoles.includes("admin") && auth.currentUser && await claimAdmin(auth.currentUser)) {
     profile.role = "admin";
@@ -406,7 +433,6 @@ function distanceKm(lat1, lon1, lat2, lon2) {
 }
 
 // Paystack helper (client-side only – verification must be server-side)
-// Settles to PAYSTACK_SUBACCOUNT when set (this subaccount "owns" the payment).
 function payWithPaystack({ email, amount, reference, metadata = {}, onSuccess, onCancel, subaccount }) {
   if (typeof PaystackPop === "undefined") {
     showToast("Payment library not loaded", "error");
@@ -479,6 +505,7 @@ export {
   writeBatch,
   runTransaction,
   getDocs,
+  collectionGroup,
   arrayUnion,
   arrayRemove,
   increment,
@@ -502,5 +529,7 @@ export {
   showError,
   distanceKm,
   payWithPaystack,
-  generateRef
+  generateRef,
+  FREE_ACCESS_EMAILS,
+  hasFreeStudentAccess
 };
