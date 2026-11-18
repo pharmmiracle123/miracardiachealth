@@ -143,7 +143,18 @@ audio{max-width:230px;height:36px;display:block}
 .wm{top:60px}
 .online{font-size:11px;padding:6px 10px}
 .pill.off{background:var(--surface2);color:var(--muted)}
+.rxrow{display:flex;justify-content:space-around;padding:6px 10px 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.rxrow button{background:none;border:0;font-size:26px;padding:4px 6px}
+.rxs{align-self:flex-end;margin:-4px 6px 0;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:13px}
+.them .rxs{align-self:flex-start}
+.pinbar{display:none;margin:8px 10px 0;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);font-size:12.5px;align-items:center;gap:8px;position:relative;z-index:2;cursor:pointer}
+.pinbar.on{display:flex}.pinbar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pinbar button{background:none;border:0;font-size:15px;color:var(--muted)}
+.sheet{max-height:80dvh;overflow:auto}
+.sysmsg{margin:10px auto;max-width:88%;text-align:center;background:var(--surface2);border:1px dashed var(--g1);border-radius:16px;padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap}
+.sysmsg .call{display:inline-block;margin:6px 4px 0;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;text-decoration:none;font-weight:600;font-size:12.5px;white-space:normal}
+.sysmsg small{display:block;color:var(--muted);font-size:10.5px;margin-top:4px}
 </style>
+  <link rel="manifest" href="manifest.json" />
 </head>
 <body>
 <div class="orbs"></div>
@@ -156,16 +167,10 @@ audio{max-width:230px;height:36px;display:block}
   /* DOCTOR WHITELIST — only these emails can use this inbox (must match the doctor list in contact-doctor.html). */
   window.MIRACARDIAC_ALLOWED_DOCTOR_EMAILS = [
     "onyekamiracle08@gmail.com",
-    "emeka@example.com",
-    "ada@example.com",
-    "chioma@example.com",
     "rtiminimi@gmail.com"
   ];
   window.MIRACARDIAC_DOCTOR_PROFILES = {
-    "onyekamiracle08@gmail.com": { name: "Onyeka-Udechukwu Miracle", specialty: "General Practitioner" },
-    "emeka@example.com": { name: "Dr. Emeka Okoro", specialty: "Cardiologist" },
-    "ada@example.com": { name: "Dr. Ada Nwosu", specialty: "Pediatrician" },
-    "chioma@example.com": { name: "Dr. Chioma Eze", specialty: "Dermatologist" },
+    "onyekamiracle08@gmail.com": { name: "Onyeka-Udechukwu Miracle", specialty: "General Practitioner · Cardiology · Paediatrics · Dermatology" },
     "rtiminimi@gmail.com": { name: "Timinimi Robinson Dinbai", specialty: "Physiotherapist" }
   };
 </script>
@@ -219,6 +224,7 @@ audio{max-width:230px;height:36px;display:block}
       <div class="sbar" id="sbar"><input id="chatSearch" placeholder="Search messages…" /></div>
       <div class="crit" id="crit">⚠️ This patient sent critical vitals</div>
       <div class="banner" id="banner"></div>
+      <div class="pinbar" id="pinbar"></div>
       <div class="wm"><svg viewBox="0 0 520 300"><path d="M260 150C260 150 200 108 200 66C200 40 220 24 242 24C252 24 258 30 260 36C262 30 268 24 278 24C300 24 320 40 320 66C320 108 260 150 260 150Z" fill="none" stroke="url(#eg)" stroke-width="4"/><path d="M20 190H170L192 150L222 236L252 120L278 200L296 190H500" fill="none" stroke="url(#eg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="260" y="272" text-anchor="middle" font-family="Sora,Arial" font-weight="800" font-size="27" letter-spacing="3" fill="url(#eg)">MIRACARDIAC CHAT</text></svg></div>
       <main id="msgs"></main>
       <button class="fab" id="fab" type="button" style="bottom:170px">⌄<em id="fabN" style="display:none"></em></button>
@@ -248,7 +254,7 @@ audio{max-width:230px;height:36px;display:block}
 <script type="module">
 import {
   auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged,
-  collection, query, where, doc, setDoc, updateDoc,
+  collection, query, where, doc, setDoc, updateDoc, arrayUnion,
   onSnapshot, orderBy, serverTimestamp,
   uploadToCloudinary, escapeHtml, applyPlatformBranding
 } from './js/config.js';
@@ -354,7 +360,7 @@ function renderList() {
     return `<button type="button" data-id="${c.id}" class="conv ${c.id === activeId ? 'active' : ''}">
       <div class="av ${nw ? 'on' : ''}"><i style="font-family:Sora;font-weight:700;font-size:18px">${E(ini)}</i></div>
       <div class="mid"><div class="nm"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${E(c.patientName || 'Patient')} ${nw ? '<span class="new">NEW</span>' : ''}</span><small>${E(timeShort(msOf(c)))}</small></div>
-        <div class="pv">${E(c.lastMessage || 'New conversation')}</div></div></button>`;
+        <div class="pv" style="color:var(--g1);font-weight:600">${c.doctorSpecialty ? 'For ' + E(c.doctorSpecialty) : ''}</div><div class="pv">${E(c.lastMessage || 'New conversation')}</div></div></button>`;
   }).join('');
 }
 $('filter').oninput = renderList;
@@ -366,7 +372,7 @@ function openChat(id) {
   if (unsubMsgs) unsubMsgs(); if (unsubConsult) unsubConsult(); clearTimeout(retryT);
   activeId = id; const c = conversations.find(x => x.id === id) || {};
   $('chatPane').classList.add('open'); if (innerWidth < 900) $('listPane').classList.add('hide');
-  $('patientTitle').textContent = c.patientName || 'Patient'; $('patientSub').textContent = c.patientEmail || 'MIRACARDIAC CHAT';
+  $('patientTitle').textContent = c.patientName || 'Patient'; $('patientSub').textContent = (c.patientEmail || 'MIRACARDIAC CHAT') + (c.doctorSpecialty ? ' · for ' + c.doctorSpecialty : '');
   server = lsGet('mc_dhist_' + id, []); outbox = lsGet('mc_dout_' + id, []).filter(o => !o.fileName);
   outbox.forEach(o => o.state = 'sending'); starred = lsGet('mc_dstar_' + id, []);
   baseline = false; prevInc = 0; filterQ = ''; $('chatSearch').value = ''; $('sbar').classList.remove('on'); banner(''); clearReply();
@@ -393,7 +399,7 @@ function listen(id) {
   };
   run();
   unsubConsult = onSnapshot(doc(db, 'consultations', id), s => {
-    const d = s.data() || {}; const on = Date.now() - (d.typingPatient || 0) < 5000;
+    const d = s.data() || {}; showPin(d.pinned); const on = Date.now() - (d.typingPatient || 0) < 5000;
     $('typing').classList.toggle('on', on); clearTimeout(listen._t); if (on) listen._t = setTimeout(() => $('typing').classList.remove('on'), 5200);
   }, () => {});
 }
@@ -419,7 +425,7 @@ function dayLbl(ms) { const d = new Date(ms), n = new Date(), k = Math.round((ne
 function all() {
   const ids = new Set(server.map(m => m.id));
   const ob = outbox.filter(o => !ids.has(o.clientId)).map(o => ({ id: o.clientId, senderId: user?.uid, text: o.text, type: o.type, replyTo: o.replyTo, dur: o.dur, fileURL: o.preview || null, fileName: o.fileName, ms: o.clientTs, _out: o.state }));
-  return server.concat(ob).sort((a, b) => a.ms - b.ms);
+  return server.concat(ob).filter(m => !(m.hiddenFor || []).includes(user?.uid)).sort((a, b) => a.ms - b.ms);
 }
 const tick = m => m._out === 'failed' ? `<span class="tk fail" data-retry="${m.id}">⚠ not sent · tap to retry</span>` : (m._out === 'sending' || m._pend) ? '<span class="tk">🕒</span>' : m.read ? '<span class="tk read">✓✓</span>' : '<span class="tk">✓</span>';
 function render(force, added) {
@@ -437,6 +443,7 @@ function render(force, added) {
   let last = '';
   box.innerHTML = items.map(m => {
     const mine = m.senderId === user.uid, day = dayLbl(m.ms), chip = day !== last ? `<span class="day">${E(day)}</span>` : ''; last = day;
+    if (m.type === 'auto') return chip + '<div class="sysmsg">🤖 Auto-reply was sent to the patient because you were offline.<small>' + fmtT(m.ms) + '</small></div>';
     let body;
     if (m.deleted) body = '🚫 This message was deleted';
     else if (m.type === 'symptom' && m.symptom) { const s = m.symptom; body = `<div class="sym"><h4>🩺 Symptom card</h4><div><b>${E(s.symptom)}</b></div><div>Duration: ${E(s.duration)}</div><div>Severity ${+s.severity}/10<div class="sev"><i style="width:${+s.severity * 10}%"></i></div></div>${s.notes ? `<div style="margin-top:6px">${E(s.notes)}</div>` : ''}</div>`; }
@@ -447,7 +454,7 @@ function render(force, added) {
     else if (m.fileURL) body = `<a href="${E(m.fileURL)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">📎 ${E(m.fileName || 'File')}</a>`;
     else body = E(m.text || (m.type === 'image' ? '📷 Photo' : m.type === 'audio' ? '🎤 Voice note' : ''));
     const rq = m.replyTo && !m.deleted ? `<div class="rq"><b>${E(m.replyTo.name || '')}</b><br>${E((m.replyTo.text || '').slice(0, 80))}</div>` : '';
-    return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>
+    return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>${rxHTML(m)}
       <div class="meta">${starred.includes(m.id) ? '⭐' : ''}${m.edited && !m.deleted ? 'edited · ' : ''}${fmtT(m.ms)} ${mine ? tick(m) : ''}</div></div>`;
   }).join('');
   if (atBottom) { box.scrollTop = box.scrollHeight; newCount = 0; } else if (added) newCount += added;
@@ -564,41 +571,67 @@ $('btnMic').onclick = async () => {
 $('msgs').addEventListener('click', e => {
   const r = e.target.closest('[data-retry]'); if (r) { const o = outbox.find(x => x.clientId === r.dataset.retry); if (o) flush(o); return; }
   const im = e.target.closest('[data-lb]'); if (im) { $('lb').firstElementChild.src = im.src; $('lb').classList.add('on'); }
+  else if (!e.target.closest('a,audio,button,.locb')) { const bb = e.target.closest('[data-b]'); if (bb) openSheet(bb.dataset.b); }
 });
 $('lb').onclick = () => $('lb').classList.remove('on');
+const REACTS = ['👍', '❤️', '😂', '😮', '🙏', '✅'];
+const msgRef = id => doc(db, 'consultations', activeId, 'messages', id);
 function openSheet(id) {
   const m = all().find(x => x.id === id); if (!m || m.deleted) return;
   const mine = m.senderId === user.uid, real = server.some(x => x.id === id);
-  let h = '<button class="a" data-a="reply">↩ Reply</button><button class="a" data-a="star">' + (starred.includes(id) ? '☆ Unstar' : '⭐ Star') + '</button>';
+  let h = '';
+  if (real) h += '<div class="rxrow">' + REACTS.map(e => '<button data-r="' + e + '">' + e + '</button>').join('') + '</div>';
+  h += '<button class="a" data-a="reply">↩ Reply</button>';
+  h += '<button class="a" data-a="star">' + (starred.includes(id) ? '☆ Unstar' : '⭐ Star') + '</button>';
+  if (real) h += '<button class="a" data-a="pin">📌 Pin message</button>';
   if (m.text) h += '<button class="a" data-a="copy">⧉ Copy</button>';
-  if (mine && real && m.type === 'text' && Date.now() - m.ms < EDIT_MS) h += '<button class="a" data-a="edit">✎ Edit (20 min)</button>';
+  if (mine && real && m.type === 'text') h += '<button class="a" data-a="edit">✎ Edit message</button>';
+  if (real) h += '<button class="a" data-a="info">ℹ Message info</button>';
+  h += '<button class="a" data-a="delme" style="color:var(--accent)">🗑 Delete for me</button>';
   if (mine && real) h += '<button class="a" data-a="del" style="color:var(--accent)">🗑 Delete for everyone</button>';
-  h += '<button class="a" data-a="delme">Hide for me</button>';
-  $('sheet').innerHTML = h + '<button class="a" data-a="x" style="color:var(--muted)">Cancel</button>'; $('sheet').dataset.id = id; $('sheet').classList.add('on');
+  h += '<button class="a" data-a="x" style="color:var(--muted)">Cancel</button>';
+  $('sheet').innerHTML = h; $('sheet').dataset.id = id; $('sheet').classList.add('on');
+}
+function rxHTML(m) {
+  if (!m.reactions || m.deleted) return '';
+  const c = {}; Object.values(m.reactions).forEach(e => { if (e) c[e] = (c[e] || 0) + 1; });
+  const k = Object.keys(c); if (!k.length) return '';
+  return '<div class="rxs">' + k.map(e => e + (c[e] > 1 ? ' ' + c[e] : '')).join('  ') + '</div>';
 }
 $('sheet').onclick = e => {
+  const id = $('sheet').dataset.id, m = all().find(x => x.id === id), real = server.some(x => x.id === id);
+  const rBtn = e.target.closest('[data-r]');
+  if (rBtn && m) {
+    $('sheet').classList.remove('on'); const cur = m.reactions && m.reactions[user.uid];
+    updateDoc(msgRef(id), { ['reactions.' + user.uid]: cur === rBtn.dataset.r ? null : rBtn.dataset.r }).catch(err => toast(err.message)); return;
+  }
   const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
-  const id = $('sheet').dataset.id; $('sheet').classList.remove('on');
-  const m = all().find(x => x.id === id); if (!m) return;
+  $('sheet').classList.remove('on'); if (!m) return;
   if (a === 'star') { starred = starred.includes(id) ? starred.filter(x => x !== id) : [...starred, id]; lsSet('mc_dstar_' + activeId, starred); render(false); }
-  if (a === 'reply') { replyTo = { id, text: m.text || '📎 Attachment', name: m.senderId === user.uid ? 'You' : 'Patient' }; showBar('↩ ' + replyTo.text.slice(0, 60)); }
+  if (a === 'reply') { replyTo = { id, text: m.text || (m.type === 'symptom' ? '🩺 Symptom card' : m.type === 'vitals' ? '❤️ Vitals card' : '📎 Attachment'), name: m.senderId === user.uid ? 'You' : 'Patient' }; showBar('↩ ' + replyTo.text.slice(0, 60)); }
   if (a === 'copy') navigator.clipboard?.writeText(m.text || '').then(() => toast('Copied'));
   if (a === 'edit') { editingId = id; $('msgInput').value = m.text; showBar('✎ Editing message'); }
-  if (a === 'del') updateDoc(doc(db, 'consultations', activeId, 'messages', id), { deleted: true, text: '', fileURL: null, symptom: null, vitals: null, geo: null }).catch(err => toast(err.message));
+  if (a === 'pin') updateDoc(doc(db, 'consultations', activeId), { pinned: { id, text: (m.text || '📎 Attachment').slice(0, 80), by: user.uid } }).then(() => toast('Pinned 📌')).catch(err => toast(err.message));
+  if (a === 'info') { const f = x => x ? new Date(x).toLocaleString() : ''; const seen = m.readAt && m.readAt.toMillis ? f(m.readAt.toMillis()) : (m.read ? 'seen' : 'not yet'); toast('Sent ' + f(m.ms) + (m.senderId === user.uid ? '  ·  Seen: ' + seen : ''), 6000); }
   if (a === 'delme') {
-    const key = 'mc_hidden_' + activeId;
-    let hidden = [];
-    try { hidden = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) {}
-    if (!hidden.includes(id)) { hidden.push(id); localStorage.setItem(key, JSON.stringify(hidden)); }
-    render(false);
-    toast('Hidden for you');
+    if (real) updateDoc(msgRef(id), { hiddenFor: arrayUnion(user.uid) }).then(() => toast('Deleted for you')).catch(err => toast(err.message));
+    else { outbox = outbox.filter(o => o.clientId !== id); persistOut(); render(false); toast('Deleted for you'); }
   }
+  if (a === 'del' && confirm('Delete this message for everyone?')) updateDoc(msgRef(id), { deleted: true, text: '', fileURL: null, symptom: null, vitals: null, geo: null, reactions: null }).catch(err => toast(err.message));
+};
+function showPin(p) {
+  const b = $('pinbar'); if (!p) { b.classList.remove('on'); b.innerHTML = ''; return; }
+  b.innerHTML = '📌 <span>' + E(p.text || '') + '</span><button type="button" id="unpin" aria-label="Unpin">✕</button>'; b.dataset.id = p.id; b.classList.add('on');
+}
+$('pinbar').onclick = e => {
+  if (e.target.id === 'unpin') { updateDoc(doc(db, 'consultations', activeId), { pinned: null }).catch(() => {}); return; }
+  document.querySelector('[data-b="' + $('pinbar').dataset.id + '"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 };
 let pt; const bub = e => e.target.closest('[data-b]');
 $('msgs').addEventListener('touchstart', e => { const b = bub(e); if (b) pt = setTimeout(() => { navigator.vibrate?.(15); openSheet(b.dataset.b); }, 450); }, { passive: true });
 ['touchend', 'touchmove', 'touchcancel'].forEach(v => $('msgs').addEventListener(v, () => clearTimeout(pt), { passive: true }));
 $('msgs').addEventListener('contextmenu', e => { const b = bub(e); if (b) { e.preventDefault(); openSheet(b.dataset.b); } });
-document.addEventListener('click', e => { if (!e.target.closest('#sheet')) $('sheet').classList.remove('on'); if (!e.target.closest('#menu') && e.target.id !== 'btnMenu') $('menu').classList.remove('on'); });
+document.addEventListener('click', e => { if (!e.target.closest('#sheet') && !e.target.closest('[data-b]')) $('sheet').classList.remove('on'); if (!e.target.closest('#menu') && e.target.id !== 'btnMenu') $('menu').classList.remove('on'); });
 
 /* ---------- alerts, menu, export ---------- */
 const ORIG_TITLE = document.title;
@@ -631,7 +664,7 @@ async function showMsgNotification(title, body) {
   } catch (_) {}
 }
 function incoming(items) {
-  const inc = items.filter(m => m.senderId !== user.uid && !m._pend);
+  const inc = items.filter(m => m.senderId !== user.uid && !m._pend && m.type !== 'auto');
   if (baseline && inc.length > prevInc) {
     const m = inc[inc.length - 1];
     const preview = (m.text || (m.fileURL ? '📎 Attachment' : m.type === 'location' ? '📍 Location' : m.type === 'vitals' ? '❤️ Vitals' : 'New message')).slice(0, 100);

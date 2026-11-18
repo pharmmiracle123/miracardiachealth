@@ -17,6 +17,8 @@
     .lbl { display:block; font-size:.68rem; font-weight:700; color:#64748b; margin-bottom:.2rem; text-transform:uppercase; letter-spacing:.03em; }
     .ah-card { background:#fff; border:1px solid #e2e8f0; border-radius:1rem; padding:1rem; }
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
 </head>
 <body class="bg-slate-50 text-slate-900">
 
@@ -251,7 +253,7 @@
         if (hay.includes(q)) matches.push({ id: d.id, ...u });
       });
       box.innerHTML = matches.length ? matches.map(m => `
-        <button data-id="${m.id}" class="w-full text-left px-3 py-2 rounded-lg hover:bg-teal-50 border border-slate-100 text-sm">
+        <button data-id="${__e(m.id)}" class="w-full text-left px-3 py-2 rounded-lg hover:bg-teal-50 border border-slate-100 text-sm">
           <span class="font-bold">${m.fullName || m.displayName || 'Patient'}</span>
           <span class="text-xs text-slate-500 ml-2">${m.phone || m.email || ''} ${m.mrn ? '· MRN '+m.mrn : ''}</span>
         </button>
@@ -302,10 +304,10 @@
 
       // Summary
       document.getElementById('summaryProblems').innerHTML = (chart.problems||[]).length
-        ? (chart.problems||[]).map(p => `<div class="flex justify-between py-1 border-b border-slate-100"><span>${escape(p.text)}</span><span class="text-xs text-slate-400">${p.status||''}</span></div>`).join('')
+        ? (chart.problems||[]).map(p => `<div class="flex justify-between py-1 border-b border-slate-100"><span>${escape(p.text)}</span><span class="text-xs text-slate-400">${__e(p.status||'')}</span></div>`).join('')
         : 'No problems recorded.';
       document.getElementById('summaryMeds').innerHTML = (chart.medications||[]).length
-        ? (chart.medications||[]).map(m => `<div>${escape(m.name)} ${escape(m.dose||'')} ${escape(m.freq||'')} <span class="text-xs text-slate-400">${m.route||''}</span></div>`).join('')
+        ? (chart.medications||[]).map(m => `<div>${escape(m.name)} ${escape(m.dose||'')} ${escape(m.freq||'')} <span class="text-xs text-slate-400">${__e(m.route||'')}</span></div>`).join('')
         : 'No active medications.';
       const lastV = (chart.vitals||[]).slice(-1)[0];
       document.getElementById('summaryVitals').textContent = lastV
@@ -315,12 +317,12 @@
       document.getElementById('summaryNote').textContent = lastN ? (lastN.body||'').slice(0,200) + '…' : 'No notes yet.';
 
       // Lists
-      renderList('problemsList', chart.problems, p => `<div class="ah-card flex justify-between"><div><div class="font-semibold text-sm">${escape(p.text)}</div><div class="text-xs text-slate-400">${p.status} · ${fmt(p.at)}</div></div></div>`);
-      renderList('medsList', chart.medications, m => `<div class="ah-card"><div class="font-semibold text-sm">${escape(m.name)}</div><div class="text-xs text-slate-500">${escape(m.dose||'')} ${escape(m.freq||'')} · ${m.route||''}</div></div>`);
-      renderList('allergiesList', chart.allergies, a => `<div class="ah-card border-red-200 bg-red-50"><div class="font-bold text-sm text-red-800">${escape(a.agent)}</div><div class="text-xs">${escape(a.reaction||'')} · ${a.severity||''}</div></div>`);
-      renderList('notesList', (chart.notes||[]).slice().reverse(), n => `<div class="ah-card"><div class="flex justify-between text-xs text-slate-400 mb-1"><span class="font-bold text-teal-700 uppercase">${n.type||'note'}</span><span>${fmt(n.at)} · ${escape(n.authorName||'')}</span></div><pre class="text-sm whitespace-pre-wrap font-sans">${escape(n.body||'')}</pre></div>`);
-      renderList('ordersList', (chart.orders||[]).slice().reverse(), o => `<div class="ah-card"><div class="flex justify-between"><span class="font-bold text-sm uppercase text-teal-700">${o.type}</span><span class="text-xs ${o.priority==='stat'?'text-red-600 font-bold':''}">${o.priority||'routine'}</span></div><div class="text-sm mt-1">${escape(o.detail||'')}</div><div class="text-xs text-slate-400 mt-1">${fmt(o.at)} · ${o.status||'ordered'}</div></div>`);
-      renderList('vitalsHistory', (chart.vitals||[]).slice().reverse().slice(0,20), v => `<div class="flex flex-wrap gap-2 text-xs border-b border-slate-100 py-1.5"><span class="font-mono">${fmt(v.at)}</span><span>BP ${v.bp||'—'}</span><span>HR ${v.pulse||'—'}</span><span>T ${v.temp||'—'}</span><span>RR ${v.resp||'—'}</span><span>SpO₂ ${v.spo2||'—'}%</span><span>Wt ${v.weight||'—'}</span></div>`);
+      renderList('problemsList', chart.problems, p => `<div class="ah-card flex justify-between"><div><div class="font-semibold text-sm">${escape(p.text)}</div><div class="text-xs text-slate-400">${__e(p.status)} · ${fmt(p.at)}</div></div></div>`);
+      renderList('medsList', chart.medications, m => `<div class="ah-card"><div class="font-semibold text-sm">${escape(m.name)}</div><div class="text-xs text-slate-500">${escape(m.dose||'')} ${escape(m.freq||'')} · ${__e(m.route||'')}</div></div>`);
+      renderList('allergiesList', chart.allergies, a => `<div class="ah-card border-red-200 bg-red-50"><div class="font-bold text-sm text-red-800">${escape(a.agent)}</div><div class="text-xs">${escape(a.reaction||'')} · ${__e(a.severity||'')}</div></div>`);
+      renderList('notesList', (chart.notes||[]).slice().reverse(), n => `<div class="ah-card"><div class="flex justify-between text-xs text-slate-400 mb-1"><span class="font-bold text-teal-700 uppercase">${__e(n.type||'note')}</span><span>${fmt(n.at)} · ${escape(n.authorName||'')}</span></div><pre class="text-sm whitespace-pre-wrap font-sans">${escape(n.body||'')}</pre></div>`);
+      renderList('ordersList', (chart.orders||[]).slice().reverse(), o => `<div class="ah-card"><div class="flex justify-between"><span class="font-bold text-sm uppercase text-teal-700">${__e(o.type)}</span><span class="text-xs ${o.priority==='stat'?'text-red-600 font-bold':''}">${__e(o.priority||'routine')}</span></div><div class="text-sm mt-1">${escape(o.detail||'')}</div><div class="text-xs text-slate-400 mt-1">${fmt(o.at)} · ${__e(o.status||'ordered')}</div></div>`);
+      renderList('vitalsHistory', (chart.vitals||[]).slice().reverse().slice(0,20), v => `<div class="flex flex-wrap gap-2 text-xs border-b border-slate-100 py-1.5"><span class="font-mono">${fmt(v.at)}</span><span>BP ${__e(v.bp||'—')}</span><span>HR ${__e(v.pulse||'—')}</span><span>T ${__e(v.temp||'—')}</span><span>RR ${__e(v.resp||'—')}</span><span>SpO₂ ${__e(v.spo2||'—')}%</span><span>Wt ${__e(v.weight||'—')}</span></div>`);
       renderList('docsList', chart.documents||[], d => `<div class="ah-card flex justify-between items-center"><div><div class="font-semibold text-sm">${escape(d.label||'Document')}</div><div class="text-xs text-slate-400">${fmt(d.at)}</div></div>${d.url?`<a href="${d.url}" target="_blank" class="text-teal-600 text-xs font-bold">Open</a>`:''}</div>`);
     }
 

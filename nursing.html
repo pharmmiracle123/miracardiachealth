@@ -3,21 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" />
   <title>Nursing Station | MiracardiacHealth HMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'},indigo:{600:'#4f46e5',700:'#4338ca'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488',dark:'#0f766e'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
   <style>
     body{padding-bottom:40px}
     .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem;background:#fff}
-    .field:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+    .field:focus{outline:2px solid #99f6e4;border-color:#14b8a6}
     .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
-    .n-tab.active{background:#4f46e5;color:#fff;border-color:transparent}
-    .status-given{color:#059669;font-weight:600}
-    .status-refused,.status-held,.status-not_available{color:#dc2626;font-weight:600}
-    .task-done{text-decoration:line-through;opacity:.55}
+    .btn{background:#0d9488;color:#fff;font-weight:700;padding:.65rem 1rem;border-radius:.75rem;font-size:.875rem;width:100%}
+    .btn:disabled{opacity:.6}
+    .n-tab.on{background:#0d9488;color:#fff;border-color:#0d9488}
+    .badge{display:inline-block;font-size:.68rem;font-weight:800;padding:.15rem .55rem;border-radius:999px}
+    .b-ok{background:#dcfce7;color:#166534}.b-warn{background:#fef3c7;color:#92400e}.b-bad{background:#fee2e2;color:#991b1b}.b-info{background:#e0f2fe;color:#075985}
+    .err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:.75rem;padding:.6rem .8rem;font-size:.75rem}
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -27,448 +32,299 @@
         <a href="hms-hub.html" class="text-slate-500 text-lg" aria-label="Back">←</a>
         <div>
           <h1 class="font-extrabold text-base">Nursing Station</h1>
-          <p class="text-[10px] text-slate-400">Care plans · MAR · Vitals · Handover</p>
+          <p class="text-[10px] text-slate-400">Vitals &amp; NEWS2 · MAR · Care plans · Handover · Tasks</p>
         </div>
       </div>
-      <span id="nurseBadge" class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">Nurse</span>
+      <span id="who" class="text-[11px] text-slate-500 truncate max-w-[40%]"></span>
     </div>
   </header>
 
   <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
-    <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-      <button type="button" class="n-tab active text-xs font-bold px-3 py-1.5 rounded-full border border-transparent" data-t="patients">My Patients</button>
-      <button type="button" class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="mar">MAR / Meds</button>
-      <button type="button" class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="care">Care Plans</button>
-      <button type="button" class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="handover">Shift Handover</button>
-      <button type="button" class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200" data-t="tasks">Tasks</button>
+    <div class="flex gap-1.5 overflow-x-auto pb-1" id="tabs">
+      <button class="n-tab on text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="patients">My Patients</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="vitals">Vitals · NEWS2</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="mar">MAR / Meds</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="care">Care Plans</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="handover">Shift Handover</button>
+      <button class="n-tab text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 whitespace-nowrap" data-t="tasks">Tasks</button>
     </div>
 
-    <!-- Patients -->
     <div id="panel-patients" class="n-panel space-y-2">
-      <p class="text-xs text-slate-500">Patients currently on occupied beds (from ward board).</p>
-      <div id="nursePatients" class="space-y-2">
-        <div class="card text-center text-slate-400 text-sm py-6">Loading patients…</div>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <a href="inpatient.html" class="flex-1 text-center text-sm font-bold text-teal-700 py-2.5 rounded-xl border border-teal-200 bg-teal-50">Open full Ward Board →</a>
-        <a href="emr.html" class="flex-1 text-center text-sm font-bold text-indigo-700 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50">Open EMR →</a>
-      </div>
+      <p class="text-xs text-slate-500">Patients currently occupying beds (from the ward board).</p>
+      <div id="nursePatients" class="space-y-2"><div class="card text-sm text-slate-400">Loading…</div></div>
+      <a href="inpatient.html" class="block text-center text-sm font-bold text-teal-700 py-2">Open full Ward Board →</a>
+      <a href="emr.html" class="block text-center text-sm font-bold text-indigo-700 py-1">Open EMR for documentation →</a>
     </div>
 
-    <!-- MAR -->
+    <div id="panel-vitals" class="n-panel hidden space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-sm mb-1">Record observations</h3>
+        <p class="text-xs text-slate-500 mb-3">The NEWS2 score is calculated automatically (SpO₂ scale 1). Decision support only — follow your hospital's escalation policy.</p>
+        <div class="grid gap-2">
+          <div><label class="lbl" for="vPatient">Patient / bed</label><input id="vPatient" class="field" placeholder="Name or bed number" /></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="lbl" for="vRR">Resp. rate (/min)</label><input id="vRR" type="number" inputmode="numeric" class="field" /></div>
+            <div><label class="lbl" for="vSpo2">SpO₂ (%)</label><input id="vSpo2" type="number" inputmode="numeric" class="field" /></div>
+            <div><label class="lbl" for="vSbp">Systolic BP</label><input id="vSbp" type="number" inputmode="numeric" class="field" /></div>
+            <div><label class="lbl" for="vDbp">Diastolic BP</label><input id="vDbp" type="number" inputmode="numeric" class="field" /></div>
+            <div><label class="lbl" for="vPulse">Pulse (bpm)</label><input id="vPulse" type="number" inputmode="numeric" class="field" /></div>
+            <div><label class="lbl" for="vTemp">Temp (°C)</label><input id="vTemp" type="number" step="0.1" inputmode="decimal" class="field" /></div>
+            <div><label class="lbl" for="vAvpu">Consciousness</label><select id="vAvpu" class="field"><option value="A">Alert</option><option value="N">New confusion</option><option value="V">Voice</option><option value="P">Pain</option><option value="U">Unresponsive</option></select></div>
+            <div><label class="lbl" for="vO2">Supplemental O₂</label><select id="vO2" class="field"><option value="0">No (room air)</option><option value="1">Yes</option></select></div>
+          </div>
+          <div id="newsBox" class="rounded-xl border border-slate-200 p-3 text-sm text-slate-500">Enter RR, SpO₂, systolic BP, pulse and temperature to calculate NEWS2.</div>
+          <button id="saveVitals" class="btn">Save observations</button>
+        </div>
+      </div>
+      <div id="vitalsLog" class="space-y-2"></div>
+    </div>
+
     <div id="panel-mar" class="n-panel hidden space-y-3">
       <div class="card">
-        <h3 class="font-bold text-sm mb-2">Medication Administration Record</h3>
-        <p class="text-xs text-slate-500 mb-3">Record administration against prescribed times. Always check the 5 Rights: Right patient, drug, dose, route, time.</p>
+        <h3 class="font-bold text-sm mb-1">Medication Administration Record</h3>
+        <p class="text-xs text-slate-500 mb-3">Check the 5 Rights: right patient, drug, dose, route, time.</p>
         <div class="grid gap-2">
-          <div>
-            <label class="lbl" for="marPatient">Patient / bed</label>
-            <input id="marPatient" class="field" placeholder="e.g. John Doe · Bed 4A" autocomplete="off" />
-          </div>
-          <div>
-            <label class="lbl" for="marDrug">Drug name &amp; dose</label>
-            <input id="marDrug" class="field" placeholder="e.g. Paracetamol 1g" autocomplete="off" />
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="lbl" for="marRoute">Route</label>
-              <select id="marRoute" class="field">
-                <option>Oral</option><option>IV</option><option>IM</option><option>SC</option><option>Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="lbl" for="marStatus">Status</label>
-              <select id="marStatus" class="field">
-                <option value="given">Given</option>
-                <option value="refused">Refused</option>
-                <option value="held">Held (clinical reason)</option>
-                <option value="not_available">Not available</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="lbl" for="marNote">Note / reason</label>
-            <textarea id="marNote" class="field h-16" placeholder="Optional note / reason held"></textarea>
-          </div>
-          <button type="button" id="saveMar" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition">Record Administration</button>
+          <input id="marPatient" class="field" placeholder="Patient name / bed" aria-label="Patient" />
+          <input id="marDrug" class="field" placeholder="Drug name &amp; dose" aria-label="Drug" />
+          <select id="marRoute" class="field" aria-label="Route"><option>Oral</option><option>IV</option><option>IM</option><option>SC</option><option>Other</option></select>
+          <select id="marStatus" class="field" aria-label="Status">
+            <option value="given">Given</option><option value="refused">Refused</option>
+            <option value="held">Held (clinical reason)</option><option value="not_available">Not available</option>
+          </select>
+          <textarea id="marNote" class="field h-16" placeholder="Optional note / reason held"></textarea>
+          <button id="saveMar" class="btn">Record administration</button>
         </div>
       </div>
       <div id="marLog" class="space-y-2"></div>
     </div>
 
-    <!-- Care Plans -->
     <div id="panel-care" class="n-panel hidden space-y-3">
       <div class="card">
         <h3 class="font-bold text-sm mb-2">Nursing Care Plan</h3>
-        <div class="grid gap-2">
-          <div>
-            <label class="lbl" for="cpPatient">Patient</label>
-            <input id="cpPatient" class="field" placeholder="Patient name / bed" />
-          </div>
-          <div>
-            <label class="lbl" for="cpProblem">Nursing diagnosis / problem</label>
-            <input id="cpProblem" class="field" placeholder="e.g. Acute pain related to surgery" />
-          </div>
-          <div>
-            <label class="lbl" for="cpGoal">Goal / expected outcome</label>
-            <textarea id="cpGoal" class="field h-16" placeholder="Patient reports pain ≤ 3/10 within 24h"></textarea>
-          </div>
-          <div>
-            <label class="lbl" for="cpInterventions">Interventions (one per line)</label>
-            <textarea id="cpInterventions" class="field h-20" placeholder="Assess pain q4h&#10;Administer analgesia as prescribed&#10;Encourage early mobilisation"></textarea>
-          </div>
-          <button type="button" id="saveCp" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition">Save Care Plan</button>
-        </div>
+        <input id="cpPatient" class="field mb-2" placeholder="Patient" aria-label="Patient" />
+        <input id="cpProblem" class="field mb-2" placeholder="Nursing diagnosis / problem" aria-label="Problem" />
+        <textarea id="cpGoal" class="field h-16 mb-2" placeholder="Goal / expected outcome"></textarea>
+        <textarea id="cpInterventions" class="field h-20 mb-2" placeholder="Interventions (one per line)"></textarea>
+        <button id="saveCp" class="btn">Save care plan</button>
       </div>
       <div id="cpList" class="space-y-2"></div>
     </div>
 
-    <!-- Handover -->
     <div id="panel-handover" class="n-panel hidden space-y-3">
       <div class="card">
-        <h3 class="font-bold text-sm mb-2">Shift Handover (SBAR / ISBAR)</h3>
+        <h3 class="font-bold text-sm mb-1">Shift Handover (ISBAR)</h3>
         <p class="text-xs text-slate-500 mb-2">Situation · Background · Assessment · Recommendation</p>
-        <div class="grid gap-2">
-          <div>
-            <label class="lbl" for="hoPatient">Patient / bed</label>
-            <input id="hoPatient" class="field" placeholder="Patient / bed" />
-          </div>
-          <div>
-            <label class="lbl" for="hoSituation">Situation</label>
-            <textarea id="hoSituation" class="field h-14" placeholder="What is happening now?"></textarea>
-          </div>
-          <div>
-            <label class="lbl" for="hoBackground">Background</label>
-            <textarea id="hoBackground" class="field h-14" placeholder="Relevant history / context"></textarea>
-          </div>
-          <div>
-            <label class="lbl" for="hoAssessment">Assessment</label>
-            <textarea id="hoAssessment" class="field h-14" placeholder="Your clinical assessment"></textarea>
-          </div>
-          <div>
-            <label class="lbl" for="hoRecommend">Recommendation</label>
-            <textarea id="hoRecommend" class="field h-14" placeholder="What needs to be done next?"></textarea>
-          </div>
-          <button type="button" id="saveHo" class="bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition">Save Handover Note</button>
-        </div>
+        <input id="hoPatient" class="field mb-2" placeholder="Patient / bed" aria-label="Patient" />
+        <textarea id="hoSituation" class="field h-14 mb-2" placeholder="Situation"></textarea>
+        <textarea id="hoBackground" class="field h-14 mb-2" placeholder="Background"></textarea>
+        <textarea id="hoAssessment" class="field h-14 mb-2" placeholder="Assessment"></textarea>
+        <textarea id="hoRecommend" class="field h-14 mb-2" placeholder="Recommendation"></textarea>
+        <button id="saveHo" class="btn">Save handover note</button>
       </div>
       <div id="hoList" class="space-y-2"></div>
     </div>
 
-    <!-- Tasks -->
     <div id="panel-tasks" class="n-panel hidden space-y-3">
       <div class="card">
         <h3 class="font-bold text-sm mb-2">Nursing Tasks / Reminders</h3>
-        <div class="flex gap-2">
-          <input id="taskText" class="field flex-1" placeholder="Task (e.g. Wound dressing 14:00 Bed 4)" />
-          <button type="button" id="addTask" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-sm shrink-0 hover:bg-indigo-700 transition">Add</button>
-        </div>
+        <input id="taskText" class="field mb-2" placeholder="Task (e.g. Wound dressing 14:00 Bed 4)" aria-label="Task" />
+        <button id="addTask" class="btn">Add task</button>
       </div>
       <div id="taskList" class="space-y-2"></div>
     </div>
   </main>
 
   <script type="module">
-    import {
-      requireAuth, applyPlatformBranding, showToast, escapeHtml,
-      db, auth, collection, addDoc, getDocs, query, orderBy, limit,
-      serverTimestamp, where, updateDoc, doc, deleteDoc
-    } from './js/config.js';
-
+    import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, deleteDoc, doc,
+             query, orderBy, limit, serverTimestamp, where, escapeHtml } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['nurse', 'doctor', 'admin']);
-    const byName = profile.fullName || profile.displayName || profile.email || 'Nurse';
-    document.getElementById('nurseBadge').textContent = (profile.role || 'nurse').toUpperCase();
+    if (!profile) throw new Error('Redirecting to sign in');
 
-    // Tabs
-    document.querySelectorAll('.n-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.n-tab').forEach(b => {
-          b.classList.remove('active', 'bg-indigo-600', 'text-white');
-          b.classList.add('border', 'border-slate-200');
-        });
-        btn.classList.add('active', 'bg-indigo-600', 'text-white');
-        btn.classList.remove('border-slate-200');
-        document.querySelectorAll('.n-panel').forEach(p => p.classList.add('hidden'));
-        const panel = document.getElementById('panel-' + btn.dataset.t);
-        if (panel) panel.classList.remove('hidden');
-      });
-    });
-
-    function fmtTime(ts) {
-      if (!ts) return '';
-      try {
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
-        return d.toLocaleString();
-      } catch { return ''; }
+    const $ = id => document.getElementById(id);
+    const esc = escapeHtml;
+    const toast = (m, k) => (window.mhToast ? window.mhToast(m, k) : alert(m));
+    const myName = profile.fullName || profile.displayName || profile.email || 'Nurse';
+    $('who').textContent = myName;
+    const when = ts => (ts && ts.toDate ? ts.toDate().toLocaleString() : 'just now');
+    const errBox = (el, e) => { el.innerHTML = `<div class="err">Could not load: ${esc(e.code || e.message)}. Publish the latest firestore.rules and check your role.</div>`; };
+    const val = id => $(id).value.trim();
+    async function save(btn, fn) {          // one place for busy state + error handling
+      const label = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
+      try { await fn(); } catch (e) { console.error(e); toast('Could not save: ' + (e.code || e.message), 'err'); }
+      btn.disabled = false; btn.textContent = label;
     }
 
-    // ---- Patients (occupied beds) ----
+    /* ---- tabs ---- */
+    function openTab(t) {
+      document.querySelectorAll('.n-tab').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+      document.querySelectorAll('.n-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'panel-' + t));
+    }
+    $('tabs').onclick = e => { const b = e.target.closest('.n-tab'); if (b) openTab(b.dataset.t); };
+
+    /* ---- NEWS2 (Royal College of Physicians, SpO2 scale 1) ---- */
+    function news2(v) {
+      const s = [];
+      const band = (x, rules) => { for (const [test, pts] of rules) if (test(x)) return pts; return 0; };
+      s.push(band(v.rr, [[x => x <= 8, 3], [x => x <= 11, 1], [x => x <= 20, 0], [x => x <= 24, 2], [x => true, 3]]));
+      s.push(band(v.spo2, [[x => x <= 91, 3], [x => x <= 93, 2], [x => x <= 95, 1], [x => true, 0]]));
+      s.push(v.o2 ? 2 : 0);
+      s.push(band(v.sbp, [[x => x <= 90, 3], [x => x <= 100, 2], [x => x <= 110, 1], [x => x <= 219, 0], [x => true, 3]]));
+      s.push(band(v.pulse, [[x => x <= 40, 3], [x => x <= 50, 1], [x => x <= 90, 0], [x => x <= 110, 1], [x => x <= 130, 2], [x => true, 3]]));
+      s.push(v.avpu === 'A' ? 0 : 3);
+      s.push(band(v.temp, [[x => x <= 35.0, 3], [x => x <= 36.0, 1], [x => x <= 38.0, 0], [x => x <= 39.0, 1], [x => true, 2]]));
+      const total = s.reduce((a, b) => a + b, 0), red = s.some(x => x === 3);
+      let level, cls, advice;
+      if (total >= 7) { level = 'HIGH'; cls = 'b-bad'; advice = 'Emergency response: continuous monitoring and immediate team review / transfer to higher care.'; }
+      else if (total >= 5) { level = 'MEDIUM'; cls = 'b-warn'; advice = 'Urgent response: urgent clinician review and increased monitoring (at least hourly).'; }
+      else if (red) { level = 'LOW–MEDIUM'; cls = 'b-warn'; advice = 'Single parameter scoring 3: urgent ward-based review by a clinician.'; }
+      else { level = 'LOW'; cls = 'b-ok'; advice = total ? 'Continue routine monitoring (minimum 4–6 hourly).' : 'Continue routine monitoring (minimum 12 hourly).'; }
+      return { total, level, cls, advice };
+    }
+    const num = id => { const x = $(id).value; return x === '' ? null : Number(x); };
+    function readVitals() { return { rr: num('vRR'), spo2: num('vSpo2'), sbp: num('vSbp'), dbp: num('vDbp'), pulse: num('vPulse'), temp: num('vTemp'), avpu: $('vAvpu').value, o2: $('vO2').value === '1' }; }
+    function paintNews() {
+      const v = readVitals(), need = ['rr', 'spo2', 'sbp', 'pulse', 'temp'];
+      const box = $('newsBox');
+      if (need.some(k => v[k] === null || Number.isNaN(v[k]))) { box.className = 'rounded-xl border border-slate-200 p-3 text-sm text-slate-500'; box.textContent = 'Enter RR, SpO₂, systolic BP, pulse and temperature to calculate NEWS2.'; return null; }
+      const n = news2(v);
+      box.className = 'rounded-xl border border-slate-200 p-3 text-sm';
+      box.innerHTML = `<div class="flex items-center gap-2"><span class="text-2xl font-extrabold">${n.total}</span><span class="badge ${n.cls}">${n.level} RISK</span></div><p class="text-xs text-slate-600 mt-1">${esc(n.advice)}</p>`;
+      return n;
+    }
+    ['vRR', 'vSpo2', 'vSbp', 'vDbp', 'vPulse', 'vTemp', 'vAvpu', 'vO2'].forEach(id => { $(id).addEventListener('input', paintNews); $(id).addEventListener('change', paintNews); });
+
+    $('saveVitals').onclick = () => save($('saveVitals'), async () => {
+      const patient = val('vPatient'); if (!patient) return toast('Patient / bed is required', 'err');
+      const n = paintNews(); if (!n) return toast('Enter RR, SpO₂, systolic BP, pulse and temperature', 'err');
+      const v = readVitals();
+      await addDoc(collection(db, 'vitals'), { patient, ...v, news2: n.total, risk: n.level, at: serverTimestamp(), by: auth.currentUser?.uid || '', byName: myName });
+      toast(n.total >= 5 ? 'Saved — NEWS2 ' + n.total + ': escalate per policy' : 'Observations saved', n.total >= 5 ? 'err' : 'ok');
+      ['vRR', 'vSpo2', 'vSbp', 'vDbp', 'vPulse', 'vTemp'].forEach(id => $(id).value = ''); paintNews();
+      await loadVitals();
+    });
+    async function loadVitals() {
+      const el = $('vitalsLog');
+      try {
+        const snap = await getDocs(query(collection(db, 'vitals'), orderBy('at', 'desc'), limit(20)));
+        el.innerHTML = snap.empty ? '<div class="card text-sm text-slate-400">No observations recorded yet.</div>' : '';
+        snap.forEach(d => {
+          const x = d.data(), cls = x.news2 >= 7 ? 'b-bad' : x.news2 >= 5 ? 'b-warn' : (x.risk && x.risk !== 'LOW') ? 'b-warn' : 'b-ok';
+          el.insertAdjacentHTML('beforeend', `<div class="card text-sm"><div class="flex justify-between items-center"><b>${esc(x.patient)}</b><span class="badge ${cls}">NEWS2 ${esc(x.news2)} · ${esc(x.risk)}</span></div>
+            <div class="text-xs text-slate-600 mt-1">RR ${esc(x.rr)} · SpO₂ ${esc(x.spo2)}%${x.o2 ? ' (O₂)' : ''} · BP ${esc(x.sbp)}/${esc(x.dbp ?? '–')} · HR ${esc(x.pulse)} · T ${esc(x.temp)}°C · ${x.avpu === 'A' ? 'Alert' : 'Not alert (' + esc(x.avpu) + ')'}</div>
+            <div class="text-[10px] text-slate-400 mt-1">${esc(x.byName)} · ${esc(when(x.at))}</div></div>`);
+        });
+      } catch (e) { errBox(el, e); }
+    }
+
+    /* ---- my patients ---- */
     async function loadPatients() {
-      const el = document.getElementById('nursePatients');
+      const el = $('nursePatients');
       try {
         const snap = await getDocs(query(collection(db, 'beds'), where('status', '==', 'occupied')));
-        if (snap.empty) {
-          el.innerHTML = '<div class="card text-sm text-slate-500">No occupied beds. Admit patients from the Inpatient board.</div>';
-          return;
-        }
+        if (snap.empty) { el.innerHTML = '<div class="card text-sm text-slate-500">No occupied beds. Admit patients from the Inpatient board.</div>'; return; }
         el.innerHTML = '';
         snap.forEach(d => {
-          const b = d.data();
-          el.innerHTML += `<div class="card flex justify-between items-center gap-3">
-            <div class="min-w-0">
-              <div class="font-bold text-sm truncate">${escapeHtml(b.patientName || 'Patient')}</div>
-              <div class="text-xs text-slate-500">${escapeHtml(b.bedNo || d.id)} · ${escapeHtml(b.ward || '')} · ${escapeHtml(b.diagnosis || '')}</div>
-            </div>
-            <a href="emr.html?patient=${encodeURIComponent(b.patientId || b.patientName || '')}" class="text-xs font-bold text-indigo-600 shrink-0">Chart →</a>
-          </div>`;
+          const b = d.data(), label = (b.patientName || 'Patient') + ' · ' + (b.bedNo || d.id);
+          el.insertAdjacentHTML('beforeend', `<div class="card flex justify-between items-center gap-2">
+            <div class="min-w-0"><div class="font-bold text-sm truncate">${esc(b.patientName || 'Patient')}</div><div class="text-xs text-slate-500">${esc(b.bedNo || d.id)} · ${esc(b.ward || '')} · ${esc(b.diagnosis || '')}</div></div>
+            <div class="flex gap-3 shrink-0"><button class="text-xs font-bold text-teal-700" data-vit="${esc(label)}">Vitals</button><a href="emr.html" class="text-xs font-bold text-indigo-600">Chart →</a></div></div>`);
         });
-      } catch (e) {
-        el.innerHTML = `<div class="card text-sm text-red-600">Could not load beds: ${escapeHtml(e.message)}. Check Firestore rules and that you are signed in as clinical staff.</div>`;
-      }
+      } catch (e) { errBox(el, e); }
     }
+    $('nursePatients').addEventListener('click', e => { const b = e.target.closest('[data-vit]'); if (!b) return; $('vPatient').value = b.dataset.vit; $('marPatient').value = b.dataset.vit; openTab('vitals'); $('vRR').focus(); });
 
-    // ---- MAR ----
-    document.getElementById('saveMar').addEventListener('click', async () => {
-      const patient = document.getElementById('marPatient').value.trim();
-      const drug = document.getElementById('marDrug').value.trim();
-      if (!patient || !drug) {
-        showToast('Patient and drug are required', 'warning');
-        return;
-      }
-      const btn = document.getElementById('saveMar');
-      btn.disabled = true;
-      try {
-        await addDoc(collection(db, 'mar'), {
-          patient,
-          drug,
-          route: document.getElementById('marRoute').value,
-          status: document.getElementById('marStatus').value,
-          note: document.getElementById('marNote').value.trim(),
-          at: serverTimestamp(),
-          by: auth.currentUser?.uid,
-          byName
-        });
-        document.getElementById('marDrug').value = '';
-        document.getElementById('marNote').value = '';
-        showToast('MAR entry saved', 'success');
-        await loadMar();
-      } catch (e) {
-        showToast('Save failed: ' + e.message, 'error');
-      }
-      btn.disabled = false;
+    /* ---- MAR ---- */
+    $('saveMar').onclick = () => save($('saveMar'), async () => {
+      const patient = val('marPatient'), drug = val('marDrug');
+      if (!patient || !drug) return toast('Patient and drug are required', 'err');
+      await addDoc(collection(db, 'mar'), { patient, drug, route: $('marRoute').value, status: $('marStatus').value, note: val('marNote'), at: serverTimestamp(), by: auth.currentUser?.uid || '', byName: myName });
+      toast('MAR entry saved', 'ok'); ['marDrug', 'marNote'].forEach(id => $(id).value = ''); await loadMar();
     });
-
     async function loadMar() {
-      const el = document.getElementById('marLog');
+      const el = $('marLog');
       try {
-        const snap = await getDocs(query(collection(db, 'mar'), orderBy('at', 'desc'), limit(25)));
-        if (snap.empty) {
-          el.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No MAR entries yet.</p>';
-          return;
-        }
-        el.innerHTML = '';
+        const snap = await getDocs(query(collection(db, 'mar'), orderBy('at', 'desc'), limit(20)));
+        el.innerHTML = snap.empty ? '<div class="card text-sm text-slate-400">No medication records yet.</div>' : '';
         snap.forEach(d => {
-          const m = d.data();
-          const st = (m.status || 'given').replace('_', ' ');
-          el.innerHTML += `<div class="card text-sm">
-            <div class="font-bold">${escapeHtml(m.drug || '')}</div>
-            <div class="text-xs text-slate-500">${escapeHtml(m.patient || '')} · ${escapeHtml(m.route || '')} · <span class="status-${escapeHtml(m.status || 'given')}">${escapeHtml(st)}</span></div>
-            ${m.note ? `<div class="text-xs text-slate-600 mt-1">${escapeHtml(m.note)}</div>` : ''}
-            <div class="text-[10px] text-slate-400 mt-1">${fmtTime(m.at)} · ${escapeHtml(m.byName || '')}</div>
-          </div>`;
+          const m = d.data(), cls = m.status === 'given' ? 'b-ok' : m.status === 'refused' ? 'b-bad' : 'b-warn';
+          el.insertAdjacentHTML('beforeend', `<div class="card text-sm"><div class="flex justify-between gap-2"><b>${esc(m.drug)}</b><span class="badge ${cls}">${esc(String(m.status || '').replace('_', ' '))}</span></div>
+            <div class="text-xs text-slate-500">${esc(m.patient)} · ${esc(m.route)} · ${esc(when(m.at))}</div>${m.note ? `<div class="text-xs mt-1">${esc(m.note)}</div>` : ''}<div class="text-[10px] text-slate-400">${esc(m.byName)}</div></div>`);
         });
-      } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-500">Load error: ${escapeHtml(e.message)}</p>`;
-      }
+      } catch (e) { errBox(el, e); }
     }
 
-    // ---- Care plans ----
-    document.getElementById('saveCp').addEventListener('click', async () => {
-      const patient = document.getElementById('cpPatient').value.trim();
-      if (!patient) {
-        showToast('Patient is required', 'warning');
-        return;
-      }
-      const btn = document.getElementById('saveCp');
-      btn.disabled = true;
-      try {
-        await addDoc(collection(db, 'carePlans'), {
-          patient,
-          problem: document.getElementById('cpProblem').value.trim(),
-          goal: document.getElementById('cpGoal').value.trim(),
-          interventions: document.getElementById('cpInterventions').value.trim(),
-          at: serverTimestamp(),
-          by: auth.currentUser?.uid,
-          byName
-        });
-        ['cpPatient','cpProblem','cpGoal','cpInterventions'].forEach(id => document.getElementById(id).value = '');
-        showToast('Care plan saved', 'success');
-        await loadCp();
-      } catch (e) {
-        showToast('Save failed: ' + e.message, 'error');
-      }
-      btn.disabled = false;
+    /* ---- care plans ---- */
+    $('saveCp').onclick = () => save($('saveCp'), async () => {
+      const patient = val('cpPatient'); if (!patient) return toast('Patient is required', 'err');
+      await addDoc(collection(db, 'carePlans'), { patient, problem: val('cpProblem'), goal: val('cpGoal'), interventions: val('cpInterventions'), at: serverTimestamp(), by: auth.currentUser?.uid || '', byName: myName });
+      toast('Care plan saved', 'ok'); ['cpProblem', 'cpGoal', 'cpInterventions'].forEach(id => $(id).value = ''); await loadCp();
     });
-
     async function loadCp() {
-      const el = document.getElementById('cpList');
+      const el = $('cpList');
       try {
         const snap = await getDocs(query(collection(db, 'carePlans'), orderBy('at', 'desc'), limit(15)));
-        if (snap.empty) {
-          el.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No care plans yet.</p>';
-          return;
-        }
-        el.innerHTML = '';
+        el.innerHTML = snap.empty ? '<div class="card text-sm text-slate-400">No care plans yet.</div>' : '';
         snap.forEach(d => {
-          const c = d.data();
-          el.innerHTML += `<div class="card">
-            <div class="font-bold text-sm">${escapeHtml(c.patient || '')}</div>
-            <div class="text-xs text-indigo-700 font-semibold">${escapeHtml(c.problem || '')}</div>
-            <div class="text-xs mt-1 text-slate-600">${escapeHtml(c.goal || '')}</div>
-            <pre class="text-[11px] mt-1 whitespace-pre-wrap text-slate-500 font-sans">${escapeHtml(c.interventions || '')}</pre>
-            <div class="text-[10px] text-slate-400 mt-1">${fmtTime(c.at)} · ${escapeHtml(c.byName || '')}</div>
-          </div>`;
+          const c = d.data(), items = String(c.interventions || '').split('\n').map(s => s.trim()).filter(Boolean);
+          el.insertAdjacentHTML('beforeend', `<div class="card"><div class="font-bold text-sm">${esc(c.patient)}</div><div class="text-xs text-indigo-700 font-semibold">${esc(c.problem || '')}</div>
+            <div class="text-xs mt-1 text-slate-600"><b>Goal:</b> ${esc(c.goal || '')}</div>${items.length ? `<ul class="text-xs mt-1 list-disc pl-4 text-slate-600">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : ''}
+            <div class="text-[10px] text-slate-400 mt-1">${esc(c.byName || '')} · ${esc(when(c.at))}</div></div>`);
         });
-      } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-500">Load error: ${escapeHtml(e.message)}</p>`;
-      }
+      } catch (e) { errBox(el, e); }
     }
 
-    // ---- Handover ----
-    document.getElementById('saveHo').addEventListener('click', async () => {
-      const patient = document.getElementById('hoPatient').value.trim();
-      if (!patient) {
-        showToast('Patient is required', 'warning');
-        return;
-      }
-      const btn = document.getElementById('saveHo');
-      btn.disabled = true;
-      try {
-        await addDoc(collection(db, 'handovers'), {
-          patient,
-          situation: document.getElementById('hoSituation').value.trim(),
-          background: document.getElementById('hoBackground').value.trim(),
-          assessment: document.getElementById('hoAssessment').value.trim(),
-          recommendation: document.getElementById('hoRecommend').value.trim(),
-          at: serverTimestamp(),
-          by: auth.currentUser?.uid,
-          byName
-        });
-        ['hoPatient','hoSituation','hoBackground','hoAssessment','hoRecommend'].forEach(id => document.getElementById(id).value = '');
-        showToast('Handover saved', 'success');
-        await loadHo();
-      } catch (e) {
-        showToast('Save failed: ' + e.message, 'error');
-      }
-      btn.disabled = false;
+    /* ---- handover ---- */
+    $('saveHo').onclick = () => save($('saveHo'), async () => {
+      const patient = val('hoPatient'); if (!patient) return toast('Patient / bed is required', 'err');
+      await addDoc(collection(db, 'handovers'), { patient, situation: val('hoSituation'), background: val('hoBackground'), assessment: val('hoAssessment'), recommendation: val('hoRecommend'), at: serverTimestamp(), by: auth.currentUser?.uid || '', byName: myName });
+      toast('Handover saved', 'ok'); ['hoSituation', 'hoBackground', 'hoAssessment', 'hoRecommend'].forEach(id => $(id).value = ''); await loadHo();
     });
-
     async function loadHo() {
-      const el = document.getElementById('hoList');
+      const el = $('hoList');
       try {
-        const snap = await getDocs(query(collection(db, 'handovers'), orderBy('at', 'desc'), limit(12)));
-        if (snap.empty) {
-          el.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No handover notes yet.</p>';
-          return;
-        }
-        el.innerHTML = '';
+        const snap = await getDocs(query(collection(db, 'handovers'), orderBy('at', 'desc'), limit(10)));
+        el.innerHTML = snap.empty ? '<div class="card text-sm text-slate-400">No handover notes yet.</div>' : '';
         snap.forEach(d => {
           const h = d.data();
-          el.innerHTML += `<div class="card text-sm">
-            <div class="font-bold">${escapeHtml(h.patient || '')}</div>
-            <div class="text-xs mt-1"><span class="font-semibold">S:</span> ${escapeHtml(h.situation || '')}</div>
-            <div class="text-xs"><span class="font-semibold">B:</span> ${escapeHtml(h.background || '')}</div>
-            <div class="text-xs"><span class="font-semibold">A:</span> ${escapeHtml(h.assessment || '')}</div>
-            <div class="text-xs"><span class="font-semibold">R:</span> ${escapeHtml(h.recommendation || '')}</div>
-            <div class="text-[10px] text-slate-400 mt-1">${fmtTime(h.at)} · ${escapeHtml(h.byName || '')}</div>
-          </div>`;
+          el.insertAdjacentHTML('beforeend', `<div class="card text-sm"><div class="font-bold">${esc(h.patient)}</div>
+            <div class="text-xs mt-1"><b>S:</b> ${esc(h.situation || '')}</div><div class="text-xs"><b>B:</b> ${esc(h.background || '')}</div>
+            <div class="text-xs"><b>A:</b> ${esc(h.assessment || '')}</div><div class="text-xs"><b>R:</b> ${esc(h.recommendation || '')}</div>
+            <div class="text-[10px] text-slate-400 mt-1">${esc(h.byName || '')} · ${esc(when(h.at))}</div></div>`);
         });
-      } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-500">Load error: ${escapeHtml(e.message)}</p>`;
-      }
+      } catch (e) { errBox(el, e); }
     }
 
-    // ---- Tasks ----
-    document.getElementById('addTask').addEventListener('click', async () => {
-      const text = document.getElementById('taskText').value.trim();
-      if (!text) {
-        showToast('Enter a task', 'warning');
-        return;
-      }
-      try {
-        await addDoc(collection(db, 'nurseTasks'), {
-          text,
-          done: false,
-          at: serverTimestamp(),
-          by: auth.currentUser?.uid,
-          byName
-        });
-        document.getElementById('taskText').value = '';
-        showToast('Task added', 'success');
-        await loadTasks();
-      } catch (e) {
-        showToast('Failed: ' + e.message, 'error');
-      }
+    /* ---- tasks (tick off / delete) ---- */
+    $('addTask').onclick = () => save($('addTask'), async () => {
+      const text = val('taskText'); if (!text) return toast('Enter a task', 'err');
+      await addDoc(collection(db, 'nurseTasks'), { text, done: false, at: serverTimestamp(), by: auth.currentUser?.uid || '', byName: myName });
+      $('taskText').value = ''; await loadTasks();
     });
-
-    document.getElementById('taskText').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('addTask').click();
-      }
-    });
-
     async function loadTasks() {
-      const el = document.getElementById('taskList');
+      const el = $('taskList');
       try {
         const snap = await getDocs(query(collection(db, 'nurseTasks'), orderBy('at', 'desc'), limit(30)));
-        if (snap.empty) {
-          el.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No tasks yet.</p>';
-          return;
-        }
-        el.innerHTML = '';
+        el.innerHTML = snap.empty ? '<div class="card text-sm text-slate-400">No tasks. Add one above.</div>' : '';
         snap.forEach(d => {
           const t = d.data();
-          const doneCls = t.done ? 'task-done' : '';
-          el.innerHTML += `<div class="card text-sm flex items-center gap-3" data-task-id="${d.id}">
-            <button type="button" class="task-toggle shrink-0 w-5 h-5 rounded border border-slate-300 flex items-center justify-center text-xs ${t.done ? 'bg-teal-500 border-teal-500 text-white' : ''}" data-id="${d.id}" data-done="${t.done ? '1' : '0'}" aria-label="Toggle done">${t.done ? '✓' : ''}</button>
-            <span class="flex-1 ${doneCls}">${escapeHtml(t.text || '')}</span>
-            <button type="button" class="task-del text-red-400 text-xs font-semibold shrink-0" data-id="${d.id}" title="Delete">✕</button>
-          </div>`;
+          el.insertAdjacentHTML('beforeend', `<div class="card text-sm flex items-center gap-3"><input type="checkbox" data-done="${d.id}" ${t.done ? 'checked' : ''} class="w-5 h-5 accent-teal-600" aria-label="Done" />
+            <span class="flex-1 ${t.done ? 'line-through text-slate-400' : ''}">${esc(t.text)}</span><button data-del="${d.id}" class="text-xs text-red-500 font-bold" aria-label="Delete task">✕</button></div>`);
         });
-      } catch (e) {
-        el.innerHTML = `<p class="text-xs text-red-500">Load error: ${escapeHtml(e.message)}</p>`;
-      }
+      } catch (e) { errBox(el, e); }
     }
-
-    document.getElementById('taskList').addEventListener('click', async (e) => {
-      const tog = e.target.closest('.task-toggle');
-      const del = e.target.closest('.task-del');
-      if (tog) {
-        const id = tog.dataset.id;
-        const done = tog.dataset.done !== '1';
-        try {
-          await updateDoc(doc(db, 'nurseTasks', id), { done, updatedAt: serverTimestamp() });
-          await loadTasks();
-        } catch (err) {
-          showToast(err.message, 'error');
-        }
-      }
-      if (del) {
-        if (!confirm('Delete this task?')) return;
-        try {
-          await deleteDoc(doc(db, 'nurseTasks', del.dataset.id));
-          await loadTasks();
-          showToast('Task removed', 'success');
-        } catch (err) {
-          showToast(err.message, 'error');
-        }
-      }
+    $('taskList').addEventListener('change', async e => {
+      const c = e.target.closest('[data-done]'); if (!c) return;
+      try { await updateDoc(doc(db, 'nurseTasks', c.dataset.done), { done: c.checked, doneAt: c.checked ? serverTimestamp() : null }); await loadTasks(); }
+      catch (err) { toast('Could not update: ' + (err.code || err.message), 'err'); c.checked = !c.checked; }
+    });
+    $('taskList').addEventListener('click', async e => {
+      const b = e.target.closest('[data-del]'); if (!b || !confirm('Delete this task?')) return;
+      try { await deleteDoc(doc(db, 'nurseTasks', b.dataset.del)); await loadTasks(); } catch (err) { toast('Could not delete: ' + (err.code || err.message), 'err'); }
     });
 
-    // Initial loads
-    await Promise.all([loadPatients(), loadMar(), loadCp(), loadHo(), loadTasks()]);
+    // each section loads independently — one failure no longer blanks the page
+    await Promise.allSettled([loadPatients(), loadVitals(), loadMar(), loadCp(), loadHo(), loadTasks()]);
   </script>
 </body>
 </html>

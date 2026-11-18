@@ -15,6 +15,9 @@
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
     .crit{background:#fef2f2;border-color:#fecaca}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -80,6 +83,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, where, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['lab','doctor','nurse','admin','surgeon']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     document.querySelectorAll('.l-tab').forEach(btn => {
       btn.onclick = () => {
@@ -124,14 +128,14 @@
         const o = d.data();
         const t = o.orderedAt?.toDate ? o.orderedAt.toDate().toLocaleString() : '';
         const html = `<div class="card ${o.critical?'crit':''}">
-          <div class="flex justify-between"><span class="font-bold text-sm">${o.patient}</span>
-            <span class="text-[10px] font-bold uppercase ${o.priority==='STAT'?'text-red-600':o.priority==='Urgent'?'text-amber-600':'text-slate-500'}">${o.priority||'Routine'}</span></div>
-          <div class="text-xs mt-1">${o.tests}</div>
-          <div class="text-[10px] text-slate-400 mt-1">${t} · ${o.status} · ID: ${d.id.slice(0,8)}</div>
+          <div class="flex justify-between"><span class="font-bold text-sm">${__e(o.patient)}</span>
+            <span class="text-[10px] font-bold uppercase ${o.priority==='STAT'?'text-red-600':o.priority==='Urgent'?'text-amber-600':'text-slate-500'}">${__e(o.priority||'Routine')}</span></div>
+          <div class="text-xs mt-1">${__e(o.tests)}</div>
+          <div class="text-[10px] text-slate-400 mt-1">${t} · ${__e(o.status)} · ID: ${d.id.slice(0,8)}</div>
           ${o.result ? `<div class="text-xs mt-2 bg-slate-50 rounded p-2">${o.result}</div>` : ''}
           <div class="mt-2 flex gap-1">
-            <button data-id="${d.id}" data-act="collect" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded">Specimen collected</button>
-            <button data-id="${d.id}" data-act="fill" class="text-[10px] font-bold bg-violet-100 text-violet-800 px-2 py-0.5 rounded">Enter result</button>
+            <button data-id="${__e(d.id)}" data-act="collect" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded">Specimen collected</button>
+            <button data-id="${__e(d.id)}" data-act="fill" class="text-[10px] font-bold bg-violet-100 text-violet-800 px-2 py-0.5 rounded">Enter result</button>
           </div>
         </div>`;
         el.innerHTML += html;

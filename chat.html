@@ -47,6 +47,9 @@
     }
     .reply-preview.on { display: block; }
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-100 flex flex-col h-[100dvh]">
   <header class="sticky top-0 z-40 bg-white border-b border-slate-200 safe-top shrink-0">
@@ -114,6 +117,8 @@
     const HIDDEN_KEY = 'mc_hidden_msgs_' + consultId;
 
     const profile = await requireAuth();
+
+    if (!profile) throw new Error('Redirecting to sign in');
     let consult = null;
     let unsubMsgs = null;
     let messagesCache = [];

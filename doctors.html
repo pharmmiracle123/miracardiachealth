@@ -118,7 +118,18 @@ audio{max-width:230px;height:36px;display:block}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .trend svg{width:100%;height:70px;display:block}.trend h5{margin:10px 0 2px;font-size:12px;color:var(--muted)}
 .note{font-size:11px;color:var(--muted);margin-top:8px}
+.rxrow{display:flex;justify-content:space-around;padding:6px 10px 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.rxrow button{background:none;border:0;font-size:26px;padding:4px 6px}
+.rxs{align-self:flex-end;margin:-4px 6px 0;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:13px}
+.them .rxs{align-self:flex-start}
+.pinbar{display:none;margin:8px 10px 0;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);font-size:12.5px;align-items:center;gap:8px;position:relative;z-index:2;cursor:pointer}
+.pinbar.on{display:flex}.pinbar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pinbar button{background:none;border:0;font-size:15px;color:var(--muted)}
+.sheet{max-height:80dvh;overflow:auto}
+.sysmsg{margin:10px auto;max-width:88%;text-align:center;background:var(--surface2);border:1px dashed var(--g1);border-radius:16px;padding:10px 14px;font-size:13px;line-height:1.45;white-space:pre-wrap}
+.sysmsg .call{display:inline-block;margin:6px 4px 0;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;text-decoration:none;font-weight:600;font-size:12.5px;white-space:normal}
+.sysmsg small{display:block;color:var(--muted);font-size:10.5px;margin-top:4px}
 </style>
+  <link rel="manifest" href="manifest.json" />
 </head>
 <body>
 <div class="orbs"></div>
@@ -129,11 +140,13 @@ audio{max-width:230px;height:36px;display:block}
 
 <script>
 window.MIRACARDIAC_DOCTORS = [
-  { name: "Onyeka-Udechukwu Miracle", specialty: "General Practitioner", email: "onyekamiracle08@gmail.com", experience: 15, emoji: "👨‍⚕️" },
-  { name: "Dr. Emeka Okoro", specialty: "Cardiologist", email: "emeka@example.com", experience: 12, emoji: "❤️" },
-  { name: "Dr. Ada Nwosu", specialty: "Pediatrician", email: "ada@example.com", experience: 10, emoji: "🧒" },
-  { name: "Dr. Chioma Eze", specialty: "Dermatologist", email: "chioma@example.com", experience: 9, emoji: "👩‍⚕️" },
-  { name: "Timinimi Robinson Dinbai", specialty: "Physiotherapist", email: "rtiminimi@gmail.com", experience: 8, emoji: "💪" }
+  // phones: numbers shown to the patient (tap-to-call) when this doctor is offline.
+  // key: only needed when two doctors share one email, so each keeps its own separate chat.
+  { name: "Onyeka-Udechukwu Miracle", specialty: "General Practitioner", email: "onyekamiracle08@gmail.com", experience: 15, emoji: "👨‍⚕️", phones: ["+2347017905577", "+2348169395022"] },
+  { name: "Dr. Emeka Okoro", specialty: "Cardiologist", email: "onyekamiracle08@gmail.com", key: "cardio", experience: 12, emoji: "❤️", phones: [] /* ADD PHONE NUMBER(S) HERE, e.g. "+234..." */ },
+  { name: "Dr. Ada Nwosu", specialty: "Pediatrician", email: "onyekamiracle08@gmail.com", key: "paeds", experience: 10, emoji: "🧒", phones: [] /* ADD PHONE NUMBER(S) HERE */ },
+  { name: "Dr. Chioma Eze", specialty: "Dermatologist", email: "onyekamiracle08@gmail.com", key: "derm", experience: 9, emoji: "👩‍⚕️", phones: [] /* ADD PHONE NUMBER(S) HERE */ },
+  { name: "Timinimi Robinson Dinbai", specialty: "Physiotherapist", email: "rtiminimi@gmail.com", experience: 8, emoji: "💪", phones: ["+2347034709965"] }
 ];
 </script>
 
@@ -177,6 +190,7 @@ window.MIRACARDIAC_DOCTORS = [
   </div>
   <div class="sbar" id="sbar"><input id="chatSearch" placeholder="Search messages…" /></div>
   <div class="banner" id="banner"></div>
+      <div class="pinbar" id="pinbar"></div>
   <div class="wm"><svg viewBox="0 0 520 300"><path d="M260 150C260 150 200 108 200 66C200 40 220 24 242 24C252 24 258 30 260 36C262 30 268 24 278 24C300 24 320 40 320 66C320 108 260 150 260 150Z" fill="none" stroke="url(#eg)" stroke-width="4"/><path d="M20 190H170L192 150L222 236L252 120L278 200L296 190H500" fill="none" stroke="url(#eg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="260" y="272" text-anchor="middle" font-family="Sora,Arial" font-weight="800" font-size="27" letter-spacing="3" fill="url(#eg)">MIRACARDIAC CHAT</text></svg></div>
   <main id="msgs"></main>
   <button class="fab" id="fab" type="button">⌄<em id="fabN" style="display:none"></em></button>
@@ -235,7 +249,7 @@ window.MIRACARDIAC_DOCTORS = [
 <script type="module">
 import {
   auth, db, storage, onAuthStateChanged,
-  collection, query, where, getDoc, doc, setDoc, updateDoc, deleteDoc,
+  collection, query, where, getDoc, doc, setDoc, updateDoc, deleteDoc, arrayUnion,
   onSnapshot, orderBy, serverTimestamp,
   ref, uploadBytesResumable, getDownloadURL,
   uploadToCloudinary, escapeHtml, applyPlatformBranding
@@ -256,7 +270,7 @@ const lsDel = k => { try { localStorage.removeItem(k); } catch (_) {} };
 let user = null, profile = null, chatId = null, activeDoctor = null;
 let unsubMsgs = null, unsubConsult = null, unsubList = null, unsubPresence = null, retryT = null;
 let server = [], outbox = [], replyTo = null, editingId = null, filterQ = '', filterSpec = 'All';
-let presence = {}, consults = {}, favs = lsGet('mc_fav', []), newCount = 0;
+let presenceReady = false, presence = {}, consults = {}, favs = lsGet('mc_fav', []), newCount = 0;
 
 /* ---------- theme ---------- */
 function setTheme(t) {
@@ -291,7 +305,7 @@ onAuthStateChanged(auth, async u => {
 function listenPresence() {
   try {
     unsubPresence = onSnapshot(collection(db, 'doctorPresence'), snap => {
-      presence = {};
+      presence = {}; presenceReady = true;
       snap.forEach(d => {
         const x = d.data(), em = (x.email || d.id || '').toLowerCase();
         const last = x.lastSeen?.toMillis ? x.lastSeen.toMillis() : (x.lastSeenMs || 0);
@@ -312,13 +326,13 @@ function seenText(em) {
 }
 
 /* ---------- doctor list ---------- */
-const chatDocId = (uid, em) => ('d_' + uid.slice(0, 12) + '_' + em.replace(/[^a-z0-9]/g, '_')).slice(0, 80);
+const chatDocId = (uid, d) => ('d_' + uid.slice(0, 12) + '_' + d.email.replace(/[^a-z0-9]/g, '_') + (d.key ? '_' + d.key : '')).slice(0, 90);
 function listenConsults() {
   if (unsubList) unsubList();
   try {
     unsubList = onSnapshot(query(collection(db, 'consultations'), where('patientId', '==', user.uid)), snap => {
       consults = {};
-      snap.forEach(d => { const x = d.data(); consults[(x.doctorEmail || '').toLowerCase()] = { id: d.id, ...x, ms: x.updatedAt?.toMillis ? x.updatedAt.toMillis() : 0 }; });
+      snap.forEach(d => { const x = d.data(); consults[d.id] = { id: d.id, ...x, ms: x.updatedAt?.toMillis ? x.updatedAt.toMillis() : 0 }; });
       renderList();
     }, () => {});
   } catch (_) {}
@@ -337,7 +351,7 @@ function renderList() {
   $('statusMsg').textContent = DOCTORS.length + ' doctors' + (on.length ? ' · ' + on.length + ' online' : '');
   $('rings').innerHTML = on.map(d => `<button class="ring" data-email="${E(d.email)}"><div class="av on"><i>${d.emoji || '👨‍⚕️'}</i></div><span>${E(d.name.replace('Dr. ', '').split(' ')[0])}</span></button>`).join('');
   $('grid').innerHTML = list.map(d => {
-    const c = consults[d.email], seen = lsGet('mc_seen_' + (c?.id || ''), 0);
+    const c = user ? consults[chatDocId(user.uid, d)] : null, seen = lsGet('mc_seen_' + (c?.id || ''), 0);
     const isNew = c && c.lastSenderRole === 'doctor' && c.ms > seen;
     return `<div class="card" data-email="${E(d.email)}" role="button">
       <div class="av ${isOn(d.email) ? 'on' : ''}"><i>${d.emoji || '👨‍⚕️'}</i></div>
@@ -359,7 +373,7 @@ $('grid').onclick = clickOpen; $('rings').onclick = clickOpen;
 /* ---------- open chat ---------- */
 async function ensureConsult() {
   const r = doc(db, 'consultations', chatId);
-  const patch = { updatedAt: serverTimestamp(), doctorEmail: activeDoctor.email, doctorName: activeDoctor.name };
+  const patch = { updatedAt: serverTimestamp(), doctorEmail: activeDoctor.email, doctorName: activeDoctor.name, doctorSpecialty: activeDoctor.specialty || '' };
   try { await updateDoc(r, patch); return; } catch (_) {}
   await setDoc(r, {
     type: 'direct', status: 'active', title: 'MIRACARDIAC CHAT', patientId: user.uid,
@@ -377,7 +391,7 @@ async function openChat(doctor, auto) {
   }
   if ((u.email || '').toLowerCase() === doctor.email) { toast("That's your own doctor account — use Doctor inbox"); return; }
   detach();
-  activeDoctor = doctor; chatId = chatDocId(u.uid, doctor.email);
+  activeDoctor = doctor; chatId = chatDocId(u.uid, doctor);
   lsSet('mc_open_doctor', doctor.email);
   $('browse').classList.add('hidden'); $('chatPanel').classList.add('open');
   $('chatName').textContent = doctor.name; $('chatAv').firstElementChild.textContent = doctor.emoji || '👨‍⚕️';
@@ -424,7 +438,7 @@ function listen(id) {
   run();
   unsubConsult = onSnapshot(doc(db, 'consultations', id), s => {
     const d = s.data() || {};
-    $('typing').classList.toggle('on', Date.now() - (d.typingDoctor || 0) < 5000);
+    $('typing').classList.toggle('on', Date.now() - (d.typingDoctor || 0) < 5000); showPin(d.pinned);
     clearTimeout(listen._t); if ($('typing').classList.contains('on')) listen._t = setTimeout(() => $('typing').classList.remove('on'), 5200);
   }, () => {});
 }
@@ -446,7 +460,7 @@ function dayLbl(ms) {
 function all() {
   const ids = new Set(server.map(m => m.id));
   const ob = outbox.filter(o => !ids.has(o.clientId)).map(o => ({ id: o.clientId, senderId: user?.uid, text: o.text, type: o.type, symptom: o.symptom, vitals: o.vitals, geo: o.geo, dur: o.dur, replyTo: o.replyTo, fileURL: o.preview || null, fileName: o.fileName, ms: o.clientTs, _out: o.state, _err: o.err }));
-  return server.concat(ob).sort((a, b) => a.ms - b.ms);
+  return server.concat(ob).filter(m => !(m.hiddenFor || []).includes(user?.uid)).sort((a, b) => a.ms - b.ms);
 }
 function tick(m) {
   if (m._out === 'failed') return '<span class="tk fail" data-retry="' + m.id + '">⚠ not sent · tap to retry</span>';
@@ -467,6 +481,7 @@ function render(force, added) {
   box.innerHTML = items.map(m => {
     const mine = user && m.senderId === user.uid, day = dayLbl(m.ms);
     const chip = day !== last ? `<span class="day">${E(day)}</span>` : ''; last = day;
+    if (m.type === 'auto') return chip + `<div class="sysmsg">🤖 <b>Automatic reply</b><br>${E(m.text)}<br>${(m.phones || []).map(p => `<a class="call" href="tel:${E(p)}">📞 ${E(p)}</a>`).join('')}<small>In an emergency call 112 · ${fmtT(m.ms)}</small></div>`;
     let body;
     if (m.deleted) body = '🚫 This message was deleted';
     else if (m.type === 'symptom' && m.symptom) {
@@ -476,7 +491,7 @@ function render(force, added) {
     else if (m.fileURL) body = `<a href="${E(m.fileURL)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">📎 ${E(m.fileName || 'File')}</a>`;
     else body = E(m.text || (m.type === 'image' ? '📷 Photo' : m.type === 'audio' ? '🎤 Voice note' : ''));
     const rq = m.replyTo && !m.deleted ? `<div class="rq"><b>${E(m.replyTo.name || '')}</b><br>${E((m.replyTo.text || '').slice(0, 80))}</div>` : '';
-    return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>
+    return `${chip}<div class="row ${mine ? 'me' : 'them'}"><div class="bub ${m._out || m._pend ? 'pending' : ''} ${m.deleted ? 'del' : ''}" data-b="${m.id}">${rq}${body}</div>${rxHTML(m)}
       <div class="meta">${starred.includes(m.id) ? '⭐' : ''}${m.edited && !m.deleted ? 'edited · ' : ''}${fmtT(m.ms)} ${mine ? tick(m) : ''}</div></div>`;
   }).join('');
   if (atBottom) { box.scrollTop = box.scrollHeight; newCount = 0; } else if (added) { newCount += added; }
@@ -506,6 +521,21 @@ async function prepareFile(file, folder) {
   return d;
 }
 
+/* ---------- offline auto-reply: patient is told how to reach the doctor ---------- */
+async function maybeAutoReply(cid) {
+  if (!user || !activeDoctor || cid !== chatId || !presenceReady || isOn(activeDoctor.email)) return;
+  const bucket = Math.floor(Date.now() / (6 * 3600e3)), id = 'auto_' + bucket;       // at most one per 6 hours per chat
+  if (server.some(m => m.id === id) || lsGet('mc_auto_' + cid) === bucket) return;
+  lsSet('mc_auto_' + cid, bucket);
+  const ph = (activeDoctor.phones || []).filter(Boolean);
+  const text = '👋 ' + activeDoctor.name + ' is not online right now. Your message has been delivered and you will get a reply here as soon as possible.' +
+    (ph.length ? '\n\nFor anything urgent, please call:' : '') ;
+  try {
+    await setDoc(doc(db, 'consultations', cid, 'messages', id), { senderId: user.uid, senderName: 'Auto-reply', senderRole: 'system', type: 'auto', text,
+      phones: ph, read: true, deleted: false, clientTs: Date.now(), createdAt: serverTimestamp() });
+  } catch (_) { lsSet('mc_auto_' + cid, null); }
+}
+
 /* ---------- sending: durable outbox + idempotent writes ---------- */
 function enqueue({ text = '', type = 'text', symptom = null, file = null, vitals = null, geo = null, dur = null }) {
   if (!user || !chatId) { toast('Log in first'); return; }
@@ -532,7 +562,7 @@ async function flush(o) {
       lastMessage: ({ symptom: '🩺 Symptom card', vitals: '❤️ Vitals card', audio: '🎤 Voice note', location: '📍 Location' })[o.type] || o.text || (o.type === 'image' ? '📷 Photo' : '📎 File'),
       lastSenderId: user.uid, lastSenderRole: 'patient', typingPatient: 0, updatedAt: serverTimestamp()
     }).catch(() => {});
-    o.state = 'sent'; banner('');
+    o.state = 'sent'; banner(''); maybeAutoReply(o.chatId);
   } catch (e) {
     o.state = 'failed'; o.err = e.code || e.message;
     banner(e.code === 'permission-denied'
@@ -573,33 +603,68 @@ $('msgs').addEventListener('click', e => {
   const r = e.target.closest('[data-retry]');
   if (r) { const o = outbox.find(x => x.clientId === r.dataset.retry); if (o) flush(o); return; }
   const im = e.target.closest('[data-lb]'); if (im) { $('lb').firstElementChild.src = im.src; $('lb').classList.add('on'); }
+  else if (!e.target.closest('a,audio,button,.locb')) { const bb = e.target.closest('[data-b]'); if (bb) openSheet(bb.dataset.b); }
 });
 $('lb').onclick = () => $('lb').classList.remove('on');
+const REACTS = ['👍', '❤️', '😂', '😮', '🙏', '✅'];
+const msgRef = id => doc(db, 'consultations', chatId, 'messages', id);
 function openSheet(id) {
   const m = all().find(x => x.id === id); if (!m || m.deleted) return;
-  const mine = user && m.senderId === user.uid, real = server.some(x => x.id === id);
-  let h = '<button class="a" data-a="reply">↩ Reply</button><button class="a" data-a="star">' + (starred.includes(id) ? '☆ Unstar' : '⭐ Star') + '</button>';
+  const mine = m.senderId === user.uid, real = server.some(x => x.id === id);
+  let h = '';
+  if (real) h += '<div class="rxrow">' + REACTS.map(e => '<button data-r="' + e + '">' + e + '</button>').join('') + '</div>';
+  h += '<button class="a" data-a="reply">↩ Reply</button>';
+  h += '<button class="a" data-a="star">' + (starred.includes(id) ? '☆ Unstar' : '⭐ Star') + '</button>';
+  if (real) h += '<button class="a" data-a="pin">📌 Pin message</button>';
   if (m.text) h += '<button class="a" data-a="copy">⧉ Copy</button>';
-  if (mine && real && m.type === 'text' && Date.now() - m.ms < EDIT_MS) h += '<button class="a" data-a="edit">✎ Edit (20 min)</button>';
+  if (mine && real && m.type === 'text') h += '<button class="a" data-a="edit">✎ Edit message</button>';
+  if (real) h += '<button class="a" data-a="info">ℹ Message info</button>';
+  h += '<button class="a" data-a="delme" style="color:var(--accent)">🗑 Delete for me</button>';
   if (mine && real) h += '<button class="a" data-a="del" style="color:var(--accent)">🗑 Delete for everyone</button>';
-  $('sheet').innerHTML = h + '<button class="a" data-a="x" style="color:var(--muted)">Cancel</button>'; $('sheet').dataset.id = id; $('sheet').classList.add('on');
+  h += '<button class="a" data-a="x" style="color:var(--muted)">Cancel</button>';
+  $('sheet').innerHTML = h; $('sheet').dataset.id = id; $('sheet').classList.add('on');
+}
+function rxHTML(m) {
+  if (!m.reactions || m.deleted) return '';
+  const c = {}; Object.values(m.reactions).forEach(e => { if (e) c[e] = (c[e] || 0) + 1; });
+  const k = Object.keys(c); if (!k.length) return '';
+  return '<div class="rxs">' + k.map(e => e + (c[e] > 1 ? ' ' + c[e] : '')).join('  ') + '</div>';
 }
 $('sheet').onclick = e => {
+  const id = $('sheet').dataset.id, m = all().find(x => x.id === id), real = server.some(x => x.id === id);
+  const rBtn = e.target.closest('[data-r]');
+  if (rBtn && m) {
+    $('sheet').classList.remove('on'); const cur = m.reactions && m.reactions[user.uid];
+    updateDoc(msgRef(id), { ['reactions.' + user.uid]: cur === rBtn.dataset.r ? null : rBtn.dataset.r }).catch(err => toast(err.message)); return;
+  }
   const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
-  const id = $('sheet').dataset.id; $('sheet').classList.remove('on');
-  const m = all().find(x => x.id === id); if (!m) return;
-  if (a === 'reply') { replyTo = { id, text: m.text || (m.type === 'symptom' ? '🩺 Symptom card' : '📎 Attachment'), name: m.senderId === user.uid ? 'You' : activeDoctor.name }; showBar('↩ ' + replyTo.text.slice(0, 60)); }
-  if (a === 'star') { toggleStar(id); return; }
+  $('sheet').classList.remove('on'); if (!m) return;
+  if (a === 'star') { starred = starred.includes(id) ? starred.filter(x => x !== id) : [...starred, id]; lsSet('mc_star_' + chatId, starred); render(false); }
+  if (a === 'reply') { replyTo = { id, text: m.text || (m.type === 'symptom' ? '🩺 Symptom card' : m.type === 'vitals' ? '❤️ Vitals card' : '📎 Attachment'), name: m.senderId === user.uid ? 'You' : activeDoctor.name }; showBar('↩ ' + replyTo.text.slice(0, 60)); }
   if (a === 'copy') navigator.clipboard?.writeText(m.text || '').then(() => toast('Copied'));
   if (a === 'edit') { editingId = id; $('msgInput').value = m.text; showBar('✎ Editing message'); }
-  if (a === 'del') updateDoc(doc(db, 'consultations', chatId, 'messages', id), { deleted: true, text: '', fileURL: null, symptom: null }).catch(err => toast(err.message));
+  if (a === 'pin') updateDoc(doc(db, 'consultations', chatId), { pinned: { id, text: (m.text || '📎 Attachment').slice(0, 80), by: user.uid } }).then(() => toast('Pinned 📌')).catch(err => toast(err.message));
+  if (a === 'info') { const f = x => x ? new Date(x).toLocaleString() : ''; const seen = m.readAt && m.readAt.toMillis ? f(m.readAt.toMillis()) : (m.read ? 'seen' : 'not yet'); toast('Sent ' + f(m.ms) + (m.senderId === user.uid ? '  ·  Seen: ' + seen : ''), 6000); }
+  if (a === 'delme') {
+    if (real) updateDoc(msgRef(id), { hiddenFor: arrayUnion(user.uid) }).then(() => toast('Deleted for you')).catch(err => toast(err.message));
+    else { outbox = outbox.filter(o => o.clientId !== id); persistOut(); render(false); toast('Deleted for you'); }
+  }
+  if (a === 'del' && confirm('Delete this message for everyone?')) updateDoc(msgRef(id), { deleted: true, text: '', fileURL: null, symptom: null, vitals: null, geo: null, reactions: null }).catch(err => toast(err.message));
+};
+function showPin(p) {
+  const b = $('pinbar'); if (!p) { b.classList.remove('on'); b.innerHTML = ''; return; }
+  b.innerHTML = '📌 <span>' + E(p.text || '') + '</span><button type="button" id="unpin" aria-label="Unpin">✕</button>'; b.dataset.id = p.id; b.classList.add('on');
+}
+$('pinbar').onclick = e => {
+  if (e.target.id === 'unpin') { updateDoc(doc(db, 'consultations', chatId), { pinned: null }).catch(() => {}); return; }
+  document.querySelector('[data-b="' + $('pinbar').dataset.id + '"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 };
 let pt; const bub = e => e.target.closest('[data-b]');
 $('msgs').addEventListener('touchstart', e => { const b = bub(e); if (b) pt = setTimeout(() => { navigator.vibrate?.(15); openSheet(b.dataset.b); }, 450); }, { passive: true });
 ['touchend', 'touchmove', 'touchcancel'].forEach(v => $('msgs').addEventListener(v, () => clearTimeout(pt), { passive: true }));
 $('msgs').addEventListener('contextmenu', e => { const b = bub(e); if (b) { e.preventDefault(); openSheet(b.dataset.b); } });
 document.addEventListener('click', e => {
-  if (!e.target.closest('#sheet')) $('sheet').classList.remove('on');
+  if (!e.target.closest('#sheet') && !e.target.closest('[data-b]')) $('sheet').classList.remove('on');
   if (!e.target.closest('#menu') && e.target.id !== 'btnMenu') $('menu').classList.remove('on');
 });
 

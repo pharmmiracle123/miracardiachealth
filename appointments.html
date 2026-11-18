@@ -36,6 +36,7 @@
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
     @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.001ms !important; } }
   </style>
+  <script src="js/ui.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
@@ -119,6 +120,8 @@
     const esc = escapeHtml;
 
     const profile = await requireAuth();
+
+    if (!profile) throw new Error('Redirecting to sign in');
     if (profile) boot();
 
     function boot() {

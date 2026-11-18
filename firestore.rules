@@ -99,6 +99,11 @@ allow create, update, delete: if isSignedIn()
 }
 }
 
+// Needed by pharmacy-search.html (collectionGroup query over every pharmacy's drugs)
+match /{path=**}/drugs/{drugId} {
+  allow read: if true;
+}
+
 function isConsultParticipant() {
   return isSignedIn() && (
     resource.data.patientId == request.auth.uid
@@ -150,7 +155,7 @@ match /consultations/{consultId} {
         && request.resource.data.senderId == resource.data.senderId)
       // the OTHER participant (doctor/patient) may only set read receipts
       || (canAccessConsult()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read','readAt']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read','readAt','hiddenFor','reactions']))
     );
     allow delete: if isAdmin()
       || (isSignedIn() && resource.data.senderId == request.auth.uid);
@@ -308,6 +313,10 @@ match /emr/{patientId} {
   allow read: if isClinicalStaff() || (isSignedIn() && request.auth.uid == patientId);
   allow create, update: if isClinicalStaff();
   allow delete: if isAdmin();
+}
+
+match /vitals/{id} {
+  allow read, write: if isClinicalStaff();
 }
 
 match /beds/{bedId} {

@@ -14,6 +14,9 @@
     .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -85,6 +88,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['doctor','nurse','admin','support','counselor','psychologist']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     document.getElementById('newSession').onclick = () => {
       document.getElementById('sessionModal').classList.remove('hidden');
@@ -128,12 +132,12 @@
         const riskColor = s.risk === 'high' ? 'text-red-700 bg-red-50' : s.risk === 'moderate' ? 'text-amber-700 bg-amber-50' : 'text-slate-500';
         el.innerHTML += `<div class="card">
           <div class="flex justify-between items-start">
-            <div><div class="font-bold text-sm">${s.clientName}</div><div class="text-xs text-pink-700">${s.type} · ${s.focus||''}</div></div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${riskColor}">Risk: ${s.risk||'none'}</span>
+            <div><div class="font-bold text-sm">${__e(s.clientName)}</div><div class="text-xs text-pink-700">${__e(s.type)} · ${__e(s.focus||'')}</div></div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${riskColor}">Risk: ${__e(s.risk||'none')}</span>
           </div>
           <div class="text-xs text-slate-600 mt-2 line-clamp-3">${(s.notes||'').slice(0,180)}${(s.notes||'').length>180?'…':''}</div>
           ${s.goals ? `<div class="text-[11px] mt-1 text-teal-700"><strong>Goals:</strong> ${s.goals.slice(0,100)}</div>` : ''}
-          <div class="text-[10px] text-slate-400 mt-2">${t} · ${s.counselorName||''}${s.followUp ? ' · Follow-up: '+s.followUp : ''}</div>
+          <div class="text-[10px] text-slate-400 mt-2">${t} · ${__e(s.counselorName||'')}${s.followUp ? ' · Follow-up: '+s.followUp : ''}</div>
         </div>`;
       });
     }

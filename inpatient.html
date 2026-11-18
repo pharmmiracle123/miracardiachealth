@@ -18,6 +18,9 @@
     .field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}
     .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:.2rem}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -81,6 +84,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, doc, setDoc, getDocs, updateDoc, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['doctor','nurse','admin','surgeon']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     // Seed default beds if none
     const DEFAULT_BEDS = [];
@@ -120,15 +124,15 @@
       document.getElementById('sRate').textContent = beds.length ? Math.round(occ / beds.length * 100) + '%' : '—';
 
       document.getElementById('bedBoard').innerHTML = filtered.map(b => `
-        <div class="bed ${b.status}" data-id="${b.id}">
+        <div class="bed ${__e(b.status)}" data-id="${__e(b.id)}">
           <div class="flex justify-between items-start">
             <span class="font-extrabold text-sm">${b.bedNo || b.id}</span>
             <span class="text-[10px] font-bold uppercase ${
               b.status==='occupied'?'text-teal-700':b.status==='reserved'?'text-amber-700':b.status==='cleaning'?'text-slate-500':'text-emerald-600'
-            }">${b.status}</span>
+            }">${__e(b.status)}</span>
           </div>
-          <div class="text-xs mt-1 text-slate-600 truncate">${b.patientName || '—'}</div>
-          <div class="text-[10px] text-slate-400">${b.ward}${b.diagnosis ? ' · ' + b.diagnosis.slice(0,30) : ''}</div>
+          <div class="text-xs mt-1 text-slate-600 truncate">${__e(b.patientName || '—')}</div>
+          <div class="text-[10px] text-slate-400">${__e(b.ward)}${b.diagnosis ? ' · ' + b.diagnosis.slice(0,30) : ''}</div>
           ${b.status==='occupied' ? `<div class="mt-2 flex gap-1">
             <button data-act="transfer" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded">Transfer</button>
             <button data-act="discharge" class="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">Discharge</button>

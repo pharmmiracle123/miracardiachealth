@@ -15,6 +15,9 @@
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
     .esi1{border-left:4px solid #dc2626}.esi2{border-left:4px solid #ea580c}.esi3{border-left:4px solid #eab308}.esi4{border-left:4px solid #22c55e}.esi5{border-left:4px solid #3b82f6}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -74,6 +77,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['doctor','nurse','admin','surgeon']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     document.getElementById('triageBtn').onclick = () => {
       document.getElementById('triageModal').classList.remove('hidden');
@@ -107,14 +111,14 @@
       snap.forEach(d => {
         const e = d.data();
         const t = e.triagedAt?.toDate ? e.triagedAt.toDate().toLocaleTimeString() : '';
-        el.innerHTML += `<div class="card esi${e.esi||'3'}">
-          <div class="flex justify-between"><span class="font-extrabold">${e.name}</span><span class="text-xs font-bold">ESI ${e.esi}</span></div>
-          <div class="text-xs text-slate-600 mt-0.5">${e.chiefComplaint||''} · ${e.ageSex||''}</div>
-          <div class="text-[10px] text-slate-400">Vitals: BP ${e.bp||'—'} HR ${e.pulse||'—'} T ${e.temp||'—'} SpO₂ ${e.spo2||'—'} · ${t}</div>
+        el.innerHTML += `<div class="card esi${__e(e.esi||'3')}">
+          <div class="flex justify-between"><span class="font-extrabold">${__e(e.name)}</span><span class="text-xs font-bold">ESI ${__e(e.esi)}</span></div>
+          <div class="text-xs text-slate-600 mt-0.5">${__e(e.chiefComplaint||'')} · ${__e(e.ageSex||'')}</div>
+          <div class="text-[10px] text-slate-400">Vitals: BP ${__e(e.bp||'—')} HR ${__e(e.pulse||'—')} T ${__e(e.temp||'—')} SpO₂ ${__e(e.spo2||'—')} · ${t}</div>
           <div class="mt-2 flex gap-1">
-            <button data-id="${d.id}" data-s="in_care" class="text-[10px] font-bold bg-amber-100 px-2 py-0.5 rounded">In care</button>
-            <button data-id="${d.id}" data-s="discharged" class="text-[10px] font-bold bg-emerald-100 px-2 py-0.5 rounded">Discharge</button>
-            <button data-id="${d.id}" data-s="admitted" class="text-[10px] font-bold bg-teal-100 px-2 py-0.5 rounded">Admit</button>
+            <button data-id="${__e(d.id)}" data-s="in_care" class="text-[10px] font-bold bg-amber-100 px-2 py-0.5 rounded">In care</button>
+            <button data-id="${__e(d.id)}" data-s="discharged" class="text-[10px] font-bold bg-emerald-100 px-2 py-0.5 rounded">Discharge</button>
+            <button data-id="${__e(d.id)}" data-s="admitted" class="text-[10px] font-bold bg-teal-100 px-2 py-0.5 rounded">Admit</button>
           </div>
         </div>`;
       });

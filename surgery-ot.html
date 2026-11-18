@@ -15,6 +15,9 @@
     .ot-card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
     .check-item{display:flex;align-items:flex-start;gap:.5rem;padding:.4rem 0;border-bottom:1px solid #f1f5f9;font-size:.8rem}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -108,6 +111,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['doctor','surgeon','nurse','admin','anaesthetist']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     let cases = [];
     let activeCaseId = null;
@@ -133,19 +137,19 @@
             <div>
               <div class="font-extrabold text-sm">${escape(c.procedure || 'Procedure')}</div>
               <div class="text-xs text-slate-600 mt-0.5">${escape(c.patientName || '')}</div>
-              <div class="text-[11px] text-slate-400 mt-1">${c.theatre || 'OT'} · ${dt ? dt.toLocaleString() : ''} · ${c.priority || 'Elective'}</div>
+              <div class="text-[11px] text-slate-400 mt-1">${__e(c.theatre || 'OT')} · ${dt ? dt.toLocaleString() : ''} · ${__e(c.priority || 'Elective')}</div>
               <div class="text-[11px] mt-0.5">Surgeon: ${escape(c.surgeon || '—')} · Anaes: ${escape(c.anaesthetist || '—')}</div>
             </div>
             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
               c.status==='completed'?'bg-emerald-100 text-emerald-800':
               c.status==='in_progress'?'bg-amber-100 text-amber-800':
               c.checklistComplete?'bg-teal-100 text-teal-800':'bg-slate-100 text-slate-600'
-            }">${c.status || 'scheduled'}</span>
+            }">${__e(c.status || 'scheduled')}</span>
           </div>
           <div class="flex flex-wrap gap-1.5 mt-3">
-            <button data-id="${c.id}" data-act="who" class="text-[11px] font-bold bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg">WHO Checklist</button>
-            <button data-id="${c.id}" data-act="start" class="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg">Start</button>
-            <button data-id="${c.id}" data-act="complete" class="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg">Complete</button>
+            <button data-id="${__e(c.id)}" data-act="who" class="text-[11px] font-bold bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg">WHO Checklist</button>
+            <button data-id="${__e(c.id)}" data-act="start" class="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg">Start</button>
+            <button data-id="${__e(c.id)}" data-act="complete" class="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg">Complete</button>
           </div>
         </div>`;
       }).join('');

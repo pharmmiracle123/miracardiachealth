@@ -9,6 +9,9 @@
   <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#0d9488'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
   <link rel="stylesheet" href="css/styles.css" />
   <style>body{padding-bottom:40px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}.field{width:100%;border:1px solid #e2e8f0;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem}.lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}</style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -32,7 +35,7 @@
   <script type="module">
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
-    await requireAuth(['doctor','nurse','admin','radiologist','surgeon']);
+    if (!(await requireAuth(['doctor','nurse','admin','radiologist','surgeon']))) throw new Error('Redirecting to sign in');
     document.getElementById('save').onclick = async () => {
       const patient = document.getElementById('patient').value.trim();
       if (!patient) return alert('Patient required');
@@ -50,7 +53,7 @@
       document.getElementById('list').innerHTML = '';
       snap.forEach(d => {
         const x = d.data();
-        document.getElementById('list').innerHTML += `<div class="card text-sm"><div class="font-bold">${x.patient}</div><div class="text-xs text-fuchsia-700">${x.modality} · ${x.bodyPart||''} · ${x.priority}</div><div class="text-[10px] text-slate-400 mt-1">${x.indication||''}</div></div>`;
+        document.getElementById('list').innerHTML += `<div class="card text-sm"><div class="font-bold">${__e(x.patient)}</div><div class="text-xs text-fuchsia-700">${__e(x.modality)} · ${__e(x.bodyPart||'')} · ${__e(x.priority)}</div><div class="text-[10px] text-slate-400 mt-1">${__e(x.indication||'')}</div></div>`;
       });
     }
     load();

@@ -14,6 +14,9 @@
     .lbl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:.2rem}
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
   </style>
+  <script src="js/ui.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -61,6 +64,7 @@
     import { requireAuth, applyPlatformBranding, db, auth, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, limit, serverTimestamp } from './js/config.js';
     applyPlatformBranding();
     const profile = await requireAuth(['admin','doctor','nurse','pharmacist','support']);
+    if (!profile) throw new Error('Redirecting to sign in');
 
     document.getElementById('newBill').onclick = () => {
       document.getElementById('billModal').classList.remove('hidden');
@@ -109,14 +113,14 @@
         else due += inv.total || 0;
         const t = inv.createdAt?.toDate ? inv.createdAt.toDate().toLocaleDateString() : '';
         el.innerHTML += `<div class="card">
-          <div class="flex justify-between"><span class="font-bold text-sm">${inv.patient}</span>
+          <div class="flex justify-between"><span class="font-bold text-sm">${__e(inv.patient)}</span>
             <span class="text-sm font-extrabold">₦${(inv.total||0).toLocaleString()}</span></div>
           <div class="text-xs text-slate-500 mt-0.5">${(inv.items||[]).map(i=>i.desc).join(', ').slice(0,60)}</div>
           <div class="flex justify-between items-center mt-2">
-            <span class="text-[10px] text-slate-400">${t} · ${inv.payer||'Self'}</span>
+            <span class="text-[10px] text-slate-400">${t} · ${__e(inv.payer||'Self')}</span>
             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
               inv.status==='paid'?'bg-emerald-100 text-emerald-800':inv.status==='partial'?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'
-            }">${inv.status}</span>
+            }">${__e(inv.status)}</span>
           </div>
           ${inv.status!=='paid' ? `<button data-id="${d.id}" class="mt-2 text-[11px] font-bold text-emerald-700">Mark paid</button>` : ''}
         </div>`;
