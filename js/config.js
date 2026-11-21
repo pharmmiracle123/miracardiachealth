@@ -101,7 +101,7 @@ const PAYSTACK_SUBACCOUNT = "ACCT_8lqvpvuhaz03una";
 // These emails unlock ALL paid courses automatically (MBBS past questions, etc.).
 // Add or remove addresses as needed. Matching is case-insensitive.
 const FREE_ACCESS_EMAILS = [
-  "onyekamiracle08@gmail.com",
+  "onyekamira08@gmail.com",
   "onyekaudechukwum@gmail.com",
   "onyekamiracle08@yahoo.com",
   "onyekaudechukwum@yahoo.com",
