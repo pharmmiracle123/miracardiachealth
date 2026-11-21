@@ -537,10 +537,11 @@ ANS: Persistently raised blood pressure ≥140/90 mmHg.</div>
               <p class="font-extrabold text-sm text-emerald-700 shrink-0">${formatCurrency(p.amount || 0)}</p>
             </div>
             <p class="text-[11px] text-slate-400">Ref: <span class="font-mono text-slate-600">${esc(p.reference || p.id)}</span> · ${formatDateTime(p.createdAt)}</p>
+            ${p.method === 'manual_transfer' ? `<p class="text-[11px] font-semibold text-amber-700 bg-amber-50 rounded-lg px-2 py-1">💬 Student says they paid by transfer · Sender: ${esc(p.senderNote || '—')} — confirm in your bank app before approving</p>` : ''}
             <div class="flex items-center gap-2">
               <select id="dur-${p.id}" class="field !w-auto !py-1.5 text-xs">
-                <option value="30">30 days</option><option value="90">3 months</option><option value="180">6 months</option>
-                <option value="365" selected>1 year</option><option value="0">Lifetime</option>
+                <option value="30" selected>30 days (1 month)</option><option value="90">3 months</option><option value="180">6 months</option>
+                <option value="365">1 year</option><option value="0">Lifetime</option>
               </select>
               <button data-act="buy-approve" data-id="${p.id}" class="btn-sm bg-emerald-600 text-white">Approve</button>
               <button data-act="buy-reject" data-id="${p.id}" class="btn-sm bg-red-100 text-red-700">Reject</button>
