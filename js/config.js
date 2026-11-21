@@ -90,7 +90,7 @@ const googleProvider = new GoogleAuthProvider();
 // >>> PASTE YOUR PAYSTACK PUBLIC KEY HERE <<<
 // Get it from: https://dashboard.paystack.com/#/settings/developers
 // Use pk_test_... for testing, pk_live_... for production.
-const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+const PAYSTACK_PUBLIC_KEY = "pk_live_1360dbbf248bd92c3afcb1b2b9a132f13f941d83";
 
 
 // ---------- Paystack Subaccount (settlement destination / owner) ----------
