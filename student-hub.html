@@ -309,7 +309,8 @@
         let btn;
         if (unlocked) btn = `<button class="open-btn btn-primary w-full text-sm py-2.5" data-id="${c.id}">Open course</button>`;
         else if (isPending) btn = `<button disabled class="w-full rounded-xl bg-amber-100 py-2.5 text-sm font-semibold text-amber-800">Payment received · awaiting approval</button>`;
-        else btn = `<button class="unlock-btn btn-primary w-full text-sm py-2.5" data-id="${c.id}">Unlock · ${formatCurrency(c.price || 0)}</button>`;
+        else btn = `<button class="unlock-btn btn-primary w-full text-sm py-2.5" data-id="${c.id}">Unlock · ${formatCurrency(c.price || 0)}</button>
+          <button class="paid-btn mt-2 w-full rounded-xl border-2 border-emerald-600 bg-emerald-50 px-3 py-2.5 text-xs font-extrabold uppercase leading-tight text-emerald-700 active:scale-95" data-id="${c.id}">I have made payment, kindly approve</button>`;
         const pill = unlocked
           ? `<span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">${svg('check', 'ic-sm', 3)}${free ? 'FREE' : 'UNLOCKED'}</span>`
           : `<span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">${svg('lock', 'ic-sm', 2.2)}LOCKED</span>`;
@@ -345,6 +346,7 @@
       const t = /** @type {HTMLElement} */ (e.target);
       const o = /** @type {HTMLElement|null} */ (t.closest('.open-btn')); if (o) return openCourse(o.dataset.id || '');
       const u = /** @type {HTMLElement|null} */ (t.closest('.unlock-btn')); if (u) return unlock(u.dataset.id || '');
+      const pb = /** @type {HTMLElement|null} */ (t.closest('.paid-btn')); if (pb) return claimPayment(pb.dataset.id || '');
     });
 
     /* =================== AUTH + LIVE ACCESS =================== */
@@ -374,7 +376,7 @@
       box.innerHTML = `<div class="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
         <p class="mb-1 flex items-center gap-1.5 font-bold">${svg('clock', 'ic-sm', 2.2)} Waiting for approval</p>
         ${pend.map(p => `<p>• ${escapeHtml(p.courseTitle || 'Course')} · Ref <span class="font-mono">${escapeHtml(p.reference || '')}</span></p>`).join('')}
-        <p class="mt-1 text-amber-700">Your course unlocks automatically as soon as our team approves your payment. If it takes too long, contact Support with your reference.</p></div>`;
+        <p class="mt-1 text-amber-700">Your course unlocks as soon as our team confirms and approves your payment. If it takes too long, contact Support with your reference.</p></div>`;
     }
 
     /* =================== PAYMENT =================== */
@@ -421,6 +423,33 @@
         },
         onCancel: () => showToast('Payment cancelled', 'info')
       });
+    }
+
+    /** Student already paid (bank transfer etc.) and asks admin to approve manually. @param {string} courseId */
+    async function claimPayment(courseId) {
+      const c = courses.find(x => x.id === courseId); if (!c) return;
+      if (!currentUser) {
+        if (confirm('Please log in first, then tap "I have made payment".')) location.href = 'Login.html';
+        return;
+      }
+      const existing = purchases.get(courseId);
+      if (existing && existing.status === 'paid_pending') { showToast('Your request is already waiting for approval.', 'info'); return; }
+      const sender = prompt('Enter the NAME on the account you paid from (or your transfer reference), so admin can find your payment:');
+      if (sender === null) return;
+      if (!sender.trim()) { showToast('Please enter the sender name or transfer reference.', 'warning'); return; }
+      try {
+        const reference = generateRef('TR');
+        await setDoc(doc(db, 'studentPurchases', reference), {
+          reference, userId: currentUser.uid, userEmail: currentUser.email || '', userName: currentUser.displayName || '',
+          courseId: c.id, courseTitle: c.title || '', amount: Number(c.price || 0),
+          method: 'manual_transfer', senderNote: sender.trim().slice(0, 120),
+          status: 'paid_pending', createdAt: serverTimestamp()
+        });
+        showToast('Sent! Admin will confirm your payment and approve your access.', 'success');
+      } catch (e) {
+        console.error(e);
+        showToast('Could not send your request. Check your network and try again.', 'error');
+      }
     }
 
     /* =================== PROTECTION =================== */
