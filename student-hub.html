@@ -91,6 +91,7 @@
         </div>
         <span class="text-violet-600 font-bold text-lg">›</span>
       </a>
+      <div id="quizClaim" class="mt-2"></div>
     </section>
 
     <!-- Protection notice -->
@@ -197,6 +198,7 @@
     /** @param {string} id @returns {HTMLElement} */
     const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
     const PENDING_KEY = 'mh_pending_student_purchase';
+    const QUIZ = { id: 'mbbs_progressive_quiz', title: 'MBBS Progressive Quiz (100x100)', price: 1000 };
 
     /* ---------- Small line icons (fixed size, used for lock / check / etc.) ---------- */
     /** @type {Record<string,string>} */
@@ -287,7 +289,30 @@
       return true;
     }
 
+    /** "I have made payment" box under the MBBS quiz banner */
+    function renderQuizClaim() {
+      const box = $('quizClaim'); if (!box) return;
+      if (!currentUser) { box.innerHTML = ''; return; }
+      if (hasFreeStudentAccess(currentUser.email) || hasAccess(QUIZ.id)) {
+        const exp = access.get(QUIZ.id)?.expiresAt;
+        const d = exp && exp.toDate ? exp.toDate().toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        box.innerHTML = `<p class="rounded-xl bg-emerald-50 px-3 py-2 text-center text-[11px] font-bold text-emerald-700">✅ Quiz access active${d ? ' until ' + d : ''}</p>`;
+        return;
+      }
+      const pend = purchases.get(QUIZ.id);
+      if (pend && pend.status === 'paid_pending') {
+        box.innerHTML = `<p class="rounded-xl bg-amber-100 px-3 py-2.5 text-center text-xs font-semibold text-amber-800">⏳ Payment received · awaiting admin approval</p>`;
+        return;
+      }
+      box.innerHTML = `<button class="paid-btn w-full rounded-xl border-2 border-emerald-600 bg-emerald-50 px-3 py-3 text-xs font-extrabold uppercase leading-tight text-emerald-700 active:scale-95" data-id="${QUIZ.id}">I have made payment, kindly approve</button>
+        <p class="mt-1 text-center text-[10px] text-slate-400">Already paid ₦1,000 (transfer or Paystack)? Tap this so admin can confirm and activate your 30 days.</p>`;
+    }
+    $('quizClaim').addEventListener('click', (e) => {
+      const pb = /** @type {HTMLElement} */ (e.target).closest('.paid-btn'); if (pb) claimPayment(QUIZ.id);
+    });
+
     function renderCourses() {
+      renderQuizClaim();
       const q = searchText.trim().toLowerCase();
       const list = courses.filter(c =>
         (activeCat === 'All' || (c.category || 'Other') === activeCat) &&
@@ -427,7 +452,7 @@
 
     /** Student already paid (bank transfer etc.) and asks admin to approve manually. @param {string} courseId */
     async function claimPayment(courseId) {
-      const c = courses.find(x => x.id === courseId); if (!c) return;
+      const c = courses.find(x => x.id === courseId) || (courseId === QUIZ.id ? QUIZ : null); if (!c) return;
       if (!currentUser) {
         if (confirm('Please log in first, then tap "I have made payment".')) location.href = 'Login.html';
         return;
@@ -443,7 +468,7 @@
           reference, userId: currentUser.uid, userEmail: currentUser.email || '', userName: currentUser.displayName || '',
           courseId: c.id, courseTitle: c.title || '', amount: Number(c.price || 0),
           method: 'manual_transfer', senderNote: sender.trim().slice(0, 120),
-          status: 'paid_pending', createdAt: serverTimestamp()
+          status: 'paid_pending', purpose: 'student_course', createdAt: serverTimestamp()
         });
         showToast('Sent! Admin will confirm your payment and approve your access.', 'success');
       } catch (e) {
