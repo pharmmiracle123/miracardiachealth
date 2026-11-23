@@ -42,6 +42,8 @@
         <p class="text-2xl font-extrabold text-teal-700">₦1,000 <span class="text-sm font-semibold text-slate-500">/ 30 days</span></p>
         <p id="gateStatus" class="text-xs text-slate-500">Checking access…</p>
         <button id="payBtn" class="btn-primary w-full py-3 hidden">Pay ₦1,000 for 30-day access</button>
+        <button id="claimBtn" class="hidden w-full rounded-xl border-2 border-emerald-600 bg-emerald-50 px-3 py-3 text-xs font-extrabold uppercase leading-tight text-emerald-700 active:scale-95">I have made payment, kindly approve</button>
+        <p id="claimHint" class="hidden text-[11px] text-slate-400">Already paid (transfer or Paystack)? Tap the green button so admin can confirm and activate your 30 days.</p>
         <button id="loginBtn" class="btn-outline w-full py-3 hidden" onclick="location.href='Login.html'">Log in to continue</button>
         <p id="gateHint" class="text-[11px] text-slate-400"></p>
       </div>
@@ -122,6 +124,30 @@
     let isAdmin = false;
     let accessExpiry = null;
     let unsubAccess = null;
+    let unsubPurch = null;
+    let pendingClaim = false;      // a paid_pending request exists for this course
+    const TRIED_KEY = 'mh_mbbs_pay_tried';
+    const triedPay = () => { try { const t = Number(localStorage.getItem(TRIED_KEY) || 0); return t && Date.now() - t < 7 * 864e5; } catch (_) { return false; } };
+    const markTried = () => { try { localStorage.setItem(TRIED_KEY, String(Date.now())); } catch (_) {} };
+    function renderClaim() {
+      if (!user || isAdmin || hasPaidAccess) { $('claimBtn').classList.add('hidden'); $('claimHint').classList.add('hidden'); return; }
+      if (pendingClaim) {
+        $('claimBtn').classList.add('hidden'); $('claimHint').classList.add('hidden');
+        $('gateStatus').textContent = '⏳ Payment received · awaiting admin approval. Your access opens as soon as it is approved.';
+        $('payBtn').classList.add('hidden'); $('gateHint').textContent = '';
+        return;
+      }
+      const show = true; // always visible: students may have paid by bank transfer
+      $('claimBtn').classList.toggle('hidden', !show);
+      $('claimHint').classList.toggle('hidden', !show);
+    }
+    function watchPurchases(uid) {
+      if (unsubPurch) { unsubPurch(); unsubPurch = null; }
+      unsubPurch = onSnapshot(query(collection(db, 'studentPurchases'), where('userId', '==', uid)), (snap) => {
+        pendingClaim = snap.docs.some(d => d.data().courseId === COURSE_ID && d.data().status === 'paid_pending');
+        updateGateUI();
+      }, (e) => console.warn('purchase watch', e));
+    }
 
     let level = '300';
     let setIds = [];
@@ -180,6 +206,7 @@
       $('loginBtn').classList.add('hidden');
       $('gateHint').textContent = 'Paystack · ₦1,000 · valid 30 days · auto-activates after successful payment';
       showGate();
+      renderClaim();
     }
 
     async function watchAccess(uid) {
@@ -216,9 +243,12 @@
           updateGateUI();
         } else {
           await watchAccess(u.uid);
+          watchPurchases(u.uid);
         }
       } else {
         if (unsubAccess) { unsubAccess(); unsubAccess = null; }
+        if (unsubPurch) { unsubPurch(); unsubPurch = null; }
+        pendingClaim = false;
         updateGateUI();
       }
     });
@@ -229,6 +259,7 @@
         return;
       }
       const reference = generateRef('MBBS');
+      markTried();
       payWithPaystack({
         email: user.email,
         amount: PRICE,
@@ -278,14 +309,38 @@
                 clearInterval(poll);
                 $('gateStatus').textContent = 'Payment recorded. If access does not open in a minute, contact Support with ref: ' + ref;
                 $('payBtn').classList.remove('hidden');
+                renderClaim();
               }
             }, 1500);
           } catch (e) {
             showToast('Payment received. Awaiting activation.', 'success');
           }
         },
-        onCancel: () => showToast('Payment cancelled', 'info')
+        onCancel: () => { showToast('If you already paid, tap "I have made payment".', 'info'); renderClaim(); }
       });
+    };
+
+    $('claimBtn').onclick = async () => {
+      if (!user) { location.href = 'Login.html'; return; }
+      if (pendingClaim) return;
+      const sender = prompt('Enter the NAME on the account you paid from (or your transfer reference), so admin can find your payment:');
+      if (sender === null) return;
+      if (!sender.trim()) { showToast('Please enter the sender name or transfer reference.', 'warning'); return; }
+      $('claimBtn').disabled = true;
+      try {
+        const reference = generateRef('TR');
+        await setDoc(doc(db, 'studentPurchases', reference), {
+          reference, userId: user.uid, userEmail: user.email || '', userName: user.displayName || '',
+          courseId: COURSE_ID, courseTitle: 'MBBS Progressive Quiz (100x100)', amount: PRICE,
+          method: 'manual_transfer', senderNote: sender.trim().slice(0, 120),
+          status: 'paid_pending', purpose: 'student_course', createdAt: serverTimestamp()
+        });
+        showToast('Sent! Admin will confirm your payment and approve your access.', 'success');
+      } catch (e) {
+        console.error(e);
+        showToast('Could not send your request. Check your network and try again.', 'error');
+      }
+      $('claimBtn').disabled = false;
     };
 
     function isUnlocked(setId) {
